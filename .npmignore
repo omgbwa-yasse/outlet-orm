@@ -1,0 +1,31 @@
+# Tests et exemples
+tests/
+coverage/
+*.test.js
+
+# Documentation (sauf README)
+docs/
+*.md
+!README.md
+
+# Configuration de développement
+.eslintrc.js
+jest.config.js
+.editorconfig
+.gitignore
+.vscode/
+.idea/
+
+# Fichiers de projet
+CONTRIBUTING.md
+CHANGELOG.md
+SUMMARY.md
+
+# Exemples (garder pour référence utilisateur)
+# examples/ - Commenté pour garder les exemples dans le package
+
+# Divers
+*.log
+node_modules/
+.DS_Store
+Thumbs.db
