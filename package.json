@@ -53,6 +53,7 @@
   },
   "homepage": "https://github.com/omgbwa-yasse/outlet-orm#readme",
   "dependencies": {
+    "dotenv": "^16.4.5",
     "mysql2": "^3.6.0",
     "pg": "^8.11.0",
     "sqlite3": "^5.1.6"
