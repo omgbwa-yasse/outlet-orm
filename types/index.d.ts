@@ -26,6 +26,10 @@ declare module 'outlet-orm' {
     executeRawQuery(sql: string, params?: any[]): Promise<any[]>;
     /** Execute raw SQL and return driver-native results (used by migrations) */
     execute(sql: string, params?: any[]): Promise<any>;
+    /** Atomically increment a column respecting query wheres */
+    increment(table: string, column: string, query: QueryObject, amount?: number): Promise<{ affectedRows: number }>;
+    /** Atomically decrement a column respecting query wheres */
+    decrement(table: string, column: string, query: QueryObject, amount?: number): Promise<{ affectedRows: number }>;
     close(): Promise<void>;
     /** Backwards-compatible alias used by CLI */
     disconnect(): Promise<void>;

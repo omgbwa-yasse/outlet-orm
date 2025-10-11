@@ -261,7 +261,7 @@ class QueryBuilder {
    */
   async paginate(page = 1, perPage = 15) {
     const offset = (page - 1) * perPage;
-    
+
     const total = await this.count();
     const data = await this.offset(offset).limit(perPage).get();
 
@@ -318,7 +318,7 @@ class QueryBuilder {
     if (this.model.timestamps) {
       attributes.updated_at = new Date();
     }
-    
+
     return this.model.connection.update(
       this.model.table,
       attributes,
@@ -344,7 +344,12 @@ class QueryBuilder {
    * @returns {Promise<any>}
    */
   async increment(column, amount = 1) {
-    return this.update({ [column]: `${column} + ${amount}` });
+    return this.model.connection.increment(
+      this.model.table,
+      column,
+      this.buildQuery(),
+      amount
+    );
   }
 
   /**
@@ -354,7 +359,12 @@ class QueryBuilder {
    * @returns {Promise<any>}
    */
   async decrement(column, amount = 1) {
-    return this.update({ [column]: `${column} - ${amount}` });
+    return this.model.connection.decrement(
+      this.model.table,
+      column,
+      this.buildQuery(),
+      amount
+    );
   }
 
   /**
@@ -380,10 +390,10 @@ class QueryBuilder {
 
     for (const relationName of this.withRelations) {
       const relationInstance = instances[0][relationName];
-      
+
       if (typeof relationInstance === 'function') {
         const relation = relationInstance.call(instances[0]);
-        
+
         if (relation && typeof relation.eagerLoad === 'function') {
           await relation.eagerLoad(instances, relationName);
         }

@@ -274,6 +274,76 @@ class DatabaseConnection {
   }
 
   /**
+   * Atomically increment a column
+   * @param {string} table
+   * @param {string} column
+   * @param {number} amount
+   * @param {Object} query
+   * @returns {Promise<{affectedRows: number}>}
+   */
+  async increment(table, column, query, amount = 1) {
+    await this.connect();
+
+    const { whereClause, params: whereParams } = this.buildWhereClause(query?.wheres || []);
+    const sql = `UPDATE ${table} SET ${column} = ${column} + ?${whereClause}`;
+    const params = [amount, ...whereParams];
+
+    switch (this.driver) {
+    case 'mysql': {
+      const [result] = await this.pool.execute(this.convertToDriverPlaceholder(sql), params);
+      return { affectedRows: result.affectedRows };
+    }
+    case 'postgres':
+    case 'postgresql': {
+      const res = await this.connection.query(this.convertToDriverPlaceholder(sql, 'postgres'), params);
+      return { affectedRows: res.rowCount };
+    }
+    case 'sqlite':
+      return new Promise((resolve, reject) => {
+        this.connection.run(sql, params, function(err) {
+          if (err) reject(new Error(err.message || String(err)));
+          else resolve({ affectedRows: this.changes });
+        });
+      });
+    }
+  }
+
+  /**
+   * Atomically decrement a column
+   * @param {string} table
+   * @param {string} column
+   * @param {number} amount
+   * @param {Object} query
+   * @returns {Promise<{affectedRows: number}>}
+   */
+  async decrement(table, column, query, amount = 1) {
+    await this.connect();
+
+    const { whereClause, params: whereParams } = this.buildWhereClause(query?.wheres || []);
+    const sql = `UPDATE ${table} SET ${column} = ${column} - ?${whereClause}`;
+    const params = [amount, ...whereParams];
+
+    switch (this.driver) {
+    case 'mysql': {
+      const [result] = await this.pool.execute(this.convertToDriverPlaceholder(sql), params);
+      return { affectedRows: result.affectedRows };
+    }
+    case 'postgres':
+    case 'postgresql': {
+      const res = await this.connection.query(this.convertToDriverPlaceholder(sql, 'postgres'), params);
+      return { affectedRows: res.rowCount };
+    }
+    case 'sqlite':
+      return new Promise((resolve, reject) => {
+        this.connection.run(sql, params, function(err) {
+          if (err) reject(new Error(err.message || String(err)));
+          else resolve({ affectedRows: this.changes });
+        });
+      });
+    }
+  }
+
+  /**
    * Count records
    * @param {string} table
    * @param {Object} query
@@ -333,12 +403,12 @@ class DatabaseConnection {
         const isSelect = /^\s*select/i.test(sql);
         if (isSelect) {
           this.connection.all(sql, params, (err, rows) => {
-            if (err) reject(err);
+            if (err) reject(new Error(err.message || String(err)));
             else resolve(rows);
           });
         } else {
           this.connection.run(sql, params, function(err) {
-            if (err) reject(err);
+            if (err) reject(new Error(err.message || String(err)));
             else resolve({ changes: this.changes, lastID: this.lastID });
           });
         }
@@ -374,7 +444,7 @@ class DatabaseConnection {
   async executeSQLiteQuery(sql, params) {
     return new Promise((resolve, reject) => {
       this.connection.all(sql, params, (err, rows) => {
-        if (err) reject(err);
+        if (err) reject(new Error(err.message || String(err)));
         else resolve(rows);
       });
     });
