@@ -42,16 +42,16 @@
     "query-builder",
     "active-record"
   ],
-  "author": "Your Name",
+  "author": "omgbwa-yasse",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/outlet-orm.git"
+    "url": "https://github.com/omgbwa-yasse/outlet-orm.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/outlet-orm/issues"
+    "url": "https://github.com/omgbwa-yasse/outlet-orm/issues"
   },
-  "homepage": "https://github.com/yourusername/outlet-orm#readme",
+  "homepage": "https://github.com/omgbwa-yasse/outlet-orm#readme",
   "dependencies": {
     "mysql2": "^3.6.0",
     "pg": "^8.11.0",
