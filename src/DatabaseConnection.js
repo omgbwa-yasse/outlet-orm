@@ -1,6 +1,13 @@
 const mysql = require('mysql2/promise');
 const { Client: PgClient } = require('pg');
 const sqlite3 = require('sqlite3').verbose();
+// Attempt to load environment variables from a .env file if present
+try { require('dotenv').config(); } catch (_) {}
+
+function coerceNumber(val) {
+  const n = Number(val);
+  return Number.isFinite(n) ? n : undefined;
+}
 
 /**
  * Database Connection Manager
@@ -8,8 +15,28 @@ const sqlite3 = require('sqlite3').verbose();
  */
 class DatabaseConnection {
   constructor(config) {
-    this.config = config;
-    this.driver = config.driver || 'mysql';
+    const cfg = config || {};
+    const env = process.env || {};
+    let driver = (cfg.driver || env.DB_DRIVER || env.DATABASE_DRIVER || 'mysql').toLowerCase();
+    if (driver === 'postgresql') driver = 'postgres';
+    if (driver === 'sqlite3') driver = 'sqlite';
+
+    const resolved = {
+      driver,
+      host: cfg.host || env.DB_HOST || 'localhost',
+      port: cfg.port || coerceNumber(env.DB_PORT),
+      user: cfg.user || env.DB_USER || env.DB_USERNAME,
+      password: cfg.password || env.DB_PASSWORD,
+      database: cfg.database || env.DB_DATABASE || env.DB_NAME,
+      connectionLimit: cfg.connectionLimit || coerceNumber(env.DB_POOL_MAX)
+    };
+
+    if (driver === 'sqlite' && !resolved.database) {
+      resolved.database = env.DB_FILE || env.SQLITE_DB || env.SQLITE_FILENAME || ':memory:';
+    }
+
+    this.config = resolved;
+    this.driver = driver || 'mysql';
     this.connection = null;
     this.pool = null;
   }
