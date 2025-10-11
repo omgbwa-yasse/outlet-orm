@@ -9,6 +9,14 @@
     "outlet-convert": "./bin/convert.js",
     "outlet-migrate": "./bin/migrate.js"
   },
+  "files": [
+    "src/**",
+    "lib/**",
+    "bin/**",
+    "types/**",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",

@@ -22,18 +22,18 @@ class DatabaseConnection {
     if (this.connection) return;
 
     switch (this.driver) {
-      case 'mysql':
-        await this.connectMySQL();
-        break;
-      case 'postgres':
-      case 'postgresql':
-        await this.connectPostgreSQL();
-        break;
-      case 'sqlite':
-        await this.connectSQLite();
-        break;
-      default:
-        throw new Error(`Unsupported database driver: ${this.driver}`);
+    case 'mysql':
+      await this.connectMySQL();
+      break;
+    case 'postgres':
+    case 'postgresql':
+      await this.connectPostgreSQL();
+      break;
+    case 'sqlite':
+      await this.connectSQLite();
+      break;
+    default:
+      throw new Error(`Unsupported database driver: ${this.driver}`);
     }
   }
 
@@ -97,13 +97,13 @@ class DatabaseConnection {
     const { sql, params } = this.buildSelectQuery(table, query);
 
     switch (this.driver) {
-      case 'mysql':
-        return this.executeMySQLQuery(sql, params);
-      case 'postgres':
-      case 'postgresql':
-        return this.executePostgreSQLQuery(sql, params);
-      case 'sqlite':
-        return this.executeSQLiteQuery(sql, params);
+    case 'mysql':
+      return this.executeMySQLQuery(sql, params);
+    case 'postgres':
+    case 'postgresql':
+      return this.executePostgreSQLQuery(sql, params);
+    case 'sqlite':
+      return this.executeSQLiteQuery(sql, params);
     }
   }
 
@@ -123,27 +123,27 @@ class DatabaseConnection {
     const sql = `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`;
 
     switch (this.driver) {
-      case 'mysql': {
-        const [result] = await this.pool.execute(sql, values);
-        return { insertId: result.insertId, affectedRows: result.affectedRows };
-      }
+    case 'mysql': {
+      const [result] = await this.pool.execute(sql, values);
+      return { insertId: result.insertId, affectedRows: result.affectedRows };
+    }
 
-      case 'postgres':
-      case 'postgresql': {
-        const pgResult = await this.connection.query(
-          `${sql} RETURNING *`,
-          values
-        );
-        return { insertId: pgResult.rows[0].id, affectedRows: pgResult.rowCount };
-      }
+    case 'postgres':
+    case 'postgresql': {
+      const pgResult = await this.connection.query(
+        `${sql} RETURNING *`,
+        values
+      );
+      return { insertId: pgResult.rows[0].id, affectedRows: pgResult.rowCount };
+    }
 
-      case 'sqlite':
-        return new Promise((resolve, reject) => {
-          this.connection.run(sql, values, function(err) {
-            if (err) reject(err);
-            else resolve({ insertId: this.lastID, affectedRows: this.changes });
-          });
+    case 'sqlite':
+      return new Promise((resolve, reject) => {
+        this.connection.run(sql, values, function(err) {
+          if (err) reject(err);
+          else resolve({ insertId: this.lastID, affectedRows: this.changes });
         });
+      });
     }
   }
 
@@ -168,24 +168,24 @@ class DatabaseConnection {
     const sql = `INSERT INTO ${table} (${columns.join(', ')}) VALUES ${allPlaceholders}`;
 
     switch (this.driver) {
-      case 'mysql': {
-        const [result] = await this.pool.execute(sql, allValues);
-        return { affectedRows: result.affectedRows };
-      }
+    case 'mysql': {
+      const [result] = await this.pool.execute(sql, allValues);
+      return { affectedRows: result.affectedRows };
+    }
 
-      case 'postgres':
-      case 'postgresql': {
-        const pgResult = await this.connection.query(sql, allValues);
-        return { affectedRows: pgResult.rowCount };
-      }
+    case 'postgres':
+    case 'postgresql': {
+      const pgResult = await this.connection.query(sql, allValues);
+      return { affectedRows: pgResult.rowCount };
+    }
 
-      case 'sqlite':
-        return new Promise((resolve, reject) => {
-          this.connection.run(sql, allValues, function(err) {
-            if (err) reject(err);
-            else resolve({ affectedRows: this.changes });
-          });
+    case 'sqlite':
+      return new Promise((resolve, reject) => {
+        this.connection.run(sql, allValues, function(err) {
+          if (err) reject(err);
+          else resolve({ affectedRows: this.changes });
         });
+      });
     }
   }
 
@@ -206,30 +206,30 @@ class DatabaseConnection {
     const params = [...Object.values(data), ...whereParams];
 
     switch (this.driver) {
-      case 'mysql': {
-        const [result] = await this.pool.execute(
-          this.convertToDriverPlaceholder(sql),
-          params
-        );
-        return { affectedRows: result.affectedRows };
-      }
+    case 'mysql': {
+      const [result] = await this.pool.execute(
+        this.convertToDriverPlaceholder(sql),
+        params
+      );
+      return { affectedRows: result.affectedRows };
+    }
 
-      case 'postgres':
-      case 'postgresql': {
-        const pgResult = await this.connection.query(
-          this.convertToDriverPlaceholder(sql, 'postgres'),
-          params
-        );
-        return { affectedRows: pgResult.rowCount };
-      }
+    case 'postgres':
+    case 'postgresql': {
+      const pgResult = await this.connection.query(
+        this.convertToDriverPlaceholder(sql, 'postgres'),
+        params
+      );
+      return { affectedRows: pgResult.rowCount };
+    }
 
-      case 'sqlite':
-        return new Promise((resolve, reject) => {
-          this.connection.run(sql, params, function(err) {
-            if (err) reject(err);
-            else resolve({ affectedRows: this.changes });
-          });
+    case 'sqlite':
+      return new Promise((resolve, reject) => {
+        this.connection.run(sql, params, function(err) {
+          if (err) reject(err);
+          else resolve({ affectedRows: this.changes });
         });
+      });
     }
   }
 
@@ -246,30 +246,30 @@ class DatabaseConnection {
     const sql = `DELETE FROM ${table}${whereClause}`;
 
     switch (this.driver) {
-      case 'mysql': {
-        const [result] = await this.pool.execute(
-          this.convertToDriverPlaceholder(sql),
-          params
-        );
-        return { affectedRows: result.affectedRows };
-      }
+    case 'mysql': {
+      const [result] = await this.pool.execute(
+        this.convertToDriverPlaceholder(sql),
+        params
+      );
+      return { affectedRows: result.affectedRows };
+    }
 
-      case 'postgres':
-      case 'postgresql': {
-        const pgResult = await this.connection.query(
-          this.convertToDriverPlaceholder(sql, 'postgres'),
-          params
-        );
-        return { affectedRows: pgResult.rowCount };
-      }
+    case 'postgres':
+    case 'postgresql': {
+      const pgResult = await this.connection.query(
+        this.convertToDriverPlaceholder(sql, 'postgres'),
+        params
+      );
+      return { affectedRows: pgResult.rowCount };
+    }
 
-      case 'sqlite':
-        return new Promise((resolve, reject) => {
-          this.connection.run(sql, params, function(err) {
-            if (err) reject(err);
-            else resolve({ affectedRows: this.changes });
-          });
+    case 'sqlite':
+      return new Promise((resolve, reject) => {
+        this.connection.run(sql, params, function(err) {
+          if (err) reject(err);
+          else resolve({ affectedRows: this.changes });
         });
+      });
     }
   }
 
@@ -299,13 +299,50 @@ class DatabaseConnection {
     await this.connect();
 
     switch (this.driver) {
-      case 'mysql':
-        return this.executeMySQLQuery(sql, params);
-      case 'postgres':
-      case 'postgresql':
-        return this.executePostgreSQLQuery(sql, params);
-      case 'sqlite':
-        return this.executeSQLiteQuery(sql, params);
+    case 'mysql':
+      return this.executeMySQLQuery(sql, params);
+    case 'postgres':
+    case 'postgresql':
+      return this.executePostgreSQLQuery(sql, params);
+    case 'sqlite':
+      return this.executeSQLiteQuery(sql, params);
+    }
+  }
+
+  /**
+   * Execute raw SQL and return driver-native results (used by migrations)
+   * @param {string} sql
+   * @param {Array} params
+   * @returns {Promise<any>}
+   */
+  async execute(sql, params = []) {
+    await this.connect();
+    switch (this.driver) {
+    case 'mysql': {
+      const [result] = await this.pool.execute(sql, params);
+      return result;
+    }
+    case 'postgres':
+    case 'postgresql': {
+      const res = await this.connection.query(this.convertToDriverPlaceholder(sql, 'postgres'), params);
+      return res.rows ?? res;
+    }
+    case 'sqlite':
+      return new Promise((resolve, reject) => {
+        // Choose all/run based on query type
+        const isSelect = /^\s*select/i.test(sql);
+        if (isSelect) {
+          this.connection.all(sql, params, (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+          });
+        } else {
+          this.connection.run(sql, params, function(err) {
+            if (err) reject(err);
+            else resolve({ changes: this.changes, lastID: this.lastID });
+          });
+        }
+      });
     }
   }
 
@@ -399,42 +436,42 @@ class DatabaseConnection {
       const boolean = index === 0 ? 'WHERE' : (where.boolean || 'AND').toUpperCase();
 
       switch (where.type) {
-        case 'basic':
-          clauses.push(`${boolean} ${where.column} ${where.operator} ?`);
-          params.push(where.value);
-          break;
+      case 'basic':
+        clauses.push(`${boolean} ${where.column} ${where.operator} ?`);
+        params.push(where.value);
+        break;
 
-        case 'in': {
-          const inPlaceholders = where.values.map(() => '?').join(', ');
-          clauses.push(`${boolean} ${where.column} IN (${inPlaceholders})`);
-          params.push(...where.values);
-          break;
-        }
+      case 'in': {
+        const inPlaceholders = where.values.map(() => '?').join(', ');
+        clauses.push(`${boolean} ${where.column} IN (${inPlaceholders})`);
+        params.push(...where.values);
+        break;
+      }
 
-        case 'notIn': {
-          const notInPlaceholders = where.values.map(() => '?').join(', ');
-          clauses.push(`${boolean} ${where.column} NOT IN (${notInPlaceholders})`);
-          params.push(...where.values);
-          break;
-        }
+      case 'notIn': {
+        const notInPlaceholders = where.values.map(() => '?').join(', ');
+        clauses.push(`${boolean} ${where.column} NOT IN (${notInPlaceholders})`);
+        params.push(...where.values);
+        break;
+      }
 
-        case 'null':
-          clauses.push(`${boolean} ${where.column} IS NULL`);
-          break;
+      case 'null':
+        clauses.push(`${boolean} ${where.column} IS NULL`);
+        break;
 
-        case 'notNull':
-          clauses.push(`${boolean} ${where.column} IS NOT NULL`);
-          break;
+      case 'notNull':
+        clauses.push(`${boolean} ${where.column} IS NOT NULL`);
+        break;
 
-        case 'between':
-          clauses.push(`${boolean} ${where.column} BETWEEN ? AND ?`);
-          params.push(...where.values);
-          break;
+      case 'between':
+        clauses.push(`${boolean} ${where.column} BETWEEN ? AND ?`);
+        params.push(...where.values);
+        break;
 
-        case 'like':
-          clauses.push(`${boolean} ${where.column} LIKE ?`);
-          params.push(where.value);
-          break;
+      case 'like':
+        clauses.push(`${boolean} ${where.column} LIKE ?`);
+        params.push(where.value);
+        break;
       }
     });
 
@@ -486,6 +523,13 @@ class DatabaseConnection {
       }
       this.connection = null;
     }
+  }
+
+  /**
+   * Backwards-compatible alias used by CLI
+   */
+  async disconnect() {
+    return this.close();
   }
 }
 

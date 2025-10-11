@@ -23,7 +23,7 @@ class Relation {
    * @param {string} relationName
    * @returns {Promise<void>}
    */
-  async eagerLoad(models, relationName) {
+  async eagerLoad(_models, _relationName) {
     throw new Error('Method eagerLoad() must be implemented by subclass');
   }
 }

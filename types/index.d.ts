@@ -24,7 +24,11 @@ declare module 'outlet-orm' {
     delete(table: string, query: QueryObject): Promise<{ affectedRows: number }>;
     count(table: string, query: QueryObject): Promise<number>;
     executeRawQuery(sql: string, params?: any[]): Promise<any[]>;
+    /** Execute raw SQL and return driver-native results (used by migrations) */
+    execute(sql: string, params?: any[]): Promise<any>;
     close(): Promise<void>;
+    /** Backwards-compatible alias used by CLI */
+    disconnect(): Promise<void>;
   }
 
   // ==================== Query Builder ====================

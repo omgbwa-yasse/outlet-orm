@@ -198,6 +198,15 @@ class Model {
     return this.query().count();
   }
 
+  /**
+   * Eager load relations on the query
+   * @param {...string} relations
+   * @returns {QueryBuilder}
+   */
+  static with(...relations) {
+    return this.query().with(...relations);
+  }
+
   // ==================== Instance Methods ====================
 
   /**
@@ -248,24 +257,24 @@ class Model {
     if (!cast || value === null || value === undefined) return value;
 
     switch (cast) {
-      case 'int':
-      case 'integer':
-        return parseInt(value, 10);
-      case 'float':
-      case 'double':
-        return parseFloat(value);
-      case 'string':
-        return String(value);
-      case 'bool':
-      case 'boolean':
-        return Boolean(value);
-      case 'array':
-      case 'json':
-        return typeof value === 'string' ? JSON.parse(value) : value;
-      case 'date':
-        return value instanceof Date ? value : new Date(value);
-      default:
-        return value;
+    case 'int':
+    case 'integer':
+      return parseInt(value, 10);
+    case 'float':
+    case 'double':
+      return parseFloat(value);
+    case 'string':
+      return String(value);
+    case 'bool':
+    case 'boolean':
+      return Boolean(value);
+    case 'array':
+    case 'json':
+      return typeof value === 'string' ? JSON.parse(value) : value;
+    case 'date':
+      return value instanceof Date ? value : new Date(value);
+    default:
+      return value;
     }
   }
 
@@ -293,11 +302,11 @@ class Model {
 
     const data = this.attributes;
     const result = await this.constructor.connection.insert(this.constructor.table, data);
-    
+
     this.setAttribute(this.constructor.primaryKey, result.insertId);
     this.exists = true;
     this.original = { ...this.attributes };
-    
+
     return this;
   }
 
@@ -371,7 +380,7 @@ class Model {
    */
   toJSON() {
     const json = { ...this.attributes };
-    
+
     // Hide specified attributes
     this.constructor.hidden.forEach(key => {
       delete json[key];
@@ -396,7 +405,7 @@ class Model {
     const HasOneRelation = require('./Relations/HasOneRelation');
     localKey = localKey || this.constructor.primaryKey;
     foreignKey = foreignKey || `${this.constructor.table.slice(0, -1)}_id`;
-    
+
     return new HasOneRelation(this, related, foreignKey, localKey);
   }
 
@@ -411,7 +420,7 @@ class Model {
     const HasManyRelation = require('./Relations/HasManyRelation');
     localKey = localKey || this.constructor.primaryKey;
     foreignKey = foreignKey || `${this.constructor.table.slice(0, -1)}_id`;
-    
+
     return new HasManyRelation(this, related, foreignKey, localKey);
   }
 
@@ -426,7 +435,7 @@ class Model {
     const BelongsToRelation = require('./Relations/BelongsToRelation');
     ownerKey = ownerKey || related.primaryKey;
     foreignKey = foreignKey || `${related.table.slice(0, -1)}_id`;
-    
+
     return new BelongsToRelation(this, related, foreignKey, ownerKey);
   }
 
