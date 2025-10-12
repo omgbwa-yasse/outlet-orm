@@ -1,8 +1,36 @@
-const mysql = require('mysql2/promise');
-const { Client: PgClient } = require('pg');
-const sqlite3 = require('sqlite3').verbose();
 // Load environment variables from .env if present
 require('dotenv').config();
+
+// Lazy driver holders
+let mysql;
+let PgClient;
+let sqlite3;
+
+function ensureDriver(driverName) {
+  let pkg;
+  try {
+    switch (driverName) {
+    case 'mysql':
+      pkg = 'mysql2';
+      if (!mysql) mysql = require('mysql2/promise');
+      return true;
+    case 'postgres':
+    case 'postgresql':
+      pkg = 'pg';
+      if (!PgClient) ({ Client: PgClient } = require('pg'));
+      return true;
+    case 'sqlite':
+      pkg = 'sqlite3';
+      if (!sqlite3) sqlite3 = require('sqlite3').verbose();
+      return true;
+    default:
+      return false;
+    }
+  } catch (e) {
+    const msg = `Database driver not installed: ${pkg}.\nInstall it with: npm i ${pkg} --save\nOr select a different driver via config/.env.`;
+    throw new Error(msg);
+  }
+}
 
 function coerceNumber(val) {
   const n = Number(val);
@@ -50,13 +78,16 @@ class DatabaseConnection {
 
     switch (this.driver) {
     case 'mysql':
+      ensureDriver('mysql');
       await this.connectMySQL();
       break;
     case 'postgres':
     case 'postgresql':
+      ensureDriver('postgres');
       await this.connectPostgreSQL();
       break;
     case 'sqlite':
+      ensureDriver('sqlite');
       await this.connectSQLite();
       break;
     default:
