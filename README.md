@@ -2,11 +2,42 @@
 
 Un ORM JavaScript inspiré de Laravel Eloquent pour Node.js avec support pour MySQL, PostgreSQL et SQLite.
 
+## ✅ Prérequis et compatibilité
+
+- Node.js >= 18 (recommandé/exigé)
+- Installez le driver de base de données correspondant à votre SGBD (voir ci-dessous)
+
 ## 🚀 Installation
 
 ```bash
 npm install outlet-orm
 ```
+
+### Installer le driver de base de données
+
+Outlet ORM utilise des peerDependencies optionnelles pour les drivers de base de données. Installez uniquement le driver dont vous avez besoin:
+
+- MySQL/MariaDB: `npm install mysql2`
+- PostgreSQL: `npm install pg`
+- SQLite: `npm install sqlite3`
+
+Si aucun driver n'est installé, un message d'erreur explicite vous indiquera lequel installer lors de la connexion.
+
+## ✨ Fonctionnalités clés
+
+- API inspirée d'Eloquent (Active Record) pour un usage fluide
+- Query Builder expressif: where/joins/order/limit/offset/paginate
+- Eager Loading des relations via `.with(...)`
+- Relations: hasOne, hasMany, belongsTo, belongsToMany (avec attach/detach/sync)
+- Casts automatiques (int, float, boolean, json, date...)
+- Attributs masqués (`hidden`) et timestamps automatiques
+- Incrément/Décrément atomiques: `increment()` et `decrement()`
+- Requêtes brutes: `executeRawQuery()` et `execute()` (résultats natifs du driver)
+- Migrations complètes (create/alter/drop, index, foreign keys, batch tracking)
+- CLI pratiques: `outlet-init`, `outlet-migrate`, `outlet-convert`
+- Configuration via `.env` (chargée automatiquement)
+- Multi-base de données: MySQL, PostgreSQL et SQLite
+- Types TypeScript fournis
 
 ## ⚡ Démarrage Rapide
 
@@ -58,6 +89,16 @@ const db = new DatabaseConnection();
 // Définir la connexion par défaut
 Model.setConnection(db);
 ```
+
+#### Variables d'environnement (.env) — Détails
+
+- DB_DRIVER: `mysql` | `postgres` | `sqlite` (alias acceptés: `postgresql`, `sqlite3`)
+- DB_HOST, DB_PORT: hôte/port (par défaut: `localhost`, ports par défaut selon driver)
+- DB_USER | DB_USERNAME, DB_PASSWORD: identifiants
+- DB_DATABASE | DB_NAME: nom de la base (MySQL/Postgres)
+- SQLite spécifiquement: `DB_FILE` ou `SQLITE_DB` ou `SQLITE_FILENAME` (par défaut `:memory:`)
+
+Les paramètres passés au constructeur de `DatabaseConnection` ont priorité sur `.env`.
 
 ### Définir un modèle
 
@@ -200,6 +241,16 @@ const result = await User.paginate(1, 15);
 
 // Count
 const count = await User.where('status', 'active').count();
+
+// Joins
+const result = await User
+  .join('profiles', 'users.id', 'profiles.user_id')
+  .leftJoin('countries', 'profiles.country_id', 'countries.id')
+  .whereLike('users.name', '%john%')
+  .whereBetween('users.age', [18, 65])
+  .select('users.*', 'profiles.bio', 'countries.name as country')
+  .orderBy('users.created_at', 'desc')
+  .get();
 ```
 
 ### Relations
@@ -259,6 +310,11 @@ class User extends Model {
 
 const user = await User.find(1);
 const roles = await user.roles().get();
+
+// belongsToMany helpers
+await user.roles().attach([1, 2]);
+await user.roles().detach(2);
+await user.roles().sync([1, 3]);
 ```
 
 ### Eager Loading
@@ -367,6 +423,20 @@ class User extends Model {
 
 ## 📝 API Reference
 
+### DatabaseConnection
+
+- `new DatabaseConnection(config?)` — lit automatiquement `.env` si `config` est omis
+- `connect()` — établit la connexion (appelé automatiquement au besoin)
+- `select(table, query)` — exécute un SELECT (utilisé par le Query Builder)
+- `insert(table, data)` / `insertMany(table, data[])`
+- `update(table, data, query)` / `delete(table, query)`
+- `count(table, query)` — retourne le total
+- `executeRawQuery(sql, params?)` — résultats normalisés (tableau d’objets)
+- `execute(sql, params?)` — résultats natifs du driver (utile pour migrations)
+- `increment(table, column, query, amount?)` — mise à jour atomique
+- `decrement(table, column, query, amount?)`
+- `close()` / `disconnect()` — fermer la connexion
+
 ### Model
 
 - `static all()` - Récupérer tous les enregistrements
@@ -397,6 +467,16 @@ class User extends Model {
 - `first()` - Premier résultat
 - `paginate(page, perPage)` - Paginer les résultats
 - `count()` - Compter les résultats
+- `exists()` - Vérifier l’existence
+- `whereBetween(column, [min, max])` - Intervalle
+- `whereLike(column, pattern)` - LIKE
+- `join(table, first, [operator], second)` - INNER JOIN
+- `leftJoin(table, first, [operator], second)` - LEFT JOIN
+- `insert(data)` - Insérer des données (array => insertMany)
+- `update(attributes)` - Mise à jour bulk
+- `delete()` - Suppression bulk
+- `increment(column, amount?)` - Incrément atomique
+- `decrement(column, amount?)` - Décrément atomique
 
 ## 🛠️ Outils CLI
 
@@ -455,6 +535,7 @@ outlet-migrate rollback --steps 1
 ```
 
 **Fonctionnalités des Migrations :**
+
 - ✅ **Création et gestion des migrations** (create, alter, drop tables)
 - ✅ **Types de colonnes** : id, string, text, integer, boolean, date, datetime, timestamp, decimal, float, json, enum, uuid, foreignId
 - ✅ **Modificateurs** : nullable, default, unique, index, unsigned, autoIncrement, comment, after, first
@@ -467,6 +548,7 @@ outlet-migrate rollback --steps 1
 - ✅ **Multi-DB** : Support MySQL, PostgreSQL, SQLite
 
 **Documentation complète :**
+
 - [MIGRATIONS.md](docs/MIGRATIONS.md) - Guide complet des migrations
 
 ### 3. Conversion SQL vers ORM
@@ -477,18 +559,19 @@ outlet-convert
 
 Convertit automatiquement des schémas SQL en modèles ORM :
 
-**Option 1 : Depuis un fichier SQL local**
+#### Option 1 : Depuis un fichier SQL local
 
 - Parsez des fichiers `.sql` contenant des instructions `CREATE TABLE`
 - Génère automatiquement les modèles avec relations, casts, fillable, hidden
 
-**Option 2 : Depuis une base de données connectée**
+#### Option 2 : Depuis une base de données connectée
 
 - Connectez-vous à MySQL, PostgreSQL ou SQLite
 - Liste toutes les tables et génère les modèles correspondants
 - Détecte automatiquement les relations et types de données
 
 **Fonctionnalités de conversion :**
+
 - ✅ Détection automatique des types et casts
 - ✅ **Génération automatique de TOUTES les relations** :
   - `belongsTo` : Détecté via clés étrangères
@@ -499,6 +582,23 @@ Convertit automatiquement des schémas SQL en modèles ORM :
 - ✅ Détection des champs sensibles (password, token, etc.)
 - ✅ Support des timestamps automatiques
 - ✅ Conversion des noms de tables en classes PascalCase
+
+### 4. Utilisation non-interactive (CI/CD)
+
+Les commandes de migration supportent un mode non-interactif pratique pour l’automatisation:
+
+```bash
+# Exécuter les migrations en lisant la config depuis .env
+outlet-migrate migrate
+
+# Voir le statut
+outlet-migrate status
+
+# Annuler N étapes
+outlet-migrate rollback --steps 1
+```
+
+Astuce: si `database/config.js` est présent, il a priorité sur `.env`.
 
 **Documentation complète :**
 
