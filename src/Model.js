@@ -13,6 +13,18 @@ class Model {
   static connection = null;
 
   /**
+   * Ensure a default database connection exists.
+   * If none is set, it will be initialized from environment (.env) lazily.
+   */
+  static ensureConnection() {
+    if (!this.connection) {
+      // Lazy require to avoid circular dependencies
+      const DatabaseConnection = require('./DatabaseConnection');
+      this.connection = new DatabaseConnection();
+    }
+  }
+
+  /**
    * Set the default database connection for all models
    * @param {DatabaseConnection} connection
    */
@@ -21,6 +33,8 @@ class Model {
   }
 
   constructor(attributes = {}) {
+    // Auto-initialize connection on first model instantiation if missing
+    this.constructor.ensureConnection();
     this.attributes = {};
     this.original = {};
     this.relations = {};
@@ -35,6 +49,8 @@ class Model {
    * @returns {QueryBuilder}
    */
   static query() {
+    // Ensure a connection exists even when using static APIs without instantiation
+    this.ensureConnection();
     return new QueryBuilder(this);
   }
 
