@@ -8,14 +8,14 @@ declare module 'outlet-orm' {
     driver: 'mysql' | 'postgres' | 'postgresql' | 'sqlite';
     host?: string;
     port?: number;
-    database: string;
+    database?: string;
     user?: string;
     password?: string;
     connectionLimit?: number;
   }
 
   export class DatabaseConnection {
-    constructor(config: DatabaseConfig);
+    constructor(config?: Partial<DatabaseConfig>);
     connect(): Promise<void>;
     select(table: string, query: QueryObject): Promise<any[]>;
     insert(table: string, data: Record<string, any>): Promise<{ insertId: any; affectedRows: number }>;

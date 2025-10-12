@@ -17,5 +17,16 @@ module.exports = {
     'semi': ['error', 'always'],
     'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     'no-console': 'off'
-  }
+  },
+  overrides: [
+    {
+      files: ['bin/**/*.js', 'lib/**/*.js'],
+      rules: {
+        // Relax formatting rules for legacy/generated CLI and lib code
+        'quotes': 'off',
+        'indent': 'off',
+        'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }]
+      }
+    }
+  ]
 };
