@@ -236,15 +236,29 @@ async function runNonInteractive(cmd, flags) {
   // Load database configuration
   const dbConfigPath = path.join(process.cwd(), 'database', 'config.js');
 
+  // Prefer database/config.js; if missing, allow env-based config via .env
   let dbConfig;
   try {
     dbConfig = require(dbConfigPath);
   } catch (error) {
-    console.error('\n✗ Error: Could not load database configuration');
-    console.error(`  Make sure ${dbConfigPath} exists`);
-    console.error('  Run "outlet-init" to create the configuration\n');
-    console.error(`  Details: ${error.message}`);
-    return;
+    // Fallback to env-based configuration
+    require('dotenv').config();
+    const env = process.env || {};
+    dbConfig = {
+      driver: env.DB_DRIVER || env.DATABASE_DRIVER,
+      host: env.DB_HOST,
+      port: env.DB_PORT ? Number(env.DB_PORT) : undefined,
+      user: env.DB_USER || env.DB_USERNAME,
+      password: env.DB_PASSWORD,
+      database: env.DB_DATABASE || env.DB_NAME || env.DB_FILE || env.SQLITE_DB || env.SQLITE_FILENAME
+    };
+    if (!dbConfig.driver) {
+      console.error('\n✗ Error: Could not load database configuration');
+      console.error(`  Make sure ${dbConfigPath} exists OR provide .env variables like DB_DRIVER, DB_HOST, DB_DATABASE`);
+      console.error('  Run "outlet-init" to create the configuration');
+      console.error(`  Details: ${error.message}`);
+      return;
+    }
   }
 
   const { DatabaseConnection } = require('../lib/Database/DatabaseConnection');
@@ -257,50 +271,50 @@ async function runNonInteractive(cmd, flags) {
 
   try {
     switch (cmd) {
-      case 'migrate':
-      case 'up':
-        await manager.run();
-        break;
+    case 'migrate':
+    case 'up':
+      await manager.run();
+      break;
 
-      case 'rollback': {
-        const steps = Number(flags.steps) || 1;
-        await manager.rollback(steps);
-        break;
+    case 'rollback': {
+      const steps = Number(flags.steps) || 1;
+      await manager.rollback(steps);
+      break;
+    }
+
+    case 'reset': {
+      if (flags.yes || flags.force) {
+        await manager.reset();
+      } else {
+        console.error('✗ Refused to reset without --yes');
       }
+      break;
+    }
 
-      case 'reset': {
-        if (flags.yes || flags.force) {
-          await manager.reset();
-        } else {
-          console.error('✗ Refused to reset without --yes');
-        }
-        break;
+    case 'refresh': {
+      if (flags.yes || flags.force) {
+        await manager.refresh();
+      } else {
+        console.error('✗ Refused to refresh without --yes');
       }
+      break;
+    }
 
-      case 'refresh': {
-        if (flags.yes || flags.force) {
-          await manager.refresh();
-        } else {
-          console.error('✗ Refused to refresh without --yes');
-        }
-        break;
+    case 'fresh': {
+      if (flags.yes || flags.force) {
+        await manager.fresh();
+      } else {
+        console.error('✗ Refused to fresh without --yes');
       }
+      break;
+    }
 
-      case 'fresh': {
-        if (flags.yes || flags.force) {
-          await manager.fresh();
-        } else {
-          console.error('✗ Refused to fresh without --yes');
-        }
-        break;
-      }
+    case 'status':
+      await manager.status();
+      break;
 
-      case 'status':
-        await manager.status();
-        break;
-
-      default:
-        console.error(`✗ Unknown command: ${cmd}`);
+    default:
+      console.error(`✗ Unknown command: ${cmd}`);
     }
   } catch (error) {
     console.error('\n✗ Migration error:', error.message);
@@ -337,11 +351,23 @@ async function runMigrationCommands() {
   try {
     dbConfig = require(dbConfigPath);
   } catch (error) {
-    console.error('\n✗ Error: Could not load database configuration');
-    console.error(`  Make sure ${dbConfigPath} exists`);
-    console.error('  Run "outlet-init" to create the configuration\n');
-    console.error(`  Details: ${error.message}`);
-    return;
+    require('dotenv').config();
+    const env = process.env || {};
+    dbConfig = {
+      driver: env.DB_DRIVER || env.DATABASE_DRIVER,
+      host: env.DB_HOST,
+      port: env.DB_PORT ? Number(env.DB_PORT) : undefined,
+      user: env.DB_USER || env.DB_USERNAME,
+      password: env.DB_PASSWORD,
+      database: env.DB_DATABASE || env.DB_NAME || env.DB_FILE || env.SQLITE_DB || env.SQLITE_FILENAME
+    };
+    if (!dbConfig.driver) {
+      console.error('\n✗ Error: Could not load database configuration');
+      console.error(`  Make sure ${dbConfigPath} exists OR provide .env variables like DB_DRIVER, DB_HOST, DB_DATABASE`);
+      console.error('  Run "outlet-init" to create the configuration');
+      console.error(`  Details: ${error.message}`);
+      return;
+    }
   }
 
   const { DatabaseConnection } = require('../lib/Database/DatabaseConnection');
@@ -354,52 +380,52 @@ async function runMigrationCommands() {
 
   try {
     switch (choice) {
-      case '1':
-        await manager.run();
-        break;
+    case '1':
+      await manager.run();
+      break;
 
-      case '2': {
-        const steps = await question('How many batches to rollback? (default: 1): ');
-        await manager.rollback(parseInt(steps) || 1);
-        break;
+    case '2': {
+      const steps = await question('How many batches to rollback? (default: 1): ');
+      await manager.rollback(parseInt(steps) || 1);
+      break;
+    }
+
+    case '3': {
+      const confirmReset = await question('Are you sure you want to reset all migrations? (yes/no): ');
+      if (confirmReset.toLowerCase() === 'yes') {
+        await manager.reset();
+      } else {
+        console.log('Reset cancelled');
       }
+      break;
+    }
 
-      case '3': {
-        const confirmReset = await question('Are you sure you want to reset all migrations? (yes/no): ');
-        if (confirmReset.toLowerCase() === 'yes') {
-          await manager.reset();
-        } else {
-          console.log('Reset cancelled');
-        }
-        break;
+    case '4': {
+      const confirmRefresh = await question('Are you sure you want to refresh all migrations? (yes/no): ');
+      if (confirmRefresh.toLowerCase() === 'yes') {
+        await manager.refresh();
+      } else {
+        console.log('Refresh cancelled');
       }
+      break;
+    }
 
-      case '4': {
-        const confirmRefresh = await question('Are you sure you want to refresh all migrations? (yes/no): ');
-        if (confirmRefresh.toLowerCase() === 'yes') {
-          await manager.refresh();
-        } else {
-          console.log('Refresh cancelled');
-        }
-        break;
+    case '5': {
+      const confirmFresh = await question('⚠️  WARNING: This will DROP ALL TABLES! Continue? (yes/no): ');
+      if (confirmFresh.toLowerCase() === 'yes') {
+        await manager.fresh();
+      } else {
+        console.log('Fresh cancelled');
       }
+      break;
+    }
 
-      case '5': {
-        const confirmFresh = await question('⚠️  WARNING: This will DROP ALL TABLES! Continue? (yes/no): ');
-        if (confirmFresh.toLowerCase() === 'yes') {
-          await manager.fresh();
-        } else {
-          console.log('Fresh cancelled');
-        }
-        break;
-      }
+    case '6':
+      await manager.status();
+      break;
 
-      case '6':
-        await manager.status();
-        break;
-
-      default:
-        console.log('Invalid choice');
+    default:
+      console.log('Invalid choice');
     }
   } catch (error) {
     console.error('\n✗ Migration error:', error.message);

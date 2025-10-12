@@ -1,8 +1,8 @@
 const mysql = require('mysql2/promise');
 const { Client: PgClient } = require('pg');
 const sqlite3 = require('sqlite3').verbose();
-// Attempt to load environment variables from a .env file if present
-try { require('dotenv').config(); } catch (_) {}
+// Load environment variables from .env if present
+require('dotenv').config();
 
 function coerceNumber(val) {
   const n = Number(val);
@@ -105,7 +105,7 @@ class DatabaseConnection {
       this.connection = new sqlite3.Database(
         this.config.database || ':memory:',
         (err) => {
-          if (err) reject(err);
+          if (err) reject(new Error(err.message || String(err)));
           else resolve();
         }
       );
@@ -167,7 +167,7 @@ class DatabaseConnection {
     case 'sqlite':
       return new Promise((resolve, reject) => {
         this.connection.run(sql, values, function(err) {
-          if (err) reject(err);
+          if (err) reject(new Error(err.message || String(err)));
           else resolve({ insertId: this.lastID, affectedRows: this.changes });
         });
       });
@@ -209,7 +209,7 @@ class DatabaseConnection {
     case 'sqlite':
       return new Promise((resolve, reject) => {
         this.connection.run(sql, allValues, function(err) {
-          if (err) reject(err);
+          if (err) reject(new Error(err.message || String(err)));
           else resolve({ affectedRows: this.changes });
         });
       });
@@ -253,7 +253,7 @@ class DatabaseConnection {
     case 'sqlite':
       return new Promise((resolve, reject) => {
         this.connection.run(sql, params, function(err) {
-          if (err) reject(err);
+          if (err) reject(new Error(err.message || String(err)));
           else resolve({ affectedRows: this.changes });
         });
       });
@@ -293,7 +293,7 @@ class DatabaseConnection {
     case 'sqlite':
       return new Promise((resolve, reject) => {
         this.connection.run(sql, params, function(err) {
-          if (err) reject(err);
+          if (err) reject(new Error(err.message || String(err)));
           else resolve({ affectedRows: this.changes });
         });
       });

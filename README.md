@@ -27,18 +27,33 @@ outlet-migrate
 
 ### Configuration de la connexion
 
+Outlet ORM peut charger automatiquement le provider (driver) et les paramètres d’accès à la base de données depuis un fichier `.env` dans votre application. Les variables supportées incluent :
+
+- DB_DRIVER (mysql, postgres, sqlite)
+- DB_HOST, DB_PORT
+- DB_USER / DB_USERNAME, DB_PASSWORD
+- DB_DATABASE / DB_NAME
+- Pour SQLite: DB_FILE ou SQLITE_DB ou SQLITE_FILENAME
+
+Un exemple est fourni dans `.env.example`.
+
 ```javascript
 const { DatabaseConnection, Model } = require('outlet-orm');
 
 // Configuration MySQL
-const db = new DatabaseConnection({
-  driver: 'mysql',
-  host: 'localhost',
-  database: 'myapp',
-  user: 'root',
-  password: 'secret',
-  port: 3306
-});
+// Option 1 – via .env (aucun paramètre nécessaire)
+// DB_DRIVER=mysql, DB_HOST=localhost, DB_DATABASE=myapp, DB_USER=root, DB_PASSWORD=secret, DB_PORT=3306
+const db = new DatabaseConnection();
+
+// Option 2 – via objet de configuration (prend le dessus sur .env)
+// const db = new DatabaseConnection({
+//   driver: 'mysql',
+//   host: 'localhost',
+//   database: 'myapp',
+//   user: 'root',
+//   password: 'secret',
+//   port: 3306
+// });
 
 // Définir la connexion par défaut
 Model.setConnection(db);
@@ -393,6 +408,10 @@ outlet-init
 
 Crée un nouveau projet avec configuration de base de données, modèle exemple et fichier d'utilisation.
 
+Depuis la version actuelle, outlet-init peut aussi générer un fichier `.env` avec les paramètres saisis (driver, hôte, port, utilisateur, mot de passe, base de données ou fichier SQLite). Si `.env` existe déjà, il n'est pas modifié.
+
+Astuce: dans les environnements CI/tests, vous pouvez désactiver l'installation automatique du driver en définissant `OUTLET_INIT_NO_INSTALL=1`.
+
 ### 2. Système de Migrations
 
 ```bash
@@ -422,6 +441,17 @@ outlet-migrate
 # Fresh (drop all + migrate)
 outlet-migrate
 # Option 5: fresh
+# Exécuter les migrations en se basant sur .env si database/config.js est absent
+# (DB_DRIVER, DB_HOST, DB_DATABASE, etc.)
+outlet-migrate migrate
+
+# Voir le statut
+outlet-migrate status
+
+# Annuler la dernière migration
+outlet-migrate rollback --steps 1
+
+# Astuce: si le fichier database/config.js existe, il est prioritaire sur .env
 ```
 
 **Fonctionnalités des Migrations :**

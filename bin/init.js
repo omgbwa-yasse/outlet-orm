@@ -45,7 +45,7 @@ async function init() {
     };
 
     if (selectedDriver.name !== 'sqlite') {
-      config.host = await question(`Host (localhost): `) || 'localhost';
+      config.host = await question('Host (localhost): ') || 'localhost';
       config.port = await question(`Port (${selectedDriver.defaultPort}): `) || selectedDriver.defaultPort;
       config.database = await question('Nom de la base de données: ');
       config.user = await question('Utilisateur: ');
@@ -54,8 +54,34 @@ async function init() {
       config.database = await question('Chemin du fichier SQLite (./database.sqlite): ') || './database.sqlite';
     }
 
+    // Ask to generate a .env file
+    const generateEnv = (await question('\nSouhaitez-vous générer un fichier .env avec ces paramètres ? (oui/non) [oui]: ')).trim().toLowerCase();
+    const wantEnv = generateEnv === '' || generateEnv === 'oui' || generateEnv === 'o' || generateEnv === 'yes' || generateEnv === 'y';
+
+    if (wantEnv) {
+      const envLines = [];
+      envLines.push(`DB_DRIVER=${config.driver}`);
+      if (config.driver !== 'sqlite') {
+        envLines.push(`DB_HOST=${config.host || 'localhost'}`);
+        envLines.push(`DB_PORT=${config.port || selectedDriver.defaultPort || ''}`);
+        envLines.push(`DB_USER=${config.user || ''}`);
+        envLines.push(`DB_PASSWORD=${config.password || ''}`);
+        envLines.push(`DB_DATABASE=${config.database || ''}`);
+      } else {
+        envLines.push(`DB_FILE=${config.database}`);
+      }
+
+      const envPath = path.join(process.cwd(), '.env');
+      if (fs.existsSync(envPath)) {
+        console.log('ℹ️  .env existe déjà, génération ignorée.');
+      } else {
+        fs.writeFileSync(envPath, envLines.join('\n') + '\n');
+        console.log(`✅ Fichier .env créé: ${envPath}`);
+      }
+    }
+
     // Generate config file
-  const configContent = `const { DatabaseConnection } = require('outlet-orm');
+    const configContent = `const { DatabaseConnection } = require('outlet-orm');
 
 // Configuration de la base de données
 const db = new DatabaseConnection(${JSON.stringify(config, null, 2)});
@@ -68,7 +94,7 @@ module.exports = db;
     console.log(`\n✅ Fichier de configuration créé: ${configPath}`);
 
     // Generate example model
-  const modelContent = `const { Model } = require('outlet-orm');
+    const modelContent = `const { Model } = require('outlet-orm');
 const db = require('./database');
 
 class User extends Model {
@@ -130,22 +156,28 @@ main();
     fs.writeFileSync(usagePath, usageContent);
     console.log(`✅ Exemple d'utilisation créé: ${usagePath}`);
 
-    // Check if package needs to be installed
-    const packageJsonPath = path.join(process.cwd(), 'package.json');
-    if (!fs.existsSync(packageJsonPath)) {
-      console.log('\n⚠️  Aucun package.json trouvé. Initialisation...');
-      require('child_process').execSync('npm init -y', { stdio: 'inherit' });
-    }
+    // Optionally skip package init/install in non-interactive or test context
+    const skipInstall = process.env.OUTLET_INIT_NO_INSTALL === '1';
+    if (!skipInstall) {
+      // Check if package needs to be installed
+      const packageJsonPath = path.join(process.cwd(), 'package.json');
+      if (!fs.existsSync(packageJsonPath)) {
+        console.log('\n⚠️  Aucun package.json trouvé. Initialisation...');
+        require('child_process').execSync('npm init -y', { stdio: 'inherit' });
+      }
 
-    console.log(`\n📦 Installation du driver ${selectedDriver.package}...`);
-    require('child_process').execSync(`npm install ${selectedDriver.package}`, { stdio: 'inherit' });
+      console.log(`\n📦 Installation du driver ${selectedDriver.package}...`);
+      require('child_process').execSync(`npm install ${selectedDriver.package}`, { stdio: 'inherit' });
+    } else {
+      console.log('\n⏭️  Installation du driver ignorée (OUTLET_INIT_NO_INSTALL=1).');
+    }
 
     console.log('\n✨ Configuration terminée!\n');
     console.log('Prochaines étapes:');
     console.log('1. Créez votre schéma de base de données');
     console.log('2. Modifiez User.js selon vos besoins');
     console.log('3. Exécutez example.js: node example.js');
-  console.log('\n📚 Documentation: https://github.com/yourusername/outlet-orm');
+    console.log('\n📚 Documentation: https://github.com/yourusername/outlet-orm');
 
   } catch (error) {
     console.error('\n❌ Erreur:', error.message);
