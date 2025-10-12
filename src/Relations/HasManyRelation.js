@@ -21,16 +21,16 @@ class HasManyRelation extends Relation {
    * @param {string} relationName
    * @returns {Promise<void>}
    */
-  async eagerLoad(models, relationName) {
+  async eagerLoad(models, relationName, constraint) {
     const keys = models
       .map(model => model.getAttribute(this.localKey))
       .filter(key => key !== null && key !== undefined);
 
     if (keys.length === 0) return;
 
-    const relatedModels = await this.related
-      .whereIn(this.foreignKey, keys)
-      .get();
+    const qb = this.related.whereIn(this.foreignKey, keys);
+    if (typeof constraint === 'function') constraint(qb);
+    const relatedModels = await qb.get();
 
     const relatedMap = {};
     relatedModels.forEach(model => {

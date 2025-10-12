@@ -10,7 +10,11 @@ class QueryBuilder {
     this.offsetValue = null;
     this.selectedColumns = ['*'];
     this.withRelations = [];
+    this.withConstraints = {};
     this.joins = [];
+    this.distinctFlag = false;
+    this.groupBys = [];
+    this.havings = [];
   }
 
   /**
@@ -20,6 +24,27 @@ class QueryBuilder {
    */
   select(...columns) {
     this.selectedColumns = columns;
+    return this;
+  }
+
+  /**
+   * Convenience alias to pass an array of columns
+   * @param {string[]} cols
+   * @returns {this}
+   */
+  columns(cols) {
+    if (Array.isArray(cols)) {
+      this.selectedColumns = cols;
+    }
+    return this;
+  }
+
+  /**
+   * Select distinct
+   * @returns {this}
+   */
+  distinct() {
+    this.distinctFlag = true;
     return this;
   }
 
@@ -120,6 +145,126 @@ class QueryBuilder {
   }
 
   /**
+   * Filter parents where the given relation has at least one matching record.
+   * Implements via INNER JOIN and applying the related where clauses.
+   * @param {string} relationName
+   * @param {(qb: QueryBuilder) => void} [callback]
+   * @returns {this}
+   */
+  whereHas(relationName, callback) {
+    // Create a dummy parent instance to construct the relation
+    const parent = new this.model();
+    const fn = parent[relationName];
+    if (typeof fn !== 'function') {
+      throw new Error(`Relation '${relationName}' is not defined on ${this.model.name}`);
+    }
+    const relation = fn.call(parent);
+    if (!relation?.related || !relation?.foreignKey || !relation?.localKey) {
+      throw new Error(`Invalid relation '${relationName}' on ${this.model.name}`);
+    }
+
+    const parentTable = this.model.table;
+    const relatedClass = relation.related;
+    const relatedTable = relatedClass.table;
+
+    // Heuristic to detect relation direction
+    const relatedDerivedFK = `${relatedTable.replace(/s$/, '')}_id`;
+
+    // Build ON condition depending on relation type
+    let onLeft, onRight;
+    if (relation.foreignKey === relatedDerivedFK) {
+      // belongsTo: parent has FK to related
+      onLeft = `${relatedTable}.${relation.localKey}`; // related.ownerKey
+      onRight = `${parentTable}.${relation.foreignKey}`; // parent.foreignKey
+    } else {
+      // hasOne/hasMany: related has FK to parent
+      onLeft = `${relatedTable}.${relation.foreignKey}`; // related.foreignKey -> parent
+      onRight = `${parentTable}.${relation.localKey}`; // parent.localKey (usually PK)
+    }
+
+    // Ensure the join exists
+    this.join(relatedTable, onLeft, '=', onRight);
+
+    if (typeof callback === 'function') {
+      const relatedQB = new QueryBuilder(relatedClass);
+      callback(relatedQB);
+
+      // Prefix related wheres with table name when necessary
+      for (const w of relatedQB.wheres) {
+        const clone = { ...w };
+        if (clone.column && !/\./.test(clone.column)) {
+          clone.column = `${relatedTable}.${clone.column}`;
+        }
+        this.wheres.push(clone);
+      }
+    }
+
+    return this;
+  }
+
+  /**
+   * Filter parents that have related rows count matching operator and count
+   * @param {string} relationName
+   * @param {string|number} operatorOrCount
+   * @param {number} [count]
+   * @returns {this}
+   */
+  has(relationName, operatorOrCount = '>=', count = 1) {
+    let operator = operatorOrCount;
+    if (typeof operatorOrCount === 'number') {
+      operator = '>=';
+      count = operatorOrCount;
+    }
+
+    // Reuse whereHas join logic without extra wheres
+    this.whereHas(relationName);
+
+  const parentTable = this.model.table;
+  const parentPk = this.model.primaryKey || 'id';
+
+    // Group by parent primary key and having count
+    if (!this.groupBys.includes(`${parentTable}.${parentPk}`)) {
+      this.groupBys.push(`${parentTable}.${parentPk}`);
+    }
+    this.havings.push({ type: 'count', column: '*', operator, value: count });
+    return this;
+  }
+
+  /**
+   * Filter parents that do not have related rows (no callback support for now)
+   * @param {string} relationName
+   * @returns {this}
+   */
+  whereDoesntHave(relationName) {
+    const parent = new this.model();
+    const fn = parent[relationName];
+    if (typeof fn !== 'function') {
+      throw new Error(`Relation '${relationName}' is not defined on ${this.model.name}`);
+    }
+    const relation = fn.call(parent);
+    const relatedClass = relation.related;
+    const relatedTable = relatedClass.table;
+    const parentTable = this.model.table;
+
+    // Heuristic to detect direction as above
+    const relatedDerivedFK = `${relatedTable.replace(/s$/, '')}_id`;
+    let onLeft, onRight;
+    if (relation.foreignKey === relatedDerivedFK) {
+      onLeft = `${relatedTable}.${relation.localKey}`;
+      onRight = `${parentTable}.${relation.foreignKey}`;
+    } else {
+      onLeft = `${relatedTable}.${relation.foreignKey}`;
+      onRight = `${parentTable}.${relation.localKey}`;
+    }
+
+    // LEFT JOIN and ensure null on related PK
+    this.leftJoin(relatedTable, onLeft, '=', onRight);
+    const relatedPk = relatedClass.primaryKey || 'id';
+    this.whereNull(`${relatedTable}.${relatedPk}`);
+    return this;
+  }
+
+  /**
    * Add an order by clause
    * @param {string} column
    * @param {string} direction
@@ -128,6 +273,16 @@ class QueryBuilder {
   orderBy(column, direction = 'asc') {
     this.orders.push({ column, direction: direction.toLowerCase() });
     return this;
+  }
+
+  /**
+   * Typo-friendly alias for orderBy
+   * @param {string} column
+   * @param {string} direction
+   * @returns {this}
+   */
+  ordrer(column, direction = 'asc') {
+    return this.orderBy(column, direction);
   }
 
   /**
@@ -147,6 +302,28 @@ class QueryBuilder {
    */
   offset(value) {
     this.offsetValue = value;
+    return this;
+  }
+
+  /**
+   * Group by columns
+   * @param {...string} columns
+   * @returns {this}
+   */
+  groupBy(...columns) {
+    this.groupBys.push(...columns);
+    return this;
+  }
+
+  /**
+   * Having clause (basic)
+   * @param {string} column
+   * @param {string} operator
+   * @param {any} value
+   * @returns {this}
+   */
+  having(column, operator, value) {
+    this.havings.push({ type: 'basic', column, operator, value });
     return this;
   }
 
@@ -174,7 +351,50 @@ class QueryBuilder {
    * @returns {this}
    */
   with(...relations) {
-    this.withRelations.push(...relations);
+    // Support forms: with('a', 'b') | with(['a','b']) | with({ a: cb })
+    if (relations.length === 1 && Array.isArray(relations[0])) {
+      this.withRelations.push(...relations[0]);
+    } else if (relations.length === 1 && typeof relations[0] === 'object' && !Array.isArray(relations[0])) {
+      const obj = relations[0];
+      for (const [name, cb] of Object.entries(obj)) {
+        this.withRelations.push(name);
+        if (typeof cb === 'function') this.withConstraints[name] = cb;
+      }
+    } else {
+      this.withRelations.push(...relations);
+    }
+    return this;
+  }
+
+  /**
+   * withCount helper: adds subquery count columns
+   * Supports: withCount('rel') or withCount(['a','b'])
+   * @param {string|string[]} rels
+   * @returns {this}
+   */
+  withCount(rels) {
+    const list = Array.isArray(rels) ? rels : [rels];
+    for (const name of list) {
+      // Build simple subquery for hasOne/hasMany/belongsTo
+      const parent = new this.model();
+      const fn = parent[name];
+      if (typeof fn !== 'function') continue;
+      const relation = fn.call(parent);
+      const parentTable = this.model.table;
+      const relatedClass = relation.related;
+      const relatedTable = relatedClass.table;
+
+      let sub = '';
+      if (relation.child) {
+        // belongsTo
+        const ownerKey = relation.ownerKey || relatedClass.primaryKey || 'id';
+        sub = `(SELECT COUNT(*) FROM ${relatedTable} WHERE ${relatedTable}.${ownerKey} = ${parentTable}.${relation.foreignKey}) AS ${name}_count`;
+      } else {
+        // hasOne/hasMany
+        sub = `(SELECT COUNT(*) FROM ${relatedTable} WHERE ${relatedTable}.${relation.foreignKey} = ${parentTable}.${relation.localKey}) AS ${name}_count`;
+      }
+      this.selectedColumns.push(sub);
+    }
     return this;
   }
 
@@ -327,6 +547,21 @@ class QueryBuilder {
   }
 
   /**
+   * Update records and fetch the first updated model, optionally eager loading relations
+   * @param {Object} attributes
+   * @param {string[]} [relations]
+   * @returns {Promise<Model|null>}
+   */
+  async updateAndFetch(attributes, relations = []) {
+    await this.update(attributes);
+    const qb = this.clone();
+    if (relations?.length) {
+      qb.with(...relations);
+    }
+    return qb.first();
+  }
+
+  /**
    * Delete records
    * @returns {Promise<any>}
    */
@@ -395,7 +630,8 @@ class QueryBuilder {
         const relation = relationInstance.call(instances[0]);
 
         if (relation && typeof relation.eagerLoad === 'function') {
-          await relation.eagerLoad(instances, relationName);
+          const constraint = this.withConstraints[relationName];
+          await relation.eagerLoad(instances, relationName, constraint);
         }
       }
     }
@@ -411,6 +647,9 @@ class QueryBuilder {
       wheres: this.wheres,
       orders: this.orders,
       joins: this.joins,
+      distinct: this.distinctFlag,
+      groupBys: this.groupBys,
+      havings: this.havings,
       limit: this.limitValue,
       offset: this.offsetValue
     };
@@ -428,7 +667,11 @@ class QueryBuilder {
     cloned.offsetValue = this.offsetValue;
     cloned.selectedColumns = [...this.selectedColumns];
     cloned.withRelations = [...this.withRelations];
+    cloned.withConstraints = { ...this.withConstraints };
     cloned.joins = [...this.joins];
+    cloned.distinctFlag = this.distinctFlag;
+    cloned.groupBys = [...this.groupBys];
+    cloned.havings = [...this.havings];
     return cloned;
   }
 }

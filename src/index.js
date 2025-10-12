@@ -8,6 +8,7 @@ const HasOneRelation = require('./Relations/HasOneRelation');
 const HasManyRelation = require('./Relations/HasManyRelation');
 const BelongsToRelation = require('./Relations/BelongsToRelation');
 const BelongsToManyRelation = require('./Relations/BelongsToManyRelation');
+const HasManyThroughRelation = require('./Relations/HasManyThroughRelation');
 
 module.exports = {
   Model,
@@ -17,5 +18,6 @@ module.exports = {
   HasOneRelation,
   HasManyRelation,
   BelongsToRelation,
-  BelongsToManyRelation
+  BelongsToManyRelation,
+  HasManyThroughRelation
 };

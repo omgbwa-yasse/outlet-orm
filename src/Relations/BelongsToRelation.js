@@ -17,7 +17,7 @@ class BelongsToRelation extends Relation {
    */
   async get() {
     const foreignKeyValue = this.child.getAttribute(this.foreignKey);
-    
+
     if (!foreignKeyValue) {
       return null;
     }
@@ -33,16 +33,16 @@ class BelongsToRelation extends Relation {
    * @param {string} relationName
    * @returns {Promise<void>}
    */
-  async eagerLoad(models, relationName) {
+  async eagerLoad(models, relationName, constraint) {
     const keys = models
       .map(model => model.getAttribute(this.foreignKey))
       .filter(key => key !== null && key !== undefined);
 
     if (keys.length === 0) return;
 
-    const relatedModels = await this.related
-      .whereIn(this.ownerKey, keys)
-      .get();
+    const qb = this.related.whereIn(this.ownerKey, keys);
+    if (typeof constraint === 'function') constraint(qb);
+    const relatedModels = await qb.get();
 
     const relatedMap = {};
     relatedModels.forEach(model => {

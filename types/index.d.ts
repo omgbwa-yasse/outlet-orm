@@ -42,6 +42,9 @@ declare module 'outlet-orm' {
     wheres?: WhereClause[];
     orders?: OrderClause[];
     joins?: JoinClause[];
+    distinct?: boolean;
+    groupBys?: string[];
+    havings?: HavingClause[];
     limit?: number | null;
     offset?: number | null;
   }
@@ -58,6 +61,13 @@ declare module 'outlet-orm' {
   export interface OrderClause {
     column: string;
     direction: 'asc' | 'desc';
+  }
+
+  export interface HavingClause {
+    type: 'basic' | 'count';
+    column: string;
+    operator: string;
+    value: any;
   }
 
   export interface JoinClause {
@@ -82,6 +92,9 @@ declare module 'outlet-orm' {
     constructor(model: typeof Model);
 
     select(...columns: string[]): this;
+    /** Convenience alias to pass an array of columns */
+    columns(cols: string[]): this;
+    distinct(): this;
     where(column: string, value: any): this;
     where(column: string, operator: string, value: any): this;
     whereIn(column: string, values: any[]): this;
@@ -92,12 +105,24 @@ declare module 'outlet-orm' {
     orWhere(column: string, operator: string, value: any): this;
     whereBetween(column: string, values: [any, any]): this;
     whereLike(column: string, value: string): this;
+    /** Filter parents where a relation has matches */
+    whereHas(relationName: string, callback?: (qb: QueryBuilder<any>) => void): this;
+  /** Filter parents where relation count matches */
+  has(relationName: string, count: number): this;
+  has(relationName: string, operator: string, count: number): this;
+  /** Filter parents without related rows */
+  whereDoesntHave(relationName: string): this;
     orderBy(column: string, direction?: 'asc' | 'desc'): this;
+    /** Typo-friendly alias for orderBy */
+    ordrer(column: string, direction?: 'asc' | 'desc'): this;
     limit(value: number): this;
     offset(value: number): this;
     skip(value: number): this;
     take(value: number): this;
-    with(...relations: string[]): this;
+  with(...relations: string[] | [Record<string, (qb: QueryBuilder<any>) => void> | string[]]): this;
+  withCount(relations: string | string[]): this;
+  groupBy(...columns: string[]): this;
+  having(column: string, operator: string, value: any): this;
     join(table: string, first: string, second: string): this;
     join(table: string, first: string, operator: string, second: string): this;
     leftJoin(table: string, first: string, second: string): this;
@@ -111,6 +136,8 @@ declare module 'outlet-orm' {
     exists(): Promise<boolean>;
     insert(data: Record<string, any> | Record<string, any>[]): Promise<any>;
     update(attributes: Record<string, any>): Promise<any>;
+    /** Update and return first matching row as model, optionally eager-loading relations */
+    updateAndFetch(attributes: Record<string, any>, relations?: string[]): Promise<T | null>;
     delete(): Promise<any>;
     increment(column: string, amount?: number): Promise<any>;
     decrement(column: string, amount?: number): Promise<any>;
@@ -149,6 +176,10 @@ declare module 'outlet-orm' {
     static create<T extends Model>(this: new () => T, attributes: Record<string, any>): Promise<T>;
     static insert(data: Record<string, any> | Record<string, any>[]): Promise<any>;
     static update(attributes: Record<string, any>): Promise<any>;
+  /** Update by primary key and return the updated model, optionally eager-loading relations */
+  static updateAndFetchById<T extends Model>(this: new () => T, id: any, attributes: Record<string, any>, relations?: string[]): Promise<T | null>;
+  /** Update by primary key */
+  static updateById<T extends Model>(this: new () => T, id: any, attributes: Record<string, any>): Promise<any>;
     static delete(): Promise<any>;
     static first<T extends Model>(this: new () => T): Promise<T | null>;
     static orderBy<T extends Model>(this: new () => T, column: string, direction?: 'asc' | 'desc'): QueryBuilder<T>;
@@ -159,7 +190,7 @@ declare module 'outlet-orm' {
     static whereNull<T extends Model>(this: new () => T, column: string): QueryBuilder<T>;
     static whereNotNull<T extends Model>(this: new () => T, column: string): QueryBuilder<T>;
     static count(): Promise<number>;
-    static with<T extends Model>(this: new () => T, ...relations: string[]): QueryBuilder<T>;
+  static with<T extends Model>(this: new () => T, ...relations: string[] | [Record<string, (qb: QueryBuilder<any>) => void> | string[]]): QueryBuilder<T>;
 
     // Instance methods
     fill(attributes: Record<string, any>): this;
@@ -171,6 +202,8 @@ declare module 'outlet-orm' {
     getDirty(): Record<string, any>;
     isDirty(): boolean;
     toJSON(): Record<string, any>;
+  /** Load relations on an existing instance. Supports dot-notation and arrays. */
+  load(...relations: string[] | [string[]]): Promise<this>;
 
     // Relationships
     hasOne<T extends Model>(related: new () => T, foreignKey?: string, localKey?: string): HasOneRelation<T>;
@@ -184,6 +217,14 @@ declare module 'outlet-orm' {
       parentKey?: string,
       relatedKey?: string
     ): BelongsToManyRelation<T>;
+    hasManyThrough<T extends Model>(
+      relatedFinal: new () => T,
+      through: new () => Model,
+      foreignKeyOnThrough?: string,
+      throughKeyOnFinal?: string,
+      localKey?: string,
+      throughLocalKey?: string
+    ): HasManyThroughRelation<T>;
   }
 
   // ==================== Relations ====================
@@ -191,19 +232,19 @@ declare module 'outlet-orm' {
   export abstract class Relation<T extends Model> {
     constructor(parent: Model, related: new () => T, foreignKey: string, localKey: string);
     abstract get(): Promise<T | T[] | null>;
-    abstract eagerLoad(models: Model[], relationName: string): Promise<void>;
+    abstract eagerLoad(models: Model[], relationName: string, constraint?: (qb: QueryBuilder<T>) => void): Promise<void>;
   }
 
   export class HasOneRelation<T extends Model> extends Relation<T> {
     get(): Promise<T | null>;
-    eagerLoad(models: Model[], relationName: string): Promise<void>;
+    eagerLoad(models: Model[], relationName: string, constraint?: (qb: QueryBuilder<T>) => void): Promise<void>;
     where(column: string, value: any): QueryBuilder<T>;
     where(column: string, operator: string, value: any): QueryBuilder<T>;
   }
 
   export class HasManyRelation<T extends Model> extends Relation<T> {
     get(): Promise<T[]>;
-    eagerLoad(models: Model[], relationName: string): Promise<void>;
+    eagerLoad(models: Model[], relationName: string, constraint?: (qb: QueryBuilder<T>) => void): Promise<void>;
     where(column: string, value: any): QueryBuilder<T>;
     where(column: string, operator: string, value: any): QueryBuilder<T>;
     count(): Promise<number>;
@@ -211,16 +252,21 @@ declare module 'outlet-orm' {
 
   export class BelongsToRelation<T extends Model> extends Relation<T> {
     get(): Promise<T | null>;
-    eagerLoad(models: Model[], relationName: string): Promise<void>;
+    eagerLoad(models: Model[], relationName: string, constraint?: (qb: QueryBuilder<T>) => void): Promise<void>;
     where(column: string, value: any): QueryBuilder<T>;
     where(column: string, operator: string, value: any): QueryBuilder<T>;
   }
 
   export class BelongsToManyRelation<T extends Model> extends Relation<T> {
     get(): Promise<T[]>;
-    eagerLoad(models: Model[], relationName: string): Promise<void>;
+    eagerLoad(models: Model[], relationName: string, constraint?: (qb: QueryBuilder<T>) => void): Promise<void>;
     attach(ids: number | number[]): Promise<void>;
     detach(ids?: number | number[] | null): Promise<void>;
     sync(ids: number[]): Promise<void>;
+  }
+
+  export class HasManyThroughRelation<T extends Model> extends Relation<T> {
+    get(): Promise<T[]>;
+    eagerLoad(models: Model[], relationName: string, constraint?: (qb: QueryBuilder<T>) => void): Promise<void>;
   }
 }

@@ -513,11 +513,21 @@ class DatabaseConnection {
    * @private
    */
   buildSelectQuery(table, query) {
+    const distinct = query.distinct ? 'DISTINCT ' : '';
     const columns = query.columns && query.columns.length > 0
       ? query.columns.join(', ')
       : '*';
 
-    let sql = `SELECT ${columns} FROM ${table}`;
+    let sql = `SELECT ${distinct}${columns} FROM ${table}`;
+    // JOINS
+    if (query.joins && query.joins.length > 0) {
+      const joinClauses = query.joins.map(j => {
+        const type = (j.type === 'left' ? 'LEFT JOIN' : 'INNER JOIN');
+        const op = j.operator || '=';
+        return ` ${type} ${j.table} ON ${j.first} ${op} ${j.second}`;
+      }).join('');
+      sql += joinClauses;
+    }
     let params = [];
 
     // WHERE clauses
@@ -525,6 +535,29 @@ class DatabaseConnection {
       const { whereClause, params: whereParams } = this.buildWhereClause(query.wheres);
       sql += whereClause;
       params = [...params, ...whereParams];
+    }
+
+    // GROUP BY
+    if (query.groupBys && query.groupBys.length > 0) {
+      sql += ` GROUP BY ${query.groupBys.join(', ')}`;
+    }
+
+    // HAVING
+    if (query.havings && query.havings.length > 0) {
+      const havingClauses = [];
+      for (const h of query.havings) {
+        if (h.type === 'basic') {
+          havingClauses.push(`${h.column} ${h.operator} ?`);
+          params.push(h.value);
+        } else if (h.type === 'count') {
+          const col = h.column && h.column !== '*' ? h.column : '*';
+          havingClauses.push(`COUNT(${col}) ${h.operator} ?`);
+          params.push(h.value);
+        }
+      }
+      if (havingClauses.length) {
+        sql += ` HAVING ${havingClauses.join(' AND ')}`;
+      }
     }
 
     // ORDER BY
@@ -644,7 +677,7 @@ class DatabaseConnection {
       } else if (this.driver === 'sqlite') {
         await new Promise((resolve, reject) => {
           this.connection.close((err) => {
-            if (err) reject(err);
+            if (err) reject(new Error(err.message || String(err)));
             else resolve();
           });
         });

@@ -59,7 +59,7 @@ class BelongsToManyRelation extends Relation {
    * @param {string} relationName
    * @returns {Promise<void>}
    */
-  async eagerLoad(models, relationName) {
+  async eagerLoad(models, relationName, constraint) {
     const parentKeys = models
       .map(model => model.getAttribute(this.parentKey))
       .filter(key => key !== null && key !== undefined);
@@ -94,9 +94,9 @@ class BelongsToManyRelation extends Relation {
     const relatedIds = [...new Set(pivotRecords.map(record => record[this.relatedPivotKey]))];
 
     // Get all related models
-    const relatedModels = await this.related
-      .whereIn(this.relatedKey, relatedIds)
-      .get();
+    const qb = this.related.whereIn(this.relatedKey, relatedIds);
+    if (typeof constraint === 'function') constraint(qb);
+    const relatedModels = await qb.get();
 
     // Create a map of related models by their key
     const relatedMap = {};

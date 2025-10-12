@@ -27,11 +27,14 @@ Si aucun driver n'est installé, un message d'erreur explicite vous indiquera le
 
 - API inspirée d'Eloquent (Active Record) pour un usage fluide
 - Query Builder expressif: where/joins/order/limit/offset/paginate
+- Filtres relationnels façon Laravel: `whereHas()`
+- Existence/absence et agrégations: `has()`, `whereDoesntHave()`, `withCount()`
 - Eager Loading des relations via `.with(...)`
 - Relations: hasOne, hasMany, belongsTo, belongsToMany (avec attach/detach/sync)
 - Casts automatiques (int, float, boolean, json, date...)
 - Attributs masqués (`hidden`) et timestamps automatiques
 - Incrément/Décrément atomiques: `increment()` et `decrement()`
+- Aliases ergonomiques: `columns([...])`, `ordrer()` (alias typo de `orderBy`)
 - Requêtes brutes: `executeRawQuery()` et `execute()` (résultats natifs du driver)
 - Migrations complètes (create/alter/drop, index, foreign keys, batch tracking)
 - CLI pratiques: `outlet-init`, `outlet-migrate`, `outlet-convert`
@@ -187,6 +190,15 @@ await user.save();
 await User
   .where('status', 'pending')
   .update({ status: 'active' });
+
+// One-liner façon Prisma (update + include)
+const updated = await User
+  .where('id', 1)
+  .updateAndFetch({ name: 'Neo' }, ['profile', 'posts.comments']);
+
+// Helpers par ID
+const user1 = await User.updateAndFetchById(1, { name: 'Trinity' }, ['profile']);
+await User.updateById(2, { status: 'active' });
 ```
 
 #### Supprimer
@@ -250,6 +262,36 @@ const result = await User
   .whereBetween('users.age', [18, 65])
   .select('users.*', 'profiles.bio', 'countries.name as country')
   .orderBy('users.created_at', 'desc')
+  .get();
+
+// Alias ergonomiques
+const slim = await User
+  .columns(['id', 'name'])    // alias de select(...)
+  .ordrer('created_at', 'desc') // alias typo de orderBy
+  .get();
+
+// whereHas: filtrer les parents qui ont des enfants correspondants
+// Exemple: Utilisateurs ayant au moins un post publié récemment
+const authors = await User
+  .whereHas('posts', (q) => {
+    q.where('status', 'published').where('created_at', '>', new Date(Date.now() - 7*24*3600*1000));
+  })
+  .get();
+
+// has: au moins N enfants
+const prolific = await User.has('posts', '>=', 10).get();
+
+// whereDoesntHave: aucun enfant
+const orphans = await User.whereDoesntHave('posts').get();
+
+// withCount: ajouter une colonne posts_count
+const withCounts = await User.withCount('posts').get();
+
+// Agrégations: distinct, groupBy, having
+const stats = await User
+  .distinct()
+  .groupBy('status')
+  .having('COUNT(*)', '>', 5)
   .get();
 ```
 
@@ -317,6 +359,36 @@ await user.roles().detach(2);
 await user.roles().sync([1, 3]);
 ```
 
+#### Has Many Through (hasManyThrough)
+
+Permet d'accéder à une relation distante via un modèle intermédiaire (ex: User -> Post -> Comment pour récupérer les comments d'un user sans passer par les posts).
+
+```javascript
+class User extends Model {
+  posts() {
+    return this.hasMany(Post, 'user_id');
+  }
+
+  comments() {
+    // hasManyThrough(final, through, fkOnThrough?, throughKeyOnFinal?, localKey?, throughLocalKey?)
+    return this.hasManyThrough(Comment, Post, 'user_id', 'post_id');
+  }
+}
+
+const user = await User.find(1);
+const comments = await user.comments().get();
+
+// Eager load (avec contrainte):
+const users = await User.with({ comments: q => q.where('created_at', '>', new Date(Date.now() - 7*24*3600*1000)) }).get();
+```
+
+Par défaut, les clés sont inférées selon les conventions:
+
+- foreignKeyOnThrough: `${parentTableSingular}_id`
+- throughKeyOnFinal: `${throughTableSingular}_id`
+- localKey: clé primaire du parent (par défaut `id`)
+- throughLocalKey: clé primaire du modèle intermédiaire (par défaut `id`)
+
 ### Eager Loading
 
 ```javascript
@@ -329,6 +401,12 @@ users.forEach(user => {
   console.log(user.relations.posts);
   console.log(user.relations.profile);
 });
+
+// Chargement à la demande sur une instance existante
+const user = await User.find(1);
+await user.load('posts.comments', 'profile');
+// Ou tableau
+await user.load(['roles', 'permissions']);
 ```
 
 ### Casts
@@ -446,10 +524,13 @@ class User extends Model {
 - `static create(attributes)` - Créer et sauvegarder
 - `static insert(data)` - Insérer des données brutes
 - `static update(attributes)` - Mise à jour bulk
+- `static updateAndFetchById(id, attributes, relations?)` - Mise à jour par ID et retour du modèle (avec include)
+- `static updateById(id, attributes)` - Mise à jour par ID
 - `static delete()` - Suppression bulk
 - `save()` - Sauvegarder l'instance
 - `destroy()` - Supprimer l'instance
 - `toJSON()` - Convertir en JSON
+- `load(...relations)` - Charger des relations sur une instance, supporte la dot-notation
 
 ### QueryBuilder
 
@@ -470,13 +551,23 @@ class User extends Model {
 - `exists()` - Vérifier l’existence
 - `whereBetween(column, [min, max])` - Intervalle
 - `whereLike(column, pattern)` - LIKE
+- `whereHas(relation, cb?)` - Filtrer par relation (INNER JOIN)
+- `has(relation, opOrCount, [count])` - Existence relationnelle (GROUP BY/HAVING)
+- `whereDoesntHave(relation)` - Absence de relation (LEFT JOIN IS NULL)
 - `join(table, first, [operator], second)` - INNER JOIN
 - `leftJoin(table, first, [operator], second)` - LEFT JOIN
+- `withCount(relations)` - Ajoute {relation}_count via sous-requête
+- `distinct()` - SELECT DISTINCT
+- `groupBy(...cols)` - GROUP BY
+- `having(column, operator, value)` - HAVING
 - `insert(data)` - Insérer des données (array => insertMany)
 - `update(attributes)` - Mise à jour bulk
+- `updateAndFetch(attributes, relations?)` - Mise à jour + premier enregistrement (avec include)
 - `delete()` - Suppression bulk
 - `increment(column, amount?)` - Incrément atomique
 - `decrement(column, amount?)` - Décrément atomique
+- `columns([...])` - Alias de `select(...cols)`
+- `ordrer(column, direction?)` - Alias typo de `orderBy`
 
 ## 🛠️ Outils CLI
 

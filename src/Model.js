@@ -125,6 +125,30 @@ class Model {
   }
 
   /**
+   * Update by primary key and fetch the updated model (optionally with relations)
+   * @param {any} id
+   * @param {Object} attributes
+   * @param {string[]} [relations]
+   * @returns {Promise<Model|null>}
+   */
+  static async updateAndFetchById(id, attributes, relations = []) {
+    await this.query().where(this.primaryKey, id).update(attributes);
+    const qb = this.query().where(this.primaryKey, id);
+    if (relations && relations.length) qb.with(...relations);
+    return qb.first();
+  }
+
+  /**
+   * Update by primary key only (convenience)
+   * @param {any} id
+   * @param {Object} attributes
+   * @returns {Promise<any>}
+   */
+  static async updateById(id, attributes) {
+    return this.query().where(this.primaryKey, id).update(attributes);
+  }
+
+  /**
    * Delete records
    * @returns {Promise<any>}
    */
@@ -408,6 +432,54 @@ class Model {
     return json;
   }
 
+  /**
+   * Load one or multiple relations on this model instance.
+   * Supports dot-notation for nested relations (e.g., 'posts.comments').
+   * @param {...string|Array<string>} relations
+   * @returns {Promise<this>}
+   */
+  async load(...relations) {
+    const list = relations.length === 1 && Array.isArray(relations[0])
+      ? relations[0]
+      : relations;
+
+    for (const rel of list) {
+      if (typeof rel !== 'string' || !rel) continue;
+      await this._loadRelationPath(rel);
+    }
+    return this;
+  }
+
+  /**
+   * Internal: load a relation path with optional nesting (a.b.c)
+   * @param {string} path
+   * @private
+   */
+  async _loadRelationPath(path) {
+    const segments = path.split('.');
+    const head = segments[0];
+    const tail = segments.slice(1).join('.');
+
+    const relationFn = this[head];
+    if (typeof relationFn !== 'function') return;
+
+    const relation = relationFn.call(this);
+    if (!relation || typeof relation.get !== 'function') return;
+
+    const value = await relation.get();
+    this.relations[head] = value;
+
+    if (tail) {
+      if (Array.isArray(value)) {
+        await Promise.all(
+          value.map(v => (v && typeof v.load === 'function') ? v.load(tail) : null)
+        );
+      } else if (value && typeof value.load === 'function') {
+        await value.load(tail);
+      }
+    }
+  }
+
   // ==================== Relationships ====================
 
   /**
@@ -469,6 +541,23 @@ class Model {
     const BelongsToManyRelation = require('./Relations/BelongsToManyRelation');
     return new BelongsToManyRelation(
       this, related, pivot, foreignPivotKey, relatedPivotKey, parentKey, relatedKey
+    );
+  }
+
+  /**
+   * Define a has-many-through relationship
+   * @param {typeof Model} relatedFinal
+   * @param {typeof Model} through
+   * @param {string} [foreignKeyOnThrough]
+   * @param {string} [throughKeyOnFinal]
+   * @param {string} [localKey]
+   * @param {string} [throughLocalKey]
+   * @returns {HasManyThroughRelation}
+   */
+  hasManyThrough(relatedFinal, through, foreignKeyOnThrough, throughKeyOnFinal, localKey, throughLocalKey) {
+    const HasManyThroughRelation = require('./Relations/HasManyThroughRelation');
+    return new HasManyThroughRelation(
+      this, relatedFinal, through, foreignKeyOnThrough, throughKeyOnFinal, localKey, throughLocalKey
     );
   }
 }
