@@ -1,11 +1,13 @@
 # Solutions pour désactiver les timestamps dans outlet-orm
 
 ## Problème identifié
+
 Le système de timestamps fonctionne correctement dans outlet-orm, mais parfois les développeurs rencontrent des problèmes lors de l'usage.
 
 ## Solutions
 
 ### 1. Vérifier la définition du modèle
+
 ```javascript
 class MyModel extends Model {
   static table = 'ma_table';
@@ -15,6 +17,7 @@ class MyModel extends Model {
 ```
 
 ### 2. Insertion SQL directe (bypass du modèle)
+
 ```javascript
 // Via DatabaseConnection directement
 const db = new DatabaseConnection();
@@ -25,6 +28,7 @@ await db.insert('ma_table', {
 ```
 
 ### 3. Insertion avec Query Builder raw
+
 ```javascript
 // Via QueryBuilder sans timestamps
 await MyModel.query().insert({ 
@@ -34,6 +38,7 @@ await MyModel.query().insert({
 ```
 
 ### 4. Overrider les méthodes de timestamps
+
 ```javascript
 class MyModel extends Model {
   static table = 'ma_table';
@@ -67,6 +72,7 @@ class MyModel extends Model {
 ```
 
 ### 5. Utilisation d'executeRawQuery
+
 ```javascript
 // Insertion SQL complètement manuelle
 await db.executeRawQuery(
@@ -76,6 +82,7 @@ await db.executeRawQuery(
 ```
 
 ## Diagnostic
+
 Pour diagnostiquer votre problème spécifique :
 
 1. Vérifiez `console.log(MyModel.timestamps)` - doit être `false`
