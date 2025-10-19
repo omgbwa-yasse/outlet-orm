@@ -624,15 +624,43 @@ class QueryBuilder {
     if (instances.length === 0) return;
 
     for (const relationName of this.withRelations) {
-      const relationInstance = instances[0][relationName];
+      await this.loadRelationPath(instances, relationName, this.withConstraints[relationName]);
+    }
+  }
 
-      if (typeof relationInstance === 'function') {
-        const relation = relationInstance.call(instances[0]);
+  /**
+   * Load a relation path with support for nested relations (dot notation)
+   * @param {Array<Model>} models
+   * @param {string} path
+   * @param {*} constraint
+   * @returns {Promise<void>}
+   */
+  async loadRelationPath(models, path, constraint) {
+    if (models.length === 0) return;
 
-        if (relation && typeof relation.eagerLoad === 'function') {
-          const constraint = this.withConstraints[relationName];
-          await relation.eagerLoad(instances, relationName, constraint);
-        }
+    const segments = path.split('.');
+    const head = segments[0];
+    const tail = segments.slice(1).join('.');
+
+    // Load head relation eagerly
+    const relationInstance = models[0][head];
+    if (typeof relationInstance === 'function') {
+      const relation = relationInstance.call(models[0]);
+      if (relation && typeof relation.eagerLoad === 'function') {
+        await relation.eagerLoad(models, head, constraint);
+      }
+    }
+
+    if (tail) {
+      // Collect all related models from the loaded relations
+      const relatedModels = models.flatMap(model => {
+        const rel = model.relations[head];
+        return Array.isArray(rel) ? rel : (rel ? [rel] : []);
+      }).filter(Boolean);
+
+      if (relatedModels.length > 0) {
+        // Recursively load the remaining path on related models
+        await this.loadRelationPath(relatedModels, tail, null);
       }
     }
   }

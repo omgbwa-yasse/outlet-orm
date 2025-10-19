@@ -1,6 +1,6 @@
 # Outlet ORM – Plan d'action des relations et filtres avancés
 
-Dernière mise à jour: 2025-10-12
+Dernière mise à jour: 2025-01-11
 
 Ce document suit l'avancement des fonctionnalités relationnelles avancées alignées avec Eloquent.
 
@@ -19,17 +19,17 @@ Ce document suit l'avancement des fonctionnalités relationnelles avancées alig
 - [x] has(relation, op, count) – via JOIN + GROUP BY + HAVING
 - [x] whereDoesntHave(relation) – via LEFT JOIN + WHERE related.pk IS NULL (sans callback pour l’instant)
 - [x] withCount('rel' | ['relA', 'relB']) – sous-requêtes COUNT(*) simples (sans callback)
-- [x] with avec contraintes: with({ rel: qb => qb.where(...) }) et dot-notation de base
+- [x] with avec contraintes: with({ rel: qb => qb.where(...) }) et dot-notation complète pour relations imbriquées
 
 ## Phase 2 – Relations transitives
 
-- [~] hasManyThrough
+- [x] hasManyThrough
 - [ ] hasOneThrough (optionnel)
 
 ## Phase 3 – Relations polymorphiques
 
-- [ ] morphTo / morphOne / morphMany
-- [ ] Morph Map (Model.setMorphMap)
+- [x] morphTo / morphOne / morphMany
+- [x] Morph Map (Model.setMorphMap)
 
 ## Phase 4 – belongsToMany avancé (pivot)
 
@@ -56,8 +56,10 @@ Ce document suit l'avancement des fonctionnalités relationnelles avancées alig
 
 - whereHas/has/whereDoesntHave utilisent des JOINs. Pour la sémantique stricte EXISTS/NOT EXISTS, une itération future pourra ajouter des sous-requêtes spécifiques selon le driver.
 - withCount Phase 1 couvre hasOne/hasMany/belongsTo via sous-requêtes simples.
+- Chargement eager imbriqué maintenant supporté avec dot-notation (ex: `with('posts.comments.author')`), générant des structures JSON imbriquées comme demandé.
 
 ## Validation
 
 - Lint: PASS (à revalider à chaque étape)
 - Tests: PASS existants; des tests additionnels seront ajoutés au fil des features.
+- Demo: examples/polymorphic-demo.js montre les relations polymorphiques avec eager loading.
