@@ -32,6 +32,14 @@ class Model {
     this.connection = connection;
   }
 
+  /**
+   * Set the morph map for polymorphic relations
+   * @param {Object} map
+   */
+  static setMorphMap(map) {
+    this.morphMap = map;
+  }
+
   constructor(attributes = {}) {
     // Auto-initialize connection on first model instantiation if missing
     this.constructor.ensureConnection();
@@ -559,6 +567,50 @@ class Model {
     return new HasManyThroughRelation(
       this, relatedFinal, through, foreignKeyOnThrough, throughKeyOnFinal, localKey, throughLocalKey
     );
+  }
+
+  /**
+   * Define a polymorphic inverse relationship
+   * @param {string} name
+   * @param {string} [typeColumn]
+   * @param {string} [idColumn]
+   * @returns {MorphToRelation}
+   */
+  morphTo(name, typeColumn, idColumn) {
+    const MorphToRelation = require('./Relations/MorphToRelation');
+    return new MorphToRelation(this, name, typeColumn, idColumn);
+  }
+
+  /**
+   * Define a polymorphic one-to-one relationship
+   * @param {typeof Model} related
+   * @param {string} morphType
+   * @param {string} [foreignKey]
+   * @param {string} [localKey]
+   * @returns {MorphOneRelation}
+   */
+  morphOne(related, morphType, foreignKey, localKey) {
+    const MorphOneRelation = require('./Relations/MorphOneRelation');
+    localKey = localKey || this.constructor.primaryKey;
+    foreignKey = foreignKey || `${morphType}_id`;
+
+    return new MorphOneRelation(this, related, morphType, foreignKey, localKey);
+  }
+
+  /**
+   * Define a polymorphic one-to-many relationship
+   * @param {typeof Model} related
+   * @param {string} morphType
+   * @param {string} [foreignKey]
+   * @param {string} [localKey]
+   * @returns {MorphManyRelation}
+   */
+  morphMany(related, morphType, foreignKey, localKey) {
+    const MorphManyRelation = require('./Relations/MorphManyRelation');
+    localKey = localKey || this.constructor.primaryKey;
+    foreignKey = foreignKey || `${morphType}_id`;
+
+    return new MorphManyRelation(this, related, morphType, foreignKey, localKey);
   }
 }
 
