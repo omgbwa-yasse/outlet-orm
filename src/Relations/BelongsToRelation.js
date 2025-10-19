@@ -9,6 +9,8 @@ class BelongsToRelation extends Relation {
     super(child, related, foreignKey, ownerKey);
     this.child = child;
     this.ownerKey = ownerKey;
+    this.defaultValue = null;
+    this.touchesParent = false;
   }
 
   /**
@@ -19,12 +21,24 @@ class BelongsToRelation extends Relation {
     const foreignKeyValue = this.child.getAttribute(this.foreignKey);
 
     if (!foreignKeyValue) {
-      return null;
+      return this.getDefault();
     }
 
-    return this.related
+    const result = await this.related
       .where(this.ownerKey, foreignKeyValue)
       .first();
+
+    return result || this.getDefault();
+  }
+
+  /**
+   * Get the default value
+   * @returns {Model|null}
+   */
+  getDefault() {
+    if (this.defaultValue === null) return null;
+    if (typeof this.defaultValue === 'function') return this.defaultValue();
+    return this.defaultValue;
   }
 
   /**
@@ -52,7 +66,7 @@ class BelongsToRelation extends Relation {
 
     models.forEach(model => {
       const foreignKeyValue = model.getAttribute(this.foreignKey);
-      model.relations[relationName] = relatedMap[foreignKeyValue] || null;
+      model.relations[relationName] = relatedMap[foreignKeyValue] || this.getDefault();
     });
   }
 
@@ -67,6 +81,46 @@ class BelongsToRelation extends Relation {
     return this.related
       .where(this.ownerKey, this.child.getAttribute(this.foreignKey))
       .where(column, operator, value);
+  }
+
+  /**
+   * Set a default value for the relation
+   * @param {Model|function} value
+   * @returns {BelongsToRelation}
+   */
+  withDefault(value) {
+    this.defaultValue = value;
+    return this;
+  }
+
+  /**
+   * Associate the model with this relation
+   * @param {Model|number} modelOrId
+   * @returns {BelongsToRelation}
+   */
+  associate(modelOrId) {
+    const id = modelOrId instanceof this.related ? modelOrId.getAttribute(this.ownerKey) : modelOrId;
+    this.child.setAttribute(this.foreignKey, id);
+    return this;
+  }
+
+  /**
+   * Dissociate the model from this relation
+   * @returns {BelongsToRelation}
+   */
+  dissociate() {
+    this.child.setAttribute(this.foreignKey, null);
+    return this;
+  }
+
+  /**
+   * Enable touching the parent model's timestamp when this model is saved
+   * @returns {BelongsToRelation}
+   */
+  touches() {
+    this.touchesParent = true;
+    this.child.touches.push(this);
+    return this;
   }
 }
 
