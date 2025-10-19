@@ -46,6 +46,7 @@ class Model {
     this.attributes = {};
     this.original = {};
     this.relations = {};
+    this.touches = [];
     this.exists = false;
     this.fill(attributes);
   }
@@ -355,6 +356,8 @@ class Model {
     this.exists = true;
     this.original = { ...this.attributes };
 
+    await this.touchParents();
+
     return this;
   }
 
@@ -379,7 +382,29 @@ class Model {
     );
 
     this.original = { ...this.attributes };
+
+    await this.touchParents();
+
     return this;
+  }
+
+  /**
+   * Touch parent models for belongsTo relations with touches enabled
+   * @returns {Promise<void>}
+   */
+  async touchParents() {
+    for (const relation of this.touches) {
+      if (relation.touchesParent) {
+        const foreignKeyValue = this.getAttribute(relation.foreignKey);
+        if (foreignKeyValue) {
+          await this.constructor.connection.update(
+            relation.related.table,
+            { updated_at: new Date() },
+            { [relation.ownerKey]: foreignKeyValue }
+          );
+        }
+      }
+    }
   }
 
   /**
@@ -565,6 +590,23 @@ class Model {
   hasManyThrough(relatedFinal, through, foreignKeyOnThrough, throughKeyOnFinal, localKey, throughLocalKey) {
     const HasManyThroughRelation = require('./Relations/HasManyThroughRelation');
     return new HasManyThroughRelation(
+      this, relatedFinal, through, foreignKeyOnThrough, throughKeyOnFinal, localKey, throughLocalKey
+    );
+  }
+
+  /**
+   * Define a has-one-through relationship
+   * @param {typeof Model} relatedFinal
+   * @param {typeof Model} through
+   * @param {string} [foreignKeyOnThrough]
+   * @param {string} [throughKeyOnFinal]
+   * @param {string} [localKey]
+   * @param {string} [throughLocalKey]
+   * @returns {HasOneThroughRelation}
+   */
+  hasOneThrough(relatedFinal, through, foreignKeyOnThrough, throughKeyOnFinal, localKey, throughLocalKey) {
+    const HasOneThroughRelation = require('./Relations/HasOneThroughRelation');
+    return new HasOneThroughRelation(
       this, relatedFinal, through, foreignKeyOnThrough, throughKeyOnFinal, localKey, throughLocalKey
     );
   }

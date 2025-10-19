@@ -24,7 +24,7 @@ Ce document suit l'avancement des fonctionnalités relationnelles avancées alig
 ## Phase 2 – Relations transitives
 
 - [x] hasManyThrough
-- [ ] hasOneThrough (optionnel)
+- [x] hasOneThrough
 
 ## Phase 3 – Relations polymorphiques
 
@@ -33,24 +33,24 @@ Ce document suit l'avancement des fonctionnalités relationnelles avancées alig
 
 ## Phase 4 – belongsToMany avancé (pivot)
 
-- [ ] withPivot(...cols) + exposition model.pivot
-- [ ] wherePivot / wherePivotIn
-- [ ] withTimestamps sur pivot
-- [ ] as('alias') pour renommer pivot
-- [ ] toggle(ids) / syncWithoutDetaching(ids)
-- [ ] updateExistingPivot(id, attrs)
+- [x] withPivot(...cols) + exposition model.pivot
+- [x] wherePivot / wherePivotIn
+- [x] withTimestamps sur pivot
+- [x] as('alias') pour renommer pivot
+- [x] toggle(ids) / syncWithoutDetaching(ids)
+- [x] updateExistingPivot(id, attrs)
 
 ## Phase 5 – Ergonomie belongsTo et création via relations
 
-- [ ] belongsTo.withDefault(val|fn)
-- [ ] belongsTo.associate(modelOrId) / dissociate()
-- [ ] hasOne/hasMany: create/save/createMany/saveMany
-- [ ] belongsToMany: create + attach, createMany
+- [x] belongsTo.withDefault(val|fn)
+- [x] belongsTo.associate(modelOrId) / dissociate()
+- [x] hasOne/hasMany: create/save/createMany/saveMany
+- [x] belongsToMany: create + attach, createMany
 
 ## Phase 6 – Divers
 
-- [ ] touches (timestamps parent) – au moins pour belongsTo
-- [ ] Améliorer withCount pour belongsToMany et contraintes
+- [x] touches (timestamps parent) – au moins pour belongsTo
+- [x] Améliorer withCount pour belongsToMany et contraintes
 
 ## Notes techniques
 

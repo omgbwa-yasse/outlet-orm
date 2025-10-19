@@ -69,6 +69,57 @@ class HasManyRelation extends Relation {
       .where(this.foreignKey, this.parent.getAttribute(this.localKey))
       .count();
   }
+
+  /**
+   * Create a new related model and associate it
+   * @param {Object} attributes
+   * @returns {Promise<Model>}
+   */
+  async create(attributes = {}) {
+    const model = new this.related.model(attributes);
+    model.setAttribute(this.foreignKey, this.parent.getAttribute(this.localKey));
+    await model.save();
+    return model;
+  }
+
+  /**
+   * Save an existing model and associate it
+   * @param {Model} model
+   * @returns {Promise<Model>}
+   */
+  async save(model) {
+    model.setAttribute(this.foreignKey, this.parent.getAttribute(this.localKey));
+    await model.save();
+    return model;
+  }
+
+  /**
+   * Create multiple related models and associate them
+   * @param {Array<Object>} attributesArray
+   * @returns {Promise<Array<Model>>}
+   */
+  async createMany(attributesArray) {
+    const models = [];
+    for (const attributes of attributesArray) {
+      const model = await this.create(attributes);
+      models.push(model);
+    }
+    return models;
+  }
+
+  /**
+   * Save multiple existing models and associate them
+   * @param {Array<Model>} models
+   * @returns {Promise<Array<Model>>}
+   */
+  async saveMany(models) {
+    const savedModels = [];
+    for (const model of models) {
+      const saved = await this.save(model);
+      savedModels.push(saved);
+    }
+    return savedModels;
+  }
 }
 
 module.exports = HasManyRelation;

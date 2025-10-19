@@ -219,8 +219,8 @@ class QueryBuilder {
     // Reuse whereHas join logic without extra wheres
     this.whereHas(relationName);
 
-  const parentTable = this.model.table;
-  const parentPk = this.model.primaryKey || 'id';
+    const parentTable = this.model.table;
+    const parentPk = this.model.primaryKey || 'id';
 
     // Group by parent primary key and having count
     if (!this.groupBys.includes(`${parentTable}.${parentPk}`)) {
@@ -375,7 +375,7 @@ class QueryBuilder {
   withCount(rels) {
     const list = Array.isArray(rels) ? rels : [rels];
     for (const name of list) {
-      // Build simple subquery for hasOne/hasMany/belongsTo
+      // Build simple subquery for hasOne/hasMany/belongsTo/belongsToMany
       const parent = new this.model();
       const fn = parent[name];
       if (typeof fn !== 'function') continue;
@@ -385,7 +385,10 @@ class QueryBuilder {
       const relatedTable = relatedClass.table;
 
       let sub = '';
-      if (relation.child) {
+      if (relation instanceof require('./Relations/BelongsToManyRelation')) {
+        // belongsToMany: count from pivot
+        sub = `(SELECT COUNT(*) FROM ${relation.pivot} WHERE ${relation.pivot}.${relation.foreignPivotKey} = ${parentTable}.${relation.parentKey}) AS ${name}_count`;
+      } else if (relation.child) {
         // belongsTo
         const ownerKey = relation.ownerKey || relatedClass.primaryKey || 'id';
         sub = `(SELECT COUNT(*) FROM ${relatedTable} WHERE ${relatedTable}.${ownerKey} = ${parentTable}.${relation.foreignKey}) AS ${name}_count`;
