@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.1] - 2025-11-12
+
+### Added
+- **`withHidden()` method**: Include hidden attributes in query results
+- **`withoutHidden(show)` method**: Control visibility of hidden attributes with boolean parameter
+- Comprehensive test suite for hidden attributes feature (10 new tests)
+- Working demo example: `examples/hidden-attributes-demo.js`
+- TypeScript definitions for new methods
+
+### Enhanced
+- `toJSON()` method now respects `_showHidden` flag for dynamic attribute visibility
+- QueryBuilder hydration transfers visibility state to model instances
+- Documentation updated with usage examples for authentication scenarios
+
+### Documentation
+- Added hidden attributes visibility control examples to README
+- Added API reference for `withHidden()` and `withoutHidden()`
+- Created `HIDDEN_ATTRIBUTES_IMPLEMENTATION.md` with complete implementation details
+
 ## [1.0.0] - 2025-10-11
 
 ### Added
