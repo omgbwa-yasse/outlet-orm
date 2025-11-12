@@ -33,6 +33,7 @@ Si aucun driver n'est installé, un message d'erreur explicite vous indiquera le
 - Relations: hasOne, hasMany, belongsTo, belongsToMany (avec attach/detach/sync)
 - Casts automatiques (int, float, boolean, json, date...)
 - Attributs masqués (`hidden`) et timestamps automatiques
+- Contrôle de visibilité des attributs cachés: `withHidden()` et `withoutHidden()`
 - Incrément/Décrément atomiques: `increment()` et `decrement()`
 - Aliases ergonomiques: `columns([...])`, `ordrer()` (alias typo de `orderBy`)
 - Requêtes brutes: `executeRawQuery()` et `execute()` (résultats natifs du driver)
@@ -438,6 +439,27 @@ const user = await User.find(1);
 console.log(user.toJSON()); // password et secret_token ne sont pas inclus
 ```
 
+#### Afficher les attributs cachés
+
+Parfois, vous devez inclure les attributs cachés dans les résultats, par exemple lors de l'authentification :
+
+```javascript
+// Inclure les attributs cachés dans les résultats de la requête
+const user = await User.withHidden().where('email', 'john@example.com').first();
+console.log(user.toJSON()); // password est inclus
+
+// Alternative : contrôler la visibilité avec un booléen
+const userWithPassword = await User.withoutHidden(true).where('email', 'john@example.com').first();
+// true = afficher les attributs cachés
+// false (défaut) = masquer les attributs cachés
+
+// Utilisation typique pour l'authentification
+const user = await User.withHidden().where('email', email).first();
+if (user && await bcrypt.compare(password, user.getAttribute('password'))) {
+  // Authentification réussie
+}
+```
+
 ### Timestamps
 
 ```javascript
@@ -527,6 +549,8 @@ class User extends Model {
 - `static updateAndFetchById(id, attributes, relations?)` - Mise à jour par ID et retour du modèle (avec include)
 - `static updateById(id, attributes)` - Mise à jour par ID
 - `static delete()` - Suppression bulk
+- `static withHidden()` - Inclure les attributs cachés dans les résultats
+- `static withoutHidden(show?)` - Contrôler la visibilité des attributs cachés (false = masquer, true = afficher)
 - `save()` - Sauvegarder l'instance
 - `destroy()` - Supprimer l'instance
 - `toJSON()` - Convertir en JSON
