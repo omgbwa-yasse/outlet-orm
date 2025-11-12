@@ -191,6 +191,10 @@ declare module 'outlet-orm' {
     static whereNotNull<T extends Model>(this: new () => T, column: string): QueryBuilder<T>;
     static count(): Promise<number>;
   static with<T extends Model>(this: new () => T, ...relations: string[] | [Record<string, (qb: QueryBuilder<any>) => void> | string[]]): QueryBuilder<T>;
+  /** Include hidden attributes in query results */
+  static withHidden<T extends Model>(this: new () => T): QueryBuilder<T>;
+  /** Control visibility of hidden attributes (false = hide, true = show) */
+  static withoutHidden<T extends Model>(this: new () => T, show?: boolean): QueryBuilder<T>;
 
     // Instance methods
     fill(attributes: Record<string, any>): this;

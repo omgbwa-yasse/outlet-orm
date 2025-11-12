@@ -48,6 +48,7 @@ class Model {
     this.relations = {};
     this.touches = [];
     this.exists = false;
+    this._showHidden = false;
     this.fill(attributes);
   }
 
@@ -256,6 +257,27 @@ class Model {
     return this.query().with(...relations);
   }
 
+  /**
+   * Include hidden attributes in query results
+   * @returns {QueryBuilder}
+   */
+  static withHidden() {
+    const query = this.query();
+    query._showHidden = true;
+    return query;
+  }
+
+  /**
+   * Control visibility of hidden attributes in query results
+   * @param {boolean} show - If false (default), hidden attributes will be hidden. If true, they will be shown.
+   * @returns {QueryBuilder}
+   */
+  static withoutHidden(show = false) {
+    const query = this.query();
+    query._showHidden = show;
+    return query;
+  }
+
   // ==================== Instance Methods ====================
 
   /**
@@ -454,10 +476,12 @@ class Model {
   toJSON() {
     const json = { ...this.attributes };
 
-    // Hide specified attributes
-    this.constructor.hidden.forEach(key => {
-      delete json[key];
-    });
+    // Hide specified attributes unless _showHidden is true
+    if (!this._showHidden) {
+      this.constructor.hidden.forEach(key => {
+        delete json[key];
+      });
+    }
 
     // Add relations
     Object.assign(json, this.relations);

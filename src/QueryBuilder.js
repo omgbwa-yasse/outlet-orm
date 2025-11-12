@@ -15,6 +15,7 @@ class QueryBuilder {
     this.distinctFlag = false;
     this.groupBys = [];
     this.havings = [];
+    this._showHidden = false;
   }
 
   /**
@@ -606,7 +607,7 @@ class QueryBuilder {
   }
 
   /**
-   * Create a model instance from a row
+   * Create a model instance from a database row
    * @param {Object} row
    * @returns {Model}
    */
@@ -615,6 +616,7 @@ class QueryBuilder {
     instance.attributes = row;
     instance.original = { ...row };
     instance.exists = true;
+    instance._showHidden = this._showHidden;
     return instance;
   }
 

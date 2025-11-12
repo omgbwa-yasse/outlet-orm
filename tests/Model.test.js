@@ -113,6 +113,41 @@ describe('Model', () => {
       expect(json).toHaveProperty('name', 'John');
       expect(json).toHaveProperty('email', 'john@test.com');
     });
+
+    test('should hide hidden attributes in toJSON', () => {
+      class UserWithHidden extends Model {
+        static hidden = ['password', 'secret_token'];
+      }
+      const user = new UserWithHidden({
+        name: 'John',
+        email: 'john@test.com',
+        password: 'secret123',
+        secret_token: 'abc123'
+      });
+      const json = user.toJSON();
+      expect(json).toHaveProperty('name', 'John');
+      expect(json).toHaveProperty('email', 'john@test.com');
+      expect(json).not.toHaveProperty('password');
+      expect(json).not.toHaveProperty('secret_token');
+    });
+
+    test('should show hidden attributes when _showHidden is true', () => {
+      class UserWithHidden extends Model {
+        static hidden = ['password', 'secret_token'];
+      }
+      const user = new UserWithHidden({
+        name: 'John',
+        email: 'john@test.com',
+        password: 'secret123',
+        secret_token: 'abc123'
+      });
+      user._showHidden = true;
+      const json = user.toJSON();
+      expect(json).toHaveProperty('name', 'John');
+      expect(json).toHaveProperty('email', 'john@test.com');
+      expect(json).toHaveProperty('password', 'secret123');
+      expect(json).toHaveProperty('secret_token', 'abc123');
+    });
   });
 
   describe('Attribute Casting', () => {
@@ -211,7 +246,7 @@ describe('QueryBuilder', () => {
       .where('age', '>', 18)
       .orderBy('name')
       .limit(10);
-    
+
     expect(result).toBe(query);
     expect(query.wheres).toHaveLength(1);
     expect(query.orders).toHaveLength(1);
@@ -223,7 +258,7 @@ describe('QueryBuilder', () => {
       .select('id', 'name')
       .where('age', '>', 18)
       .orderBy('name');
-    
+
     const built = query.buildQuery();
     expect(built).toHaveProperty('columns', ['id', 'name']);
     expect(built).toHaveProperty('wheres');
