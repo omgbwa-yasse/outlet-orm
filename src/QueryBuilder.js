@@ -16,6 +16,76 @@ class QueryBuilder {
     this.groupBys = [];
     this.havings = [];
     this._showHidden = false;
+    this._withTrashed = false;
+    this._onlyTrashed = false;
+    this._excludedScopes = [];
+    this._excludeAllScopes = false;
+  }
+
+  /**
+   * Apply global scopes to the query
+   * @private
+   */
+  _applyGlobalScopes() {
+    if (this._excludeAllScopes) return;
+
+    const scopes = this.model.globalScopes || {};
+    for (const [name, scopeFn] of Object.entries(scopes)) {
+      if (!this._excludedScopes.includes(name)) {
+        scopeFn(this);
+      }
+    }
+  }
+
+  /**
+   * Apply soft delete constraints
+   * @private
+   */
+  _applySoftDeleteConstraints() {
+    if (!this.model.softDeletes) return;
+
+    if (this._onlyTrashed) {
+      this.whereNotNull(this.model.DELETED_AT);
+    } else if (!this._withTrashed) {
+      this.whereNull(this.model.DELETED_AT);
+    }
+  }
+
+  /**
+   * Include soft deleted records
+   * @returns {this}
+   */
+  withTrashed() {
+    this._withTrashed = true;
+    return this;
+  }
+
+  /**
+   * Only get soft deleted records
+   * @returns {this}
+   */
+  onlyTrashed() {
+    this._onlyTrashed = true;
+    return this;
+  }
+
+  /**
+   * Query without a specific global scope
+   * @param {string} name
+   * @returns {this}
+   */
+  withoutGlobalScope(name) {
+    this._excludedScopes.push(name);
+    return this;
+  }
+
+  /**
+   * Query without all global scopes
+   * @returns {this}
+   */
+  withoutGlobalScopes() {
+    this._excludeAllScopes = true;
+    return this;
   }
 
   /**
@@ -441,6 +511,10 @@ class QueryBuilder {
    * @returns {Promise<Array>}
    */
   async get() {
+    // Apply global scopes and soft delete constraints
+    this._applyGlobalScopes();
+    this._applySoftDeleteConstraints();
+
     const rows = await this.model.connection.select(
       this.model.table,
       this.buildQuery()
@@ -486,6 +560,10 @@ class QueryBuilder {
   async paginate(page = 1, perPage = 15) {
     const offset = (page - 1) * perPage;
 
+    // Apply scopes for count
+    this._applyGlobalScopes();
+    this._applySoftDeleteConstraints();
+
     const total = await this.count();
     const data = await this.offset(offset).limit(perPage).get();
 
@@ -505,6 +583,10 @@ class QueryBuilder {
    * @returns {Promise<number>}
    */
   async count() {
+    // Apply scopes for count
+    this._applyGlobalScopes();
+    this._applySoftDeleteConstraints();
+
     const result = await this.model.connection.count(
       this.model.table,
       this.buildQuery()

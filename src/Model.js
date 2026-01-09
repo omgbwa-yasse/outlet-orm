@@ -12,6 +12,30 @@ class Model {
   static casts = {};
   static connection = null;
 
+  // Soft Deletes
+  static softDeletes = false;
+  static DELETED_AT = 'deleted_at';
+
+  // Scopes
+  static globalScopes = {};
+
+  // Events/Hooks
+  static eventListeners = {
+    creating: [],
+    created: [],
+    updating: [],
+    updating: [],
+    saving: [],
+    saved: [],
+    deleting: [],
+    deleted: [],
+    restoring: [],
+    restored: []
+  };
+
+  // Validation rules
+  static rules = {};
+
   /**
    * Ensure a default database connection exists.
    * If none is set, it will be initialized from environment (.env) lazily.
@@ -49,7 +73,367 @@ class Model {
     this.touches = [];
     this.exists = false;
     this._showHidden = false;
+    this._withTrashed = false;
+    this._onlyTrashed = false;
     this.fill(attributes);
+  }
+
+  // ==================== Events/Hooks ====================
+
+  /**
+   * Register an event listener
+   * @param {string} event - Event name (creating, created, updating, updated, saving, saved, deleting, deleted, restoring, restored)
+   * @param {Function} callback - Callback function
+   */
+  static on(event, callback) {
+    if (!this.eventListeners[event]) {
+      this.eventListeners[event] = [];
+    }
+    this.eventListeners[event].push(callback);
+  }
+
+  /**
+   * Fire an event
+   * @param {string} event
+   * @param {Model} model
+   * @returns {Promise<boolean>} - Returns false if event should be cancelled
+   */
+  static async fireEvent(event, model) {
+    const listeners = this.eventListeners[event] || [];
+    for (const listener of listeners) {
+      const result = await listener(model);
+      if (result === false) {
+        return false; // Cancel the operation
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Register a 'creating' event listener
+   * @param {Function} callback
+   */
+  static creating(callback) {
+    this.on('creating', callback);
+  }
+
+  /**
+   * Register a 'created' event listener
+   * @param {Function} callback
+   */
+  static created(callback) {
+    this.on('created', callback);
+  }
+
+  /**
+   * Register an 'updating' event listener
+   * @param {Function} callback
+   */
+  static updating(callback) {
+    this.on('updating', callback);
+  }
+
+  /**
+   * Register an 'updated' event listener
+   * @param {Function} callback
+   */
+  static updated(callback) {
+    this.on('updated', callback);
+  }
+
+  /**
+   * Register a 'saving' event listener (fires on both create and update)
+   * @param {Function} callback
+   */
+  static saving(callback) {
+    this.on('saving', callback);
+  }
+
+  /**
+   * Register a 'saved' event listener (fires after both create and update)
+   * @param {Function} callback
+   */
+  static saved(callback) {
+    this.on('saved', callback);
+  }
+
+  /**
+   * Register a 'deleting' event listener
+   * @param {Function} callback
+   */
+  static deleting(callback) {
+    this.on('deleting', callback);
+  }
+
+  /**
+   * Register a 'deleted' event listener
+   * @param {Function} callback
+   */
+  static deleted(callback) {
+    this.on('deleted', callback);
+  }
+
+  /**
+   * Register a 'restoring' event listener
+   * @param {Function} callback
+   */
+  static restoring(callback) {
+    this.on('restoring', callback);
+  }
+
+  /**
+   * Register a 'restored' event listener
+   * @param {Function} callback
+   */
+  static restored(callback) {
+    this.on('restored', callback);
+  }
+
+  // ==================== Scopes ====================
+
+  /**
+   * Add a global scope
+   * @param {string} name - Scope name
+   * @param {Function} callback - Function that modifies the query builder
+   */
+  static addGlobalScope(name, callback) {
+    if (!this.globalScopes) {
+      this.globalScopes = {};
+    }
+    this.globalScopes[name] = callback;
+  }
+
+  /**
+   * Remove a global scope
+   * @param {string} name - Scope name
+   */
+  static removeGlobalScope(name) {
+    if (this.globalScopes && this.globalScopes[name]) {
+      delete this.globalScopes[name];
+    }
+  }
+
+  /**
+   * Query without a specific global scope
+   * @param {string} name - Scope name to exclude
+   * @returns {QueryBuilder}
+   */
+  static withoutGlobalScope(name) {
+    const query = this.query();
+    query._excludedScopes = query._excludedScopes || [];
+    query._excludedScopes.push(name);
+    return query;
+  }
+
+  /**
+   * Query without all global scopes
+   * @returns {QueryBuilder}
+   */
+  static withoutGlobalScopes() {
+    const query = this.query();
+    query._excludeAllScopes = true;
+    return query;
+  }
+
+  // ==================== Soft Deletes ====================
+
+  /**
+   * Query including soft deleted models
+   * @returns {QueryBuilder}
+   */
+  static withTrashed() {
+    const query = this.query();
+    query._withTrashed = true;
+    return query;
+  }
+
+  /**
+   * Query only soft deleted models
+   * @returns {QueryBuilder}
+   */
+  static onlyTrashed() {
+    const query = this.query();
+    query._onlyTrashed = true;
+    return query;
+  }
+
+  /**
+   * Check if model is soft deleted
+   * @returns {boolean}
+   */
+  trashed() {
+    return this.constructor.softDeletes && this.attributes[this.constructor.DELETED_AT] !== null;
+  }
+
+  /**
+   * Restore a soft deleted model
+   * @returns {Promise<this>}
+   */
+  async restore() {
+    if (!this.constructor.softDeletes) {
+      throw new Error('This model does not use soft deletes');
+    }
+
+    // Fire restoring event
+    const shouldContinue = await this.constructor.fireEvent('restoring', this);
+    if (!shouldContinue) return this;
+
+    this.setAttribute(this.constructor.DELETED_AT, null);
+
+    await this.constructor.connection.update(
+      this.constructor.table,
+      { [this.constructor.DELETED_AT]: null },
+      { wheres: [{ type: 'basic', column: this.constructor.primaryKey, operator: '=', value: this.getAttribute(this.constructor.primaryKey) }] }
+    );
+
+    // Fire restored event
+    await this.constructor.fireEvent('restored', this);
+
+    return this;
+  }
+
+  /**
+   * Force delete a soft deleted model (permanent delete)
+   * @returns {Promise<boolean>}
+   */
+  async forceDelete() {
+    // Fire deleting event
+    const shouldContinue = await this.constructor.fireEvent('deleting', this);
+    if (!shouldContinue) return false;
+
+    await this.constructor.connection.delete(
+      this.constructor.table,
+      { wheres: [{ type: 'basic', column: this.constructor.primaryKey, operator: '=', value: this.getAttribute(this.constructor.primaryKey) }] }
+    );
+
+    this.exists = false;
+
+    // Fire deleted event
+    await this.constructor.fireEvent('deleted', this);
+
+    return true;
+  }
+
+  // ==================== Validation ====================
+
+  /**
+   * Validate the model attributes
+   * @returns {Object} - { valid: boolean, errors: Object }
+   */
+  validate() {
+    const rules = this.constructor.rules;
+    const errors = {};
+    let valid = true;
+
+    for (const [field, ruleString] of Object.entries(rules)) {
+      const fieldRules = typeof ruleString === 'string' ? ruleString.split('|') : ruleString;
+      const value = this.attributes[field];
+
+      for (const rule of fieldRules) {
+        const [ruleName, ruleParam] = rule.split(':');
+        const error = this._validateRule(field, value, ruleName, ruleParam);
+        if (error) {
+          if (!errors[field]) errors[field] = [];
+          errors[field].push(error);
+          valid = false;
+        }
+      }
+    }
+
+    return { valid, errors };
+  }
+
+  /**
+   * Validate a single rule
+   * @private
+   */
+  _validateRule(field, value, ruleName, ruleParam) {
+    switch (ruleName) {
+    case 'required':
+      if (value === undefined || value === null || value === '') {
+        return `${field} is required`;
+      }
+      break;
+
+    case 'string':
+      if (value !== undefined && value !== null && typeof value !== 'string') {
+        return `${field} must be a string`;
+      }
+      break;
+
+    case 'number':
+    case 'numeric':
+      if (value !== undefined && value !== null && typeof value !== 'number' && isNaN(Number(value))) {
+        return `${field} must be a number`;
+      }
+      break;
+
+    case 'email':
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return `${field} must be a valid email`;
+      }
+      break;
+
+    case 'min':
+      if (typeof value === 'string' && value.length < parseInt(ruleParam, 10)) {
+        return `${field} must be at least ${ruleParam} characters`;
+      }
+      if (typeof value === 'number' && value < parseInt(ruleParam, 10)) {
+        return `${field} must be at least ${ruleParam}`;
+      }
+      break;
+
+    case 'max':
+      if (typeof value === 'string' && value.length > parseInt(ruleParam, 10)) {
+        return `${field} must not exceed ${ruleParam} characters`;
+      }
+      if (typeof value === 'number' && value > parseInt(ruleParam, 10)) {
+        return `${field} must not exceed ${ruleParam}`;
+      }
+      break;
+
+    case 'in':
+      if (value !== undefined && value !== null) {
+        const allowed = ruleParam.split(',');
+        if (!allowed.includes(String(value))) {
+          return `${field} must be one of: ${ruleParam}`;
+        }
+      }
+      break;
+
+    case 'boolean':
+      if (value !== undefined && value !== null && typeof value !== 'boolean') {
+        return `${field} must be a boolean`;
+      }
+      break;
+
+    case 'date':
+      if (value !== undefined && value !== null && isNaN(Date.parse(value))) {
+        return `${field} must be a valid date`;
+      }
+      break;
+
+    case 'regex':
+      if (value && !new RegExp(ruleParam).test(value)) {
+        return `${field} format is invalid`;
+      }
+      break;
+    }
+
+    return null;
+  }
+
+  /**
+   * Validate and throw if invalid
+   * @throws {Error}
+   */
+  validateOrFail() {
+    const { valid, errors } = this.validate();
+    if (!valid) {
+      const error = new Error('Validation failed');
+      error.errors = errors;
+      throw error;
+    }
   }
 
   // ==================== Query Builder ====================
@@ -354,10 +738,21 @@ class Model {
    * @returns {Promise<this>}
    */
   async save() {
+    // Fire saving event
+    const shouldContinue = await this.constructor.fireEvent('saving', this);
+    if (!shouldContinue) return this;
+
+    let result;
     if (this.exists) {
-      return this.performUpdate();
+      result = await this.performUpdate();
+    } else {
+      result = await this.performInsert();
     }
-    return this.performInsert();
+
+    // Fire saved event
+    await this.constructor.fireEvent('saved', this);
+
+    return result;
   }
 
   /**
@@ -365,6 +760,10 @@ class Model {
    * @returns {Promise<this>}
    */
   async performInsert() {
+    // Fire creating event
+    const shouldContinue = await this.constructor.fireEvent('creating', this);
+    if (!shouldContinue) return this;
+
     if (this.constructor.timestamps) {
       const now = new Date();
       this.setAttribute('created_at', now);
@@ -380,6 +779,9 @@ class Model {
 
     await this.touchParents();
 
+    // Fire created event
+    await this.constructor.fireEvent('created', this);
+
     return this;
   }
 
@@ -388,6 +790,10 @@ class Model {
    * @returns {Promise<this>}
    */
   async performUpdate() {
+    // Fire updating event
+    const shouldContinue = await this.constructor.fireEvent('updating', this);
+    if (!shouldContinue) return this;
+
     if (this.constructor.timestamps) {
       this.setAttribute('updated_at', new Date());
     }
@@ -400,12 +806,15 @@ class Model {
     await this.constructor.connection.update(
       this.constructor.table,
       dirty,
-      { [this.constructor.primaryKey]: this.getAttribute(this.constructor.primaryKey) }
+      { wheres: [{ type: 'basic', column: this.constructor.primaryKey, operator: '=', value: this.getAttribute(this.constructor.primaryKey) }] }
     );
 
     this.original = { ...this.attributes };
 
     await this.touchParents();
+
+    // Fire updated event
+    await this.constructor.fireEvent('updated', this);
 
     return this;
   }
@@ -422,7 +831,7 @@ class Model {
           await this.constructor.connection.update(
             relation.related.table,
             { updated_at: new Date() },
-            { [relation.ownerKey]: foreignKeyValue }
+            { wheres: [{ type: 'basic', column: relation.ownerKey, operator: '=', value: foreignKeyValue }] }
           );
         }
       }
@@ -430,7 +839,7 @@ class Model {
   }
 
   /**
-   * Delete the model
+   * Delete the model (soft delete if enabled)
    * @returns {Promise<boolean>}
    */
   async destroy() {
@@ -438,12 +847,29 @@ class Model {
       return false;
     }
 
-    await this.constructor.connection.delete(
-      this.constructor.table,
-      { [this.constructor.primaryKey]: this.getAttribute(this.constructor.primaryKey) }
-    );
+    // Fire deleting event
+    const shouldContinue = await this.constructor.fireEvent('deleting', this);
+    if (!shouldContinue) return false;
 
-    this.exists = false;
+    // Soft delete if enabled
+    if (this.constructor.softDeletes) {
+      this.setAttribute(this.constructor.DELETED_AT, new Date());
+      await this.constructor.connection.update(
+        this.constructor.table,
+        { [this.constructor.DELETED_AT]: new Date() },
+        { wheres: [{ type: 'basic', column: this.constructor.primaryKey, operator: '=', value: this.getAttribute(this.constructor.primaryKey) }] }
+      );
+    } else {
+      await this.constructor.connection.delete(
+        this.constructor.table,
+        { wheres: [{ type: 'basic', column: this.constructor.primaryKey, operator: '=', value: this.getAttribute(this.constructor.primaryKey) }] }
+      );
+      this.exists = false;
+    }
+
+    // Fire deleted event
+    await this.constructor.fireEvent('deleted', this);
+
     return true;
   }
 

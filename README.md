@@ -36,6 +36,14 @@ Si aucun driver n'est installé, un message d'erreur explicite vous indiquera le
   - `hasOne`, `hasMany`, `belongsTo`, `belongsToMany` (avec attach/detach/sync)
   - `hasManyThrough`, `hasOneThrough` (relations transitives)
   - `morphOne`, `morphMany`, `morphTo` (relations polymorphiques)
+- **Transactions** complètes: `beginTransaction()`, `commit()`, `rollback()`, `transaction()`
+- **Soft Deletes**: suppression logique avec `deleted_at`, `withTrashed()`, `onlyTrashed()`, `restore()`
+- **Scopes**: globaux et locaux pour réutiliser vos filtres
+- **Events/Hooks**: `creating`, `created`, `updating`, `updated`, `deleting`, `deleted`, etc.
+- **Validation**: règles basiques intégrées (`required`, `email`, `min`, `max`, etc.)
+- **Query Logging**: mode debug avec `enableQueryLog()` et `getQueryLog()`
+- **Pool PostgreSQL**: connexions poolées pour de meilleures performances
+- **Protection SQL**: sanitization automatique des identifiants
 - **Casts automatiques** (int, float, boolean, json, date...)
 - **Attributs masqués** (`hidden`) et timestamps automatiques
 - **Contrôle de visibilité** des attributs cachés: `withHidden()` et `withoutHidden()`
@@ -548,6 +556,245 @@ class Log extends Model {
 }
 ```
 
+## 🔄 Transactions
+
+Outlet ORM supporte les transactions pour garantir l'intégrité des données:
+
+```javascript
+const { DatabaseConnection, Model } = require('outlet-orm');
+
+// Méthode 1: Callback automatique (recommandé)
+const db = Model.connection;
+const result = await db.transaction(async (connection) => {
+  const user = await User.create({ name: 'John', email: 'john@example.com' });
+  await Account.create({ user_id: user.getAttribute('id'), balance: 0 });
+  return user;
+});
+// Commit automatique, rollback si erreur
+
+// Méthode 2: Contrôle manuel
+await db.beginTransaction();
+try {
+  await User.create({ name: 'Jane' });
+  await db.commit();
+} catch (error) {
+  await db.rollback();
+  throw error;
+}
+```
+
+## 🗑️ Soft Deletes
+
+Suppression logique avec colonne `deleted_at`:
+
+```javascript
+const { Model } = require('outlet-orm');
+
+class Post extends Model {
+  static table = 'posts';
+  static softDeletes = true;
+  // static DELETED_AT = 'deleted_at'; // Personnalisable
+}
+
+// Les requêtes excluent automatiquement les supprimés
+const posts = await Post.all(); // Seulement les non-supprimés
+
+// Inclure les supprimés
+const allPosts = await Post.withTrashed().get();
+
+// Seulement les supprimés
+const trashedPosts = await Post.onlyTrashed().get();
+
+// Supprimer (soft delete)
+const post = await Post.find(1);
+await post.destroy(); // Met deleted_at à la date actuelle
+
+// Vérifier si supprimé
+if (post.trashed()) {
+  console.log('Ce post est supprimé');
+}
+
+// Restaurer
+await post.restore();
+
+// Supprimer définitivement
+await post.forceDelete();
+```
+
+## 🔬 Scopes
+
+### Scopes Globaux
+
+Appliqués automatiquement à toutes les requêtes:
+
+```javascript
+const { Model } = require('outlet-orm');
+
+class Post extends Model {
+  static table = 'posts';
+}
+
+// Ajouter un scope global
+Post.addGlobalScope('published', (query) => {
+  query.where('status', 'published');
+});
+
+// Toutes les requêtes filtrent automatiquement
+const posts = await Post.all(); // Seulement les publiés
+
+// Désactiver temporairement un scope
+const allPosts = await Post.withoutGlobalScope('published').get();
+
+// Désactiver tous les scopes
+const rawPosts = await Post.withoutGlobalScopes().get();
+```
+
+## 📣 Events / Hooks
+
+Interceptez les opérations sur vos modèles:
+
+```javascript
+const { Model } = require('outlet-orm');
+
+class User extends Model {
+  static table = 'users';
+}
+
+// Avant création
+User.creating((user) => {
+  user.setAttribute('uuid', generateUUID());
+  // Retourner false pour annuler
+});
+
+// Après création
+User.created((user) => {
+  console.log(`Utilisateur ${user.getAttribute('id')} créé`);
+});
+
+// Avant mise à jour
+User.updating((user) => {
+  user.setAttribute('updated_at', new Date());
+});
+
+// Après mise à jour
+User.updated((user) => {
+  // Notifier les systèmes externes
+});
+
+// Événements saving/saved (création ET mise à jour)
+User.saving((user) => {
+  // Nettoyage des données
+});
+
+User.saved((user) => {
+  // Cache invalidation
+});
+
+// Avant/après suppression
+User.deleting((user) => {
+  // Vérifications avant suppression
+});
+
+User.deleted((user) => {
+  // Nettoyage des relations
+});
+
+// Pour les soft deletes
+User.restoring((user) => {});
+User.restored((user) => {});
+```
+
+## ✅ Validation
+
+Validation basique intégrée:
+
+```javascript
+const { Model } = require('outlet-orm');
+
+class User extends Model {
+  static table = 'users';
+  static rules = {
+    name: 'required|string|min:2|max:100',
+    email: 'required|email',
+    age: 'numeric|min:0|max:150',
+    role: 'in:admin,user,guest',
+    password: 'required|min:8'
+  };
+}
+
+const user = new User({
+  name: 'J',
+  email: 'invalid-email',
+  age: 200
+});
+
+// Valider
+const { valid, errors } = user.validate();
+console.log(valid); // false
+console.log(errors);
+// {
+//   name: ['name must be at least 2 characters'],
+//   email: ['email must be a valid email'],
+//   age: ['age must not exceed 150']
+// }
+
+// Valider ou lancer une erreur
+try {
+  user.validateOrFail();
+} catch (error) {
+  console.log(error.errors);
+}
+```
+
+### Règles disponibles
+
+| Règle | Description |
+|-------|-------------|
+| `required` | Champ obligatoire |
+| `string` | Doit être une chaîne |
+| `number` / `numeric` | Doit être un nombre |
+| `email` | Format email valide |
+| `boolean` | Doit être un booléen |
+| `date` | Date valide |
+| `min:N` | Minimum N (longueur ou valeur) |
+| `max:N` | Maximum N (longueur ou valeur) |
+| `in:a,b,c` | Valeur parmi la liste |
+| `regex:pattern` | Match le pattern regex |
+
+## 📊 Query Logging
+
+Mode debug pour analyser vos requêtes:
+
+```javascript
+const { DatabaseConnection } = require('outlet-orm');
+
+// Activer le logging
+DatabaseConnection.enableQueryLog();
+
+// Exécuter des requêtes
+await User.where('status', 'active').get();
+await Post.with('author').get();
+
+// Récupérer le log
+const queries = DatabaseConnection.getQueryLog();
+console.log(queries);
+// [
+//   { sql: 'SELECT * FROM users WHERE status = ?', params: ['active'], duration: 15, timestamp: Date },
+//   { sql: 'SELECT * FROM posts', params: [], duration: 8, timestamp: Date }
+// ]
+
+// Vider le log
+DatabaseConnection.flushQueryLog();
+
+// Désactiver le logging
+DatabaseConnection.disableQueryLog();
+
+// Vérifier si actif
+if (DatabaseConnection.isLogging()) {
+  console.log('Logging actif');
+}
+```
+
 ## 📝 API Reference
 
 ### DatabaseConnection
@@ -556,6 +803,10 @@ class Log extends Model {
 |---------|-------------|
 | `new DatabaseConnection(config?)` | Crée une connexion (lit `.env` si config omis) |
 | `connect()` | Établit la connexion (appelé automatiquement) |
+| `beginTransaction()` | Démarre une transaction |
+| `commit()` | Valide la transaction |
+| `rollback()` | Annule la transaction |
+| `transaction(callback)` | Exécute dans une transaction (auto commit/rollback) |
 | `select(table, query)` | Exécute un SELECT |
 | `insert(table, data)` | Insère un enregistrement |
 | `insertMany(table, data[])` | Insère plusieurs enregistrements |
@@ -567,6 +818,12 @@ class Log extends Model {
 | `increment(table, column, query, amount?)` | Incrément atomique |
 | `decrement(table, column, query, amount?)` | Décrément atomique |
 | `close()` / `disconnect()` | Ferme la connexion |
+| **Query Logging (static)** | |
+| `enableQueryLog()` | Active le logging des requêtes |
+| `disableQueryLog()` | Désactive le logging |
+| `getQueryLog()` | Retourne le log des requêtes |
+| `flushQueryLog()` | Vide le log |
+| `isLogging()` | Vérifie si le logging est actif |
 
 ### Model (méthodes statiques)
 
@@ -596,6 +853,21 @@ class Log extends Model {
 | `limit(n)` / `offset(n)` | Limite/Offset |
 | `paginate(page, perPage)` | Pagination |
 | `count()` | Compte |
+| **Soft Deletes** | |
+| `withTrashed()` | Inclut les supprimés |
+| `onlyTrashed()` | Seulement les supprimés |
+| **Scopes** | |
+| `addGlobalScope(name, cb)` | Ajoute un scope global |
+| `removeGlobalScope(name)` | Supprime un scope |
+| `withoutGlobalScope(name)` | Requête sans un scope |
+| `withoutGlobalScopes()` | Requête sans tous les scopes |
+| **Events** | |
+| `on(event, callback)` | Enregistre un listener |
+| `creating(cb)` / `created(cb)` | Events création |
+| `updating(cb)` / `updated(cb)` | Events mise à jour |
+| `saving(cb)` / `saved(cb)` | Events sauvegarde |
+| `deleting(cb)` / `deleted(cb)` | Events suppression |
+| `restoring(cb)` / `restored(cb)` | Events restauration |
 
 ### Model (méthodes d'instance)
 
@@ -605,11 +877,18 @@ class Log extends Model {
 | `setAttribute(key, val)` | Définit un attribut |
 | `getAttribute(key)` | Récupère un attribut |
 | `save()` | Sauvegarde (insert ou update) |
-| `destroy()` | Supprime l'instance |
+| `destroy()` | Supprime l'instance (soft si activé) |
 | `load(...rels)` | Charge des relations |
 | `getDirty()` | Attributs modifiés |
 | `isDirty()` | A été modifié? |
 | `toJSON()` | Convertit en objet |
+| **Soft Deletes** | |
+| `trashed()` | Est supprimé? |
+| `restore()` | Restaure le modèle |
+| `forceDelete()` | Suppression définitive |
+| **Validation** | |
+| `validate()` | Valide selon les règles |
+| `validateOrFail()` | Valide ou lance erreur |
 
 ### QueryBuilder
 
@@ -637,6 +916,10 @@ class Log extends Model {
 | `leftJoin(table, first, op?, second)` | LEFT JOIN |
 | `with(...rels)` | Eager loading |
 | `withCount(rels)` | Ajoute {rel}_count |
+| `withTrashed()` | Inclut les supprimés |
+| `onlyTrashed()` | Seulement les supprimés |
+| `withoutGlobalScope(name)` | Sans un scope global |
+| `withoutGlobalScopes()` | Sans tous les scopes |
 | `get()` | Exécute et retourne tous |
 | `first()` | Premier résultat |
 | `firstOrFail()` | Premier ou erreur |

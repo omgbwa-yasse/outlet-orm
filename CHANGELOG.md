@@ -2,6 +2,85 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0] - 2025-01-XX
+
+### 🚀 Major Features
+
+#### Transactions
+- **`beginTransaction()`**: Start a database transaction
+- **`commit()`**: Commit the current transaction
+- **`rollback()`**: Rollback the current transaction
+- **`transaction(callback)`**: Execute callback in transaction with auto commit/rollback
+
+#### Soft Deletes
+- **`softDeletes` property**: Enable soft deletes on models
+- **`withTrashed()`**: Include soft deleted records in queries
+- **`onlyTrashed()`**: Query only soft deleted records
+- **`restore()`**: Restore a soft deleted model
+- **`forceDelete()`**: Permanently delete a soft deleted model
+- **`trashed()`**: Check if model is soft deleted
+
+#### Global Scopes
+- **`addGlobalScope(name, callback)`**: Add a global query scope
+- **`removeGlobalScope(name)`**: Remove a global scope
+- **`withoutGlobalScope(name)`**: Query without a specific scope
+- **`withoutGlobalScopes()`**: Query without any global scopes
+
+#### Events/Hooks
+- **`creating` / `created`**: Fired around model creation
+- **`updating` / `updated`**: Fired around model updates
+- **`saving` / `saved`**: Fired around any save operation
+- **`deleting` / `deleted`**: Fired around deletion
+- **`restoring` / `restored`**: Fired around soft delete restoration
+- **`on(event, callback)`**: Generic event listener registration
+
+#### Validation
+- **`rules` property**: Define validation rules on models
+- **`validate()`**: Validate model attributes, returns `{ valid, errors }`
+- **`validateOrFail()`**: Validate or throw error with validation errors
+- Built-in rules: `required`, `string`, `number`, `email`, `boolean`, `date`, `min`, `max`, `in`, `regex`
+
+#### Query Logging
+- **`DatabaseConnection.enableQueryLog()`**: Enable query logging
+- **`DatabaseConnection.disableQueryLog()`**: Disable query logging
+- **`DatabaseConnection.getQueryLog()`**: Get array of logged queries with SQL, params, duration, timestamp
+- **`DatabaseConnection.flushQueryLog()`**: Clear the query log
+- **`DatabaseConnection.isLogging()`**: Check if logging is enabled
+
+### 🔧 Improvements
+
+#### PostgreSQL Pool Support
+- Replaced `pg.Client` with `pg.Pool` for better connection management
+- Improved performance and connection reuse
+- Configurable pool size via `connectionLimit`
+
+#### SQL Injection Protection
+- Added `sanitizeIdentifier()` function for table/column names
+- Detection of common SQL injection patterns
+- Automatic identifier validation
+
+#### Complete Exports
+- Added missing relation exports: `MorphOneRelation`, `MorphManyRelation`, `MorphToRelation`, `HasOneThroughRelation`
+
+### 📝 Documentation
+- Comprehensive README updates for all new features
+- Updated API reference tables
+- Added examples for transactions, soft deletes, scopes, events, validation, and query logging
+- Updated TypeScript definitions
+
+### Breaking Changes
+- None - fully backward compatible with v2.x
+
+## [2.5.3] - 2025-01-XX
+
+### Fixed
+- Added missing import statements in README examples
+
+## [2.5.2] - 2025-01-XX
+
+### Enhanced
+- Comprehensive README update with complete documentation
+
 ## [2.5.1] - 2025-11-12
 
 ### Added

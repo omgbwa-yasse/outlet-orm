@@ -14,9 +14,30 @@ declare module 'outlet-orm' {
     connectionLimit?: number;
   }
 
+  export interface QueryLogEntry {
+    sql: string;
+    params: any[];
+    duration: number;
+    timestamp: Date;
+  }
+
   export class DatabaseConnection {
     constructor(config?: Partial<DatabaseConfig>);
     connect(): Promise<void>;
+
+    // Transaction support
+    beginTransaction(): Promise<void>;
+    commit(): Promise<void>;
+    rollback(): Promise<void>;
+    transaction<T>(callback: (connection: DatabaseConnection) => Promise<T>): Promise<T>;
+
+    // Query logging
+    static enableQueryLog(): void;
+    static disableQueryLog(): void;
+    static getQueryLog(): QueryLogEntry[];
+    static flushQueryLog(): void;
+    static isLogging(): boolean;
+
     select(table: string, query: QueryObject): Promise<any[]>;
     insert(table: string, data: Record<string, any>): Promise<{ insertId: any; affectedRows: number }>;
     insertMany(table: string, data: Record<string, any>[]): Promise<{ affectedRows: number }>;
@@ -107,11 +128,11 @@ declare module 'outlet-orm' {
     whereLike(column: string, value: string): this;
     /** Filter parents where a relation has matches */
     whereHas(relationName: string, callback?: (qb: QueryBuilder<any>) => void): this;
-  /** Filter parents where relation count matches */
-  has(relationName: string, count: number): this;
-  has(relationName: string, operator: string, count: number): this;
-  /** Filter parents without related rows */
-  whereDoesntHave(relationName: string): this;
+    /** Filter parents where relation count matches */
+    has(relationName: string, count: number): this;
+    has(relationName: string, operator: string, count: number): this;
+    /** Filter parents without related rows */
+    whereDoesntHave(relationName: string): this;
     orderBy(column: string, direction?: 'asc' | 'desc'): this;
     /** Typo-friendly alias for orderBy */
     ordrer(column: string, direction?: 'asc' | 'desc'): this;
@@ -119,14 +140,22 @@ declare module 'outlet-orm' {
     offset(value: number): this;
     skip(value: number): this;
     take(value: number): this;
-  with(...relations: string[] | [Record<string, (qb: QueryBuilder<any>) => void> | string[]]): this;
-  withCount(relations: string | string[]): this;
-  groupBy(...columns: string[]): this;
-  having(column: string, operator: string, value: any): this;
+    with(...relations: string[] | [Record<string, (qb: QueryBuilder<any>) => void> | string[]]): this;
+    withCount(relations: string | string[]): this;
+    groupBy(...columns: string[]): this;
+    having(column: string, operator: string, value: any): this;
     join(table: string, first: string, second: string): this;
     join(table: string, first: string, operator: string, second: string): this;
     leftJoin(table: string, first: string, second: string): this;
     leftJoin(table: string, first: string, operator: string, second: string): this;
+
+    // Soft delete methods
+    withTrashed(): this;
+    onlyTrashed(): this;
+
+    // Scope methods
+    withoutGlobalScope(name: string): this;
+    withoutGlobalScopes(): this;
 
     get(): Promise<T[]>;
     first(): Promise<T | null>;
@@ -149,6 +178,15 @@ declare module 'outlet-orm' {
 
   export type CastType = 'int' | 'integer' | 'float' | 'double' | 'string' | 'bool' | 'boolean' | 'array' | 'json' | 'date' | 'datetime' | 'timestamp';
 
+  export type ValidationRule = 'required' | 'string' | 'number' | 'numeric' | 'email' | 'boolean' | 'date' | `min:${number}` | `max:${number}` | `in:${string}` | `regex:${string}`;
+
+  export interface ValidationResult {
+    valid: boolean;
+    errors: Record<string, string[]>;
+  }
+
+  export type EventCallback<T extends Model = Model> = (model: T) => boolean | void | Promise<boolean | void>;
+
   export class Model {
     static table: string;
     static primaryKey: string;
@@ -158,12 +196,49 @@ declare module 'outlet-orm' {
     static casts: Record<string, CastType>;
     static connection: DatabaseConnection | null;
 
+    // Soft Deletes
+    static softDeletes: boolean;
+    static DELETED_AT: string;
+
+    // Scopes
+    static globalScopes: Record<string, (qb: QueryBuilder<any>) => void>;
+
+    // Events
+    static eventListeners: Record<string, EventCallback[]>;
+
+    // Validation
+    static rules: Record<string, string | ValidationRule[]>;
+
     attributes: Record<string, any>;
     original: Record<string, any>;
     relations: Record<string, any>;
     exists: boolean;
 
     constructor(attributes?: Record<string, any>);
+
+    // Event registration
+    static on(event: string, callback: EventCallback): void;
+    static fireEvent(event: string, model: Model): Promise<boolean>;
+    static creating(callback: EventCallback): void;
+    static created(callback: EventCallback): void;
+    static updating(callback: EventCallback): void;
+    static updated(callback: EventCallback): void;
+    static saving(callback: EventCallback): void;
+    static saved(callback: EventCallback): void;
+    static deleting(callback: EventCallback): void;
+    static deleted(callback: EventCallback): void;
+    static restoring(callback: EventCallback): void;
+    static restored(callback: EventCallback): void;
+
+    // Scope methods
+    static addGlobalScope(name: string, callback: (qb: QueryBuilder<any>) => void): void;
+    static removeGlobalScope(name: string): void;
+    static withoutGlobalScope<T extends Model>(this: new () => T, name: string): QueryBuilder<T>;
+    static withoutGlobalScopes<T extends Model>(this: new () => T): QueryBuilder<T>;
+
+    // Soft delete methods
+    static withTrashed<T extends Model>(this: new () => T): QueryBuilder<T>;
+    static onlyTrashed<T extends Model>(this: new () => T): QueryBuilder<T>;
 
     // Static methods
     static setConnection(connection: DatabaseConnection): void;
@@ -176,10 +251,10 @@ declare module 'outlet-orm' {
     static create<T extends Model>(this: new () => T, attributes: Record<string, any>): Promise<T>;
     static insert(data: Record<string, any> | Record<string, any>[]): Promise<any>;
     static update(attributes: Record<string, any>): Promise<any>;
-  /** Update by primary key and return the updated model, optionally eager-loading relations */
-  static updateAndFetchById<T extends Model>(this: new () => T, id: any, attributes: Record<string, any>, relations?: string[]): Promise<T | null>;
-  /** Update by primary key */
-  static updateById<T extends Model>(this: new () => T, id: any, attributes: Record<string, any>): Promise<any>;
+    /** Update by primary key and return the updated model, optionally eager-loading relations */
+    static updateAndFetchById<T extends Model>(this: new () => T, id: any, attributes: Record<string, any>, relations?: string[]): Promise<T | null>;
+    /** Update by primary key */
+    static updateById<T extends Model>(this: new () => T, id: any, attributes: Record<string, any>): Promise<any>;
     static delete(): Promise<any>;
     static first<T extends Model>(this: new () => T): Promise<T | null>;
     static orderBy<T extends Model>(this: new () => T, column: string, direction?: 'asc' | 'desc'): QueryBuilder<T>;
@@ -190,11 +265,11 @@ declare module 'outlet-orm' {
     static whereNull<T extends Model>(this: new () => T, column: string): QueryBuilder<T>;
     static whereNotNull<T extends Model>(this: new () => T, column: string): QueryBuilder<T>;
     static count(): Promise<number>;
-  static with<T extends Model>(this: new () => T, ...relations: string[] | [Record<string, (qb: QueryBuilder<any>) => void> | string[]]): QueryBuilder<T>;
-  /** Include hidden attributes in query results */
-  static withHidden<T extends Model>(this: new () => T): QueryBuilder<T>;
-  /** Control visibility of hidden attributes (false = hide, true = show) */
-  static withoutHidden<T extends Model>(this: new () => T, show?: boolean): QueryBuilder<T>;
+    static with<T extends Model>(this: new () => T, ...relations: string[] | [Record<string, (qb: QueryBuilder<any>) => void> | string[]]): QueryBuilder<T>;
+    /** Include hidden attributes in query results */
+    static withHidden<T extends Model>(this: new () => T): QueryBuilder<T>;
+    /** Control visibility of hidden attributes (false = hide, true = show) */
+    static withoutHidden<T extends Model>(this: new () => T, show?: boolean): QueryBuilder<T>;
 
     // Instance methods
     fill(attributes: Record<string, any>): this;
@@ -206,8 +281,17 @@ declare module 'outlet-orm' {
     getDirty(): Record<string, any>;
     isDirty(): boolean;
     toJSON(): Record<string, any>;
-  /** Load relations on an existing instance. Supports dot-notation and arrays. */
-  load(...relations: string[] | [string[]]): Promise<this>;
+    /** Load relations on an existing instance. Supports dot-notation and arrays. */
+    load(...relations: string[] | [string[]]): Promise<this>;
+
+    // Soft delete instance methods
+    trashed(): boolean;
+    restore(): Promise<this>;
+    forceDelete(): Promise<boolean>;
+
+    // Validation
+    validate(): ValidationResult;
+    validateOrFail(): void;
 
     // Relationships
     hasOne<T extends Model>(related: new () => T, foreignKey?: string, localKey?: string): HasOneRelation<T>;
@@ -271,6 +355,26 @@ declare module 'outlet-orm' {
 
   export class HasManyThroughRelation<T extends Model> extends Relation<T> {
     get(): Promise<T[]>;
+    eagerLoad(models: Model[], relationName: string, constraint?: (qb: QueryBuilder<T>) => void): Promise<void>;
+  }
+
+  export class HasOneThroughRelation<T extends Model> extends Relation<T> {
+    get(): Promise<T | null>;
+    eagerLoad(models: Model[], relationName: string, constraint?: (qb: QueryBuilder<T>) => void): Promise<void>;
+  }
+
+  export class MorphOneRelation<T extends Model> extends Relation<T> {
+    get(): Promise<T | null>;
+    eagerLoad(models: Model[], relationName: string, constraint?: (qb: QueryBuilder<T>) => void): Promise<void>;
+  }
+
+  export class MorphManyRelation<T extends Model> extends Relation<T> {
+    get(): Promise<T[]>;
+    eagerLoad(models: Model[], relationName: string, constraint?: (qb: QueryBuilder<T>) => void): Promise<void>;
+  }
+
+  export class MorphToRelation<T extends Model> extends Relation<T> {
+    get(): Promise<T | null>;
     eagerLoad(models: Model[], relationName: string, constraint?: (qb: QueryBuilder<T>) => void): Promise<void>;
   }
 }
