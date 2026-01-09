@@ -1,5 +1,8 @@
 # Outlet ORM
 
+[![npm version](https://badge.fury.io/js/outlet-orm.svg)](https://www.npmjs.com/package/outlet-orm)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Un ORM JavaScript inspiré de Laravel Eloquent pour Node.js avec support pour MySQL, PostgreSQL et SQLite.
 
 ## ✅ Prérequis et compatibilité
@@ -25,23 +28,25 @@ Si aucun driver n'est installé, un message d'erreur explicite vous indiquera le
 
 ## ✨ Fonctionnalités clés
 
-- API inspirée d'Eloquent (Active Record) pour un usage fluide
-- Query Builder expressif: where/joins/order/limit/offset/paginate
-- Filtres relationnels façon Laravel: `whereHas()`
-- Existence/absence et agrégations: `has()`, `whereDoesntHave()`, `withCount()`
-- Eager Loading des relations via `.with(...)`
-- Relations: hasOne, hasMany, belongsTo, belongsToMany (avec attach/detach/sync)
-- Casts automatiques (int, float, boolean, json, date...)
-- Attributs masqués (`hidden`) et timestamps automatiques
-- Contrôle de visibilité des attributs cachés: `withHidden()` et `withoutHidden()`
-- Incrément/Décrément atomiques: `increment()` et `decrement()`
-- Aliases ergonomiques: `columns([...])`, `ordrer()` (alias typo de `orderBy`)
-- Requêtes brutes: `executeRawQuery()` et `execute()` (résultats natifs du driver)
-- Migrations complètes (create/alter/drop, index, foreign keys, batch tracking)
-- CLI pratiques: `outlet-init`, `outlet-migrate`, `outlet-convert`
-- Configuration via `.env` (chargée automatiquement)
-- Multi-base de données: MySQL, PostgreSQL et SQLite
-- Types TypeScript fournis
+- **API inspirée d'Eloquent** (Active Record) pour un usage fluide
+- **Query Builder expressif**: where/joins/order/limit/offset/paginate
+- **Filtres relationnels façon Laravel**: `whereHas()`, `has()`, `whereDoesntHave()`, `withCount()`
+- **Eager Loading** des relations via `.with(...)` avec contraintes et dot-notation
+- **Relations complètes**:
+  - `hasOne`, `hasMany`, `belongsTo`, `belongsToMany` (avec attach/detach/sync)
+  - `hasManyThrough`, `hasOneThrough` (relations transitives)
+  - `morphOne`, `morphMany`, `morphTo` (relations polymorphiques)
+- **Casts automatiques** (int, float, boolean, json, date...)
+- **Attributs masqués** (`hidden`) et timestamps automatiques
+- **Contrôle de visibilité** des attributs cachés: `withHidden()` et `withoutHidden()`
+- **Incrément/Décrément atomiques**: `increment()` et `decrement()`
+- **Aliases ergonomiques**: `columns([...])`, `ordrer()` (alias typo de `orderBy`)
+- **Requêtes brutes**: `executeRawQuery()` et `execute()` (résultats natifs du driver)
+- **Migrations complètes** (create/alter/drop, index, foreign keys, batch tracking)
+- **CLI pratiques**: `outlet-init`, `outlet-migrate`, `outlet-convert`
+- **Configuration via `.env`** (chargée automatiquement)
+- **Multi-base de données**: MySQL, PostgreSQL et SQLite
+- **Types TypeScript** fournis
 
 ## ⚡ Démarrage Rapide
 
@@ -55,66 +60,62 @@ outlet-init
 outlet-migrate make create_users_table
 
 # Exécuter les migrations
-outlet-migrate
+outlet-migrate migrate
 ```
 
-## 📖 Utilisation Rapide
+## 📖 Utilisation
 
 ### Configuration de la connexion
 
-Outlet ORM peut charger automatiquement le provider (driver) et les paramètres d’accès à la base de données depuis un fichier `.env` dans votre application. Les variables supportées incluent :
-
-- DB_DRIVER (mysql, postgres, sqlite)
-- DB_HOST, DB_PORT
-- DB_USER / DB_USERNAME, DB_PASSWORD
-- DB_DATABASE / DB_NAME
-- Pour SQLite: DB_FILE ou SQLITE_DB ou SQLITE_FILENAME
-
-Un exemple est fourni dans `.env.example`.
+Outlet ORM peut charger automatiquement le provider (driver) et les paramètres d'accès à la base de données depuis un fichier `.env` dans votre application.
 
 ```javascript
 const { DatabaseConnection, Model } = require('outlet-orm');
 
-// Configuration MySQL
 // Option 1 – via .env (aucun paramètre nécessaire)
-// DB_DRIVER=mysql, DB_HOST=localhost, DB_DATABASE=myapp, DB_USER=root, DB_PASSWORD=secret, DB_PORT=3306
+// DB_DRIVER=mysql, DB_HOST=localhost, DB_DATABASE=myapp, DB_USER=root, DB_PASSWORD=secret
 const db = new DatabaseConnection();
 
 // Option 2 – via objet de configuration (prend le dessus sur .env)
-// const db = new DatabaseConnection({
-//   driver: 'mysql',
-//   host: 'localhost',
-//   database: 'myapp',
-//   user: 'root',
-//   password: 'secret',
-//   port: 3306
-// });
+const db = new DatabaseConnection({
+  driver: 'mysql',      // 'mysql' | 'postgres' | 'sqlite'
+  host: 'localhost',
+  database: 'myapp',
+  user: 'root',
+  password: 'secret',
+  port: 3306
+});
 
 // Définir la connexion par défaut
 Model.setConnection(db);
 ```
 
-#### Variables d'environnement (.env) — Détails
+#### Variables d'environnement (.env)
 
-- DB_DRIVER: `mysql` | `postgres` | `sqlite` (alias acceptés: `postgresql`, `sqlite3`)
-- DB_HOST, DB_PORT: hôte/port (par défaut: `localhost`, ports par défaut selon driver)
-- DB_USER | DB_USERNAME, DB_PASSWORD: identifiants
-- DB_DATABASE | DB_NAME: nom de la base (MySQL/Postgres)
-- SQLite spécifiquement: `DB_FILE` ou `SQLITE_DB` ou `SQLITE_FILENAME` (par défaut `:memory:`)
-
-Les paramètres passés au constructeur de `DatabaseConnection` ont priorité sur `.env`.
+| Variable | Description | Par défaut |
+|----------|-------------|------------|
+| `DB_DRIVER` | `mysql`, `postgres`, `sqlite` | `mysql` |
+| `DB_HOST` | Hôte de la base | `localhost` |
+| `DB_PORT` | Port de connexion | Selon driver |
+| `DB_USER` / `DB_USERNAME` | Identifiant | - |
+| `DB_PASSWORD` | Mot de passe | - |
+| `DB_DATABASE` / `DB_NAME` | Nom de la base | - |
+| `DB_FILE` / `SQLITE_DB` | Fichier SQLite | `:memory:` |
 
 ### Définir un modèle
 
 ```javascript
 class User extends Model {
   static table = 'users';
+  static primaryKey = 'id';           // Par défaut: 'id'
+  static timestamps = true;           // Par défaut: true
   static fillable = ['name', 'email', 'password'];
   static hidden = ['password'];
   static casts = {
     id: 'int',
     email_verified: 'boolean',
-    metadata: 'json'
+    metadata: 'json',
+    birthday: 'date'
   };
 
   // Relations
@@ -147,6 +148,9 @@ const user = new User({
 });
 user.setAttribute('password', 'secret456');
 await user.save();
+
+// Insert brut (sans créer d'instance)
+await User.insert({ name: 'Bob', email: 'bob@example.com' });
 ```
 
 #### Lire
@@ -157,6 +161,7 @@ const users = await User.all();
 
 // Par ID
 const user = await User.find(1);
+const user = await User.findOrFail(1); // Lance une erreur si non trouvé
 
 // Premier résultat
 const firstUser = await User.first();
@@ -167,7 +172,7 @@ const activeUsers = await User
   .where('age', '>', 18)
   .get();
 
-// Avec relations
+// Avec relations (Eager Loading)
 const usersWithPosts = await User
   .with('posts', 'profile')
   .get();
@@ -192,13 +197,13 @@ await User
   .where('status', 'pending')
   .update({ status: 'active' });
 
-// One-liner façon Prisma (update + include)
+// Update + Fetch (comme Prisma)
 const updated = await User
   .where('id', 1)
-  .updateAndFetch({ name: 'Neo' }, ['profile', 'posts.comments']);
+  .updateAndFetch({ name: 'Neo' }, ['profile', 'posts']);
 
 // Helpers par ID
-const user1 = await User.updateAndFetchById(1, { name: 'Trinity' }, ['profile']);
+const user = await User.updateAndFetchById(1, { name: 'Trinity' }, ['profile']);
 await User.updateById(2, { status: 'active' });
 ```
 
@@ -225,80 +230,69 @@ const users = await User
   .orWhere('role', 'admin')
   .get();
 
-// Where In
-const users = await User
-  .whereIn('id', [1, 2, 3, 4, 5])
-  .get();
+// Where In / Not In
+const users = await User.whereIn('id', [1, 2, 3, 4, 5]).get();
+const users = await User.whereNotIn('status', ['banned', 'deleted']).get();
 
-// Where Null
-const users = await User
-  .whereNull('deleted_at')
-  .get();
+// Where Null / Not Null
+const users = await User.whereNull('deleted_at').get();
+const verified = await User.whereNotNull('email_verified_at').get();
 
-// Where Not Null
-const users = await User
-  .whereNotNull('email_verified_at')
-  .get();
+// Where Between / Like
+const adults = await User.whereBetween('age', [18, 65]).get();
+const johns = await User.whereLike('name', '%john%').get();
 
 // Pagination
 const result = await User.paginate(1, 15);
-// {
-//   data: [...],
-//   total: 100,
-//   per_page: 15,
-//   current_page: 1,
-//   last_page: 7,
-//   from: 1,
-//   to: 15
-// }
+// { data: [...], total: 100, per_page: 15, current_page: 1, last_page: 7, from: 1, to: 15 }
 
-// Count
+// Count / Exists
 const count = await User.where('status', 'active').count();
+const hasUsers = await User.where('role', 'admin').exists();
 
 // Joins
 const result = await User
   .join('profiles', 'users.id', 'profiles.user_id')
   .leftJoin('countries', 'profiles.country_id', 'countries.id')
-  .whereLike('users.name', '%john%')
-  .whereBetween('users.age', [18, 65])
   .select('users.*', 'profiles.bio', 'countries.name as country')
-  .orderBy('users.created_at', 'desc')
   .get();
 
-// Alias ergonomiques
-const slim = await User
-  .columns(['id', 'name'])    // alias de select(...)
-  .ordrer('created_at', 'desc') // alias typo de orderBy
-  .get();
-
-// whereHas: filtrer les parents qui ont des enfants correspondants
-// Exemple: Utilisateurs ayant au moins un post publié récemment
-const authors = await User
-  .whereHas('posts', (q) => {
-    q.where('status', 'published').where('created_at', '>', new Date(Date.now() - 7*24*3600*1000));
-  })
-  .get();
-
-// has: au moins N enfants
-const prolific = await User.has('posts', '>=', 10).get();
-
-// whereDoesntHave: aucun enfant
-const orphans = await User.whereDoesntHave('posts').get();
-
-// withCount: ajouter une colonne posts_count
-const withCounts = await User.withCount('posts').get();
-
-// Agrégations: distinct, groupBy, having
+// Agrégations
 const stats = await User
   .distinct()
   .groupBy('status')
   .having('COUNT(*)', '>', 5)
   .get();
+
+// Incrément / Décrément atomique
+await User.where('id', 1).increment('login_count');
+await User.where('id', 1).decrement('credits', 10);
 ```
 
-### Relations
+### Filtres relationnels
 
-#### One to One (hasOne)
+```javascript
+// whereHas: Utilisateurs ayant au moins un post publié
+const authors = await User
+  .whereHas('posts', (q) => {
+    q.where('status', 'published');
+  })
+  .get();
+
+// has: Au moins N enfants
+const prolific = await User.has('posts', '>=', 10).get();
+
+// whereDoesntHave: Aucun enfant
+const noPostUsers = await User.whereDoesntHave('posts').get();
+
+// withCount: Ajouter une colonne {relation}_count
+const withCounts = await User.withCount('posts').get();
+// Chaque user aura: user.getAttribute('posts_count')
+```
+
+## 🔗 Relations
+
+### One to One (hasOne)
 
 ```javascript
 class User extends Model {
@@ -311,7 +305,7 @@ const user = await User.find(1);
 const profile = await user.profile().get();
 ```
 
-#### One to Many (hasMany)
+### One to Many (hasMany)
 
 ```javascript
 class User extends Model {
@@ -324,7 +318,7 @@ const user = await User.find(1);
 const posts = await user.posts().get();
 ```
 
-#### Belongs To (belongsTo)
+### Belongs To (belongsTo)
 
 ```javascript
 class Post extends Model {
@@ -337,16 +331,16 @@ const post = await Post.find(1);
 const author = await post.author().get();
 ```
 
-#### Many to Many (belongsToMany)
+### Many to Many (belongsToMany)
 
 ```javascript
 class User extends Model {
   roles() {
     return this.belongsToMany(
       Role,
-      'user_roles',      // Pivot table
-      'user_id',          // Foreign key
-      'role_id'           // Related key
+      'user_roles',   // Table pivot
+      'user_id',      // FK vers User
+      'role_id'       // FK vers Role
     );
   }
 }
@@ -354,76 +348,127 @@ class User extends Model {
 const user = await User.find(1);
 const roles = await user.roles().get();
 
-// belongsToMany helpers
-await user.roles().attach([1, 2]);
-await user.roles().detach(2);
-await user.roles().sync([1, 3]);
+// Méthodes pivot
+await user.roles().attach([1, 2]);    // Attacher des rôles
+await user.roles().detach(2);          // Détacher un rôle
+await user.roles().sync([1, 3]);       // Synchroniser (remplace tout)
 ```
 
-#### Has Many Through (hasManyThrough)
+### Has Many Through (hasManyThrough)
 
-Permet d'accéder à une relation distante via un modèle intermédiaire (ex: User -> Post -> Comment pour récupérer les comments d'un user sans passer par les posts).
+Accéder à une relation distante via un modèle intermédiaire.
 
 ```javascript
 class User extends Model {
-  posts() {
-    return this.hasMany(Post, 'user_id');
-  }
-
+  // User -> Post -> Comment
   comments() {
-    // hasManyThrough(final, through, fkOnThrough?, throughKeyOnFinal?, localKey?, throughLocalKey?)
     return this.hasManyThrough(Comment, Post, 'user_id', 'post_id');
   }
 }
 
 const user = await User.find(1);
-const comments = await user.comments().get();
-
-// Eager load (avec contrainte):
-const users = await User.with({ comments: q => q.where('created_at', '>', new Date(Date.now() - 7*24*3600*1000)) }).get();
+const allComments = await user.comments().get();
 ```
 
-Par défaut, les clés sont inférées selon les conventions:
+### Has One Through (hasOneThrough)
 
-- foreignKeyOnThrough: `${parentTableSingular}_id`
-- throughKeyOnFinal: `${throughTableSingular}_id`
-- localKey: clé primaire du parent (par défaut `id`)
-- throughLocalKey: clé primaire du modèle intermédiaire (par défaut `id`)
+```javascript
+class User extends Model {
+  // User -> Profile -> Country
+  country() {
+    return this.hasOneThrough(Country, Profile, 'user_id', 'country_id');
+  }
+}
+
+const user = await User.find(1);
+const country = await user.country().get();
+```
+
+### Relations Polymorphiques
+
+Les relations polymorphiques permettent à un modèle d'appartenir à plusieurs autres modèles.
+
+```javascript
+// Configuration du morph map
+Model.setMorphMap({
+  'posts': Post,
+  'videos': Video
+});
+
+// Modèles
+class Post extends Model {
+  comments() {
+    return this.morphMany(Comment, 'commentable');
+  }
+}
+
+class Video extends Model {
+  comments() {
+    return this.morphMany(Comment, 'commentable');
+  }
+}
+
+class Comment extends Model {
+  commentable() {
+    return this.morphTo('commentable');
+  }
+}
+
+// Usage
+const post = await Post.find(1);
+const comments = await post.comments().get();
+
+const comment = await Comment.find(1);
+const parent = await comment.commentable().get(); // Post ou Video
+```
+
+**Relations polymorphiques disponibles:**
+- `morphOne(Related, 'morphName')` - One-to-One polymorphique
+- `morphMany(Related, 'morphName')` - One-to-Many polymorphique
+- `morphTo('morphName')` - Inverse polymorphique
 
 ### Eager Loading
 
 ```javascript
-// Charger les relations avec les résultats
-const users = await User.with('posts', 'profile').get();
+// Charger plusieurs relations
+const users = await User.with('posts', 'profile', 'roles').get();
+
+// Charger avec contraintes
+const users = await User.with({
+  posts: (q) => q.where('status', 'published').orderBy('created_at', 'desc')
+}).get();
+
+// Charger des relations imbriquées (dot notation)
+const users = await User.with('posts.comments.author').get();
+
+// Charger sur une instance existante
+const user = await User.find(1);
+await user.load('posts', 'profile');
+await user.load(['roles', 'posts.comments']);
 
 // Accéder aux relations chargées
 users.forEach(user => {
-  console.log(user.getAttribute('name'));
   console.log(user.relations.posts);
   console.log(user.relations.profile);
 });
-
-// Chargement à la demande sur une instance existante
-const user = await User.find(1);
-await user.load('posts.comments', 'profile');
-// Ou tableau
-await user.load(['roles', 'permissions']);
 ```
+
+## 🎭 Attributs
 
 ### Casts
 
-Les casts permettent de convertir automatiquement les attributs:
+Les casts convertissent automatiquement les attributs:
 
 ```javascript
 class User extends Model {
   static casts = {
-    id: 'int',
+    id: 'int',              // ou 'integer'
     age: 'integer',
-    balance: 'float',
-    email_verified: 'boolean',
-    metadata: 'json',
-    settings: 'array',
-    birthday: 'date'
+    balance: 'float',       // ou 'double'
+    email_verified: 'boolean', // ou 'bool'
+    metadata: 'json',       // Parse JSON
+    settings: 'array',      // Parse JSON en array
+    birthday: 'date'        // Convertit en Date
   };
 }
 ```
@@ -436,24 +481,21 @@ class User extends Model {
 }
 
 const user = await User.find(1);
-console.log(user.toJSON()); // password et secret_token ne sont pas inclus
+console.log(user.toJSON()); // password et secret_token exclus
 ```
 
 #### Afficher les attributs cachés
 
-Parfois, vous devez inclure les attributs cachés dans les résultats, par exemple lors de l'authentification :
-
 ```javascript
-// Inclure les attributs cachés dans les résultats de la requête
+// Inclure les attributs cachés
 const user = await User.withHidden().where('email', 'john@example.com').first();
-console.log(user.toJSON()); // password est inclus
+console.log(user.toJSON()); // password inclus
 
-// Alternative : contrôler la visibilité avec un booléen
-const userWithPassword = await User.withoutHidden(true).where('email', 'john@example.com').first();
-// true = afficher les attributs cachés
-// false (défaut) = masquer les attributs cachés
+// Contrôler avec un booléen
+const user = await User.withoutHidden(true).first(); // true = afficher
+const user = await User.withoutHidden(false).first(); // false = masquer (défaut)
 
-// Utilisation typique pour l'authentification
+// Cas d'usage: authentification
 const user = await User.withHidden().where('email', email).first();
 if (user && await bcrypt.compare(password, user.getAttribute('password'))) {
   // Authentification réussie
@@ -463,61 +505,14 @@ if (user && await bcrypt.compare(password, user.getAttribute('password'))) {
 ### Timestamps
 
 ```javascript
-// Activer les timestamps automatiques (activé par défaut)
+// Activés par défaut (created_at, updated_at)
 class User extends Model {
-  static timestamps = true; // created_at et updated_at
+  static timestamps = true;
 }
 
-// Désactiver les timestamps
+// Désactiver
 class Log extends Model {
   static timestamps = false;
-}
-```
-
-## 🔧 Configuration avancée
-
-### Connexions multiples
-
-```javascript
-const mysqlDb = new DatabaseConnection({
-  driver: 'mysql',
-  host: 'localhost',
-  database: 'app_db',
-  user: 'root',
-  password: 'secret'
-});
-
-const postgresDb = new DatabaseConnection({
-  driver: 'postgres',
-  host: 'localhost',
-  database: 'analytics_db',
-  user: 'postgres',
-  password: 'secret'
-});
-
-// Par modèle
-class User extends Model {
-  static connection = mysqlDb;
-}
-
-class Analytics extends Model {
-  static connection = postgresDb;
-}
-```
-
-### Clé primaire personnalisée
-
-```javascript
-class User extends Model {
-  static primaryKey = 'user_id';
-}
-```
-
-### Nom de table personnalisé
-
-```javascript
-class User extends Model {
-  static table = 'app_users';
 }
 ```
 
@@ -525,119 +520,130 @@ class User extends Model {
 
 ### DatabaseConnection
 
-- `new DatabaseConnection(config?)` — lit automatiquement `.env` si `config` est omis
-- `connect()` — établit la connexion (appelé automatiquement au besoin)
-- `select(table, query)` — exécute un SELECT (utilisé par le Query Builder)
-- `insert(table, data)` / `insertMany(table, data[])`
-- `update(table, data, query)` / `delete(table, query)`
-- `count(table, query)` — retourne le total
-- `executeRawQuery(sql, params?)` — résultats normalisés (tableau d’objets)
-- `execute(sql, params?)` — résultats natifs du driver (utile pour migrations)
-- `increment(table, column, query, amount?)` — mise à jour atomique
-- `decrement(table, column, query, amount?)`
-- `close()` / `disconnect()` — fermer la connexion
+| Méthode | Description |
+|---------|-------------|
+| `new DatabaseConnection(config?)` | Crée une connexion (lit `.env` si config omis) |
+| `connect()` | Établit la connexion (appelé automatiquement) |
+| `select(table, query)` | Exécute un SELECT |
+| `insert(table, data)` | Insère un enregistrement |
+| `insertMany(table, data[])` | Insère plusieurs enregistrements |
+| `update(table, data, query)` | Met à jour des enregistrements |
+| `delete(table, query)` | Supprime des enregistrements |
+| `count(table, query)` | Compte les enregistrements |
+| `executeRawQuery(sql, params?)` | Requête brute (résultats normalisés) |
+| `execute(sql, params?)` | Requête brute (résultats natifs driver) |
+| `increment(table, column, query, amount?)` | Incrément atomique |
+| `decrement(table, column, query, amount?)` | Décrément atomique |
+| `close()` / `disconnect()` | Ferme la connexion |
 
-### Model
+### Model (méthodes statiques)
 
-- `static all()` - Récupérer tous les enregistrements
-- `static find(id)` - Trouver par ID
-- `static findOrFail(id)` - Trouver ou lancer une erreur
-- `static where(column, operator, value)` - Ajouter une clause where
-- `static create(attributes)` - Créer et sauvegarder
-- `static insert(data)` - Insérer des données brutes
-- `static update(attributes)` - Mise à jour bulk
-- `static updateAndFetchById(id, attributes, relations?)` - Mise à jour par ID et retour du modèle (avec include)
-- `static updateById(id, attributes)` - Mise à jour par ID
-- `static delete()` - Suppression bulk
-- `static withHidden()` - Inclure les attributs cachés dans les résultats
-- `static withoutHidden(show?)` - Contrôler la visibilité des attributs cachés (false = masquer, true = afficher)
-- `save()` - Sauvegarder l'instance
-- `destroy()` - Supprimer l'instance
-- `toJSON()` - Convertir en JSON
-- `load(...relations)` - Charger des relations sur une instance, supporte la dot-notation
+| Méthode | Description |
+|---------|-------------|
+| `setConnection(db)` | Définit la connexion par défaut |
+| `setMorphMap(map)` | Définit le mapping polymorphique |
+| `query()` | Retourne un QueryBuilder |
+| `all()` | Tous les enregistrements |
+| `find(id)` | Trouve par ID |
+| `findOrFail(id)` | Trouve ou lance une erreur |
+| `first()` | Premier enregistrement |
+| `where(col, op?, val)` | Clause WHERE |
+| `whereIn(col, vals)` | Clause WHERE IN |
+| `whereNull(col)` | Clause WHERE NULL |
+| `whereNotNull(col)` | Clause WHERE NOT NULL |
+| `create(attrs)` | Crée et sauvegarde |
+| `insert(data)` | Insert brut |
+| `update(attrs)` | Update bulk |
+| `updateById(id, attrs)` | Update par ID |
+| `updateAndFetchById(id, attrs, rels?)` | Update + fetch avec relations |
+| `delete()` | Delete bulk |
+| `with(...rels)` | Eager loading |
+| `withHidden()` | Inclut les attributs cachés |
+| `withoutHidden(show?)` | Contrôle visibilité |
+| `orderBy(col, dir?)` | Tri |
+| `limit(n)` / `offset(n)` | Limite/Offset |
+| `paginate(page, perPage)` | Pagination |
+| `count()` | Compte |
+
+### Model (méthodes d'instance)
+
+| Méthode | Description |
+|---------|-------------|
+| `fill(attrs)` | Remplit les attributs |
+| `setAttribute(key, val)` | Définit un attribut |
+| `getAttribute(key)` | Récupère un attribut |
+| `save()` | Sauvegarde (insert ou update) |
+| `destroy()` | Supprime l'instance |
+| `load(...rels)` | Charge des relations |
+| `getDirty()` | Attributs modifiés |
+| `isDirty()` | A été modifié? |
+| `toJSON()` | Convertit en objet |
 
 ### QueryBuilder
 
-- `select(...columns)` - Sélectionner des colonnes
-- `where(column, operator, value)` - Clause WHERE
-- `whereIn(column, values)` - Clause WHERE IN
-- `whereNull(column)` - Clause WHERE NULL
-- `whereNotNull(column)` - Clause WHERE NOT NULL
-- `orWhere(column, operator, value)` - Clause OR WHERE
-- `orderBy(column, direction)` - Ordonner les résultats
-- `limit(value)` - Limiter les résultats
-- `offset(value)` - Décaler les résultats
-- `with(...relations)` - Eager loading
-- `get()` - Exécuter et récupérer
-- `first()` - Premier résultat
-- `paginate(page, perPage)` - Paginer les résultats
-- `count()` - Compter les résultats
-- `exists()` - Vérifier l’existence
-- `whereBetween(column, [min, max])` - Intervalle
-- `whereLike(column, pattern)` - LIKE
-- `whereHas(relation, cb?)` - Filtrer par relation (INNER JOIN)
-- `has(relation, opOrCount, [count])` - Existence relationnelle (GROUP BY/HAVING)
-- `whereDoesntHave(relation)` - Absence de relation (LEFT JOIN IS NULL)
-- `join(table, first, [operator], second)` - INNER JOIN
-- `leftJoin(table, first, [operator], second)` - LEFT JOIN
-- `withCount(relations)` - Ajoute {relation}_count via sous-requête
-- `distinct()` - SELECT DISTINCT
-- `groupBy(...cols)` - GROUP BY
-- `having(column, operator, value)` - HAVING
-- `insert(data)` - Insérer des données (array => insertMany)
-- `update(attributes)` - Mise à jour bulk
-- `updateAndFetch(attributes, relations?)` - Mise à jour + premier enregistrement (avec include)
-- `delete()` - Suppression bulk
-- `increment(column, amount?)` - Incrément atomique
-- `decrement(column, amount?)` - Décrément atomique
-- `columns([...])` - Alias de `select(...cols)`
-- `ordrer(column, direction?)` - Alias typo de `orderBy`
+| Méthode | Description |
+|---------|-------------|
+| `select(...cols)` / `columns([...])` | Sélection de colonnes |
+| `distinct()` | SELECT DISTINCT |
+| `where(col, op?, val)` | Clause WHERE |
+| `whereIn(col, vals)` | WHERE IN |
+| `whereNotIn(col, vals)` | WHERE NOT IN |
+| `whereNull(col)` | WHERE NULL |
+| `whereNotNull(col)` | WHERE NOT NULL |
+| `orWhere(col, op?, val)` | OR WHERE |
+| `whereBetween(col, [min, max])` | WHERE BETWEEN |
+| `whereLike(col, pattern)` | WHERE LIKE |
+| `whereHas(rel, cb?)` | Filtre par relation |
+| `has(rel, op?, count)` | Existence relationnelle |
+| `whereDoesntHave(rel)` | Absence de relation |
+| `orderBy(col, dir?)` / `ordrer(...)` | Tri |
+| `limit(n)` / `take(n)` | Limite |
+| `offset(n)` / `skip(n)` | Offset |
+| `groupBy(...cols)` | GROUP BY |
+| `having(col, op, val)` | HAVING |
+| `join(table, first, op?, second)` | INNER JOIN |
+| `leftJoin(table, first, op?, second)` | LEFT JOIN |
+| `with(...rels)` | Eager loading |
+| `withCount(rels)` | Ajoute {rel}_count |
+| `get()` | Exécute et retourne tous |
+| `first()` | Premier résultat |
+| `firstOrFail()` | Premier ou erreur |
+| `paginate(page, perPage)` | Pagination |
+| `count()` | Compte |
+| `exists()` | Vérifie l'existence |
+| `insert(data)` | Insert |
+| `update(attrs)` | Update |
+| `updateAndFetch(attrs, rels?)` | Update + fetch |
+| `delete()` | Delete |
+| `increment(col, amount?)` | Incrément atomique |
+| `decrement(col, amount?)` | Décrément atomique |
+| `clone()` | Clone le query builder |
 
 ## 🛠️ Outils CLI
 
-### 1. Initialisation d'un projet
+### outlet-init
+
+Initialise un nouveau projet avec configuration de base de données.
 
 ```bash
 outlet-init
 ```
 
-Crée un nouveau projet avec configuration de base de données, modèle exemple et fichier d'utilisation.
+Génère:
+- Fichier de configuration `database/config.js`
+- Fichier `.env` avec les paramètres
+- Modèle exemple
+- Fichier d'utilisation
 
-Depuis la version actuelle, outlet-init peut aussi générer un fichier `.env` avec les paramètres saisis (driver, hôte, port, utilisateur, mot de passe, base de données ou fichier SQLite). Si `.env` existe déjà, il n'est pas modifié.
+### outlet-migrate
 
-Astuce: dans les environnements CI/tests, vous pouvez désactiver l'installation automatique du driver en définissant `OUTLET_INIT_NO_INSTALL=1`.
-
-### 2. Système de Migrations
+Système complet de migrations.
 
 ```bash
 # Créer une migration
 outlet-migrate make create_users_table
 
 # Exécuter les migrations
-outlet-migrate
-# Option 1: migrate
-
-# Rollback dernière migration
-outlet-migrate
-# Option 2: rollback
-
-# Voir le statut
-outlet-migrate
-# Option 6: status
-
-# Reset toutes les migrations
-outlet-migrate
-# Option 3: reset
-
-# Refresh (reset + migrate)
-outlet-migrate
-# Option 4: refresh
-
-# Fresh (drop all + migrate)
-outlet-migrate
-# Option 5: fresh
-# Exécuter les migrations en se basant sur .env si database/config.js est absent
-# (DB_DRIVER, DB_HOST, DB_DATABASE, etc.)
 outlet-migrate migrate
 
 # Voir le statut
@@ -646,84 +652,66 @@ outlet-migrate status
 # Annuler la dernière migration
 outlet-migrate rollback --steps 1
 
-# Astuce: si le fichier database/config.js existe, il est prioritaire sur .env
+# Reset toutes les migrations
+outlet-migrate reset --yes
+
+# Refresh (reset + migrate)
+outlet-migrate refresh --yes
+
+# Fresh (drop all + migrate)
+outlet-migrate fresh --yes
 ```
 
-**Fonctionnalités des Migrations :**
+**Fonctionnalités des Migrations:**
 
-- ✅ **Création et gestion des migrations** (create, alter, drop tables)
-- ✅ **Types de colonnes** : id, string, text, integer, boolean, date, datetime, timestamp, decimal, float, json, enum, uuid, foreignId
-- ✅ **Modificateurs** : nullable, default, unique, index, unsigned, autoIncrement, comment, after, first
-- ✅ **Clés étrangères** : foreign(), constrained(), onDelete(), onUpdate(), CASCADE
-- ✅ **Index** : index(), unique(), fullText()
-- ✅ **Manipulation de colonnes** : renameColumn(), dropColumn(), dropTimestamps()
-- ✅ **Migrations réversibles** : Méthodes up() et down()
-- ✅ **Batch tracking** : Rollback précis par batch
-- ✅ **SQL personnalisé** : execute() pour commandes avancées
-- ✅ **Multi-DB** : Support MySQL, PostgreSQL, SQLite
+- ✅ Création et gestion des migrations (create, alter, drop tables)
+- ✅ Types de colonnes: id, string, text, integer, boolean, date, datetime, timestamp, decimal, float, json, enum, uuid, foreignId
+- ✅ Modificateurs: nullable, default, unique, index, unsigned, autoIncrement, comment, after, first
+- ✅ Clés étrangères: foreign(), constrained(), onDelete(), onUpdate(), CASCADE
+- ✅ Index: index(), unique(), fullText()
+- ✅ Manipulation: renameColumn(), dropColumn(), dropTimestamps()
+- ✅ Migrations réversibles: Méthodes up() et down()
+- ✅ Batch tracking: Rollback précis par batch
+- ✅ SQL personnalisé: execute() pour commandes avancées
 
-**Documentation complète :**
+### outlet-convert
 
-- [MIGRATIONS.md](docs/MIGRATIONS.md) - Guide complet des migrations
-
-### 3. Conversion SQL vers ORM
+Convertit des schémas SQL en modèles ORM.
 
 ```bash
 outlet-convert
 ```
 
-Convertit automatiquement des schémas SQL en modèles ORM :
+**Options:**
+1. Depuis un fichier SQL local
+2. Depuis une base de données connectée
 
-#### Option 1 : Depuis un fichier SQL local
-
-- Parsez des fichiers `.sql` contenant des instructions `CREATE TABLE`
-- Génère automatiquement les modèles avec relations, casts, fillable, hidden
-
-#### Option 2 : Depuis une base de données connectée
-
-- Connectez-vous à MySQL, PostgreSQL ou SQLite
-- Liste toutes les tables et génère les modèles correspondants
-- Détecte automatiquement les relations et types de données
-
-**Fonctionnalités de conversion :**
-
+**Fonctionnalités:**
 - ✅ Détection automatique des types et casts
-- ✅ **Génération automatique de TOUTES les relations** :
-  - `belongsTo` : Détecté via clés étrangères
-  - `hasMany` : Généré automatiquement comme inverse de `belongsTo`
-  - `hasOne` : Détecté via clés étrangères UNIQUE
-  - `belongsToMany` : Détecté via tables pivot
+- ✅ Génération automatique de TOUTES les relations (belongsTo, hasMany, hasOne, belongsToMany)
 - ✅ Relations récursives (auto-relations)
 - ✅ Détection des champs sensibles (password, token, etc.)
 - ✅ Support des timestamps automatiques
-- ✅ Conversion des noms de tables en classes PascalCase
+- ✅ Conversion des noms en PascalCase
 
-### 4. Utilisation non-interactive (CI/CD)
+## 📚 Documentation
 
-Les commandes de migration supportent un mode non-interactif pratique pour l’automatisation:
-
-```bash
-# Exécuter les migrations en lisant la config depuis .env
-outlet-migrate migrate
-
-# Voir le statut
-outlet-migrate status
-
-# Annuler N étapes
-outlet-migrate rollback --steps 1
-```
-
-Astuce: si `database/config.js` est présent, il a priorité sur `.env`.
-
-**Documentation complète :**
-
-- [SQL_CONVERSION.md](docs/SQL_CONVERSION.md) - Guide de conversion
-- [RELATIONS_DETECTION.md](docs/RELATIONS_DETECTION.md) - Détection des relations
+- [Guide des Migrations](docs/MIGRATIONS.md)
+- [Conversion SQL](docs/SQL_CONVERSION.md)
+- [Détection des Relations](docs/RELATIONS_DETECTION.md)
+- [Guide de démarrage rapide](docs/QUICKSTART.md)
+- [Architecture](docs/ARCHITECTURE.md)
 
 ## 🤝 Contribution
 
 Les contributions sont les bienvenues! N'hésitez pas à ouvrir une issue ou un pull request.
 
+Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour les guidelines.
+
 ## 📄 Licence
 
-MIT
+MIT - Voir [LICENSE](LICENSE) pour plus de détails.
+
+---
+
+Créé par [omgbwa-yasse](https://github.com/omgbwa-yasse)
