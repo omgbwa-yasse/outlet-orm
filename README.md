@@ -102,9 +102,21 @@ Model.setConnection(db);
 | `DB_DATABASE` / `DB_NAME` | Nom de la base | - |
 | `DB_FILE` / `SQLITE_DB` | Fichier SQLite | `:memory:` |
 
+### Importation
+
+```javascript
+// CommonJS
+const { DatabaseConnection, Model } = require('outlet-orm');
+
+// ES Modules
+import { DatabaseConnection, Model } from 'outlet-orm';
+```
+
 ### Définir un modèle
 
 ```javascript
+const { Model } = require('outlet-orm');
+
 class User extends Model {
   static table = 'users';
   static primaryKey = 'id';           // Par défaut: 'id'
@@ -295,6 +307,8 @@ const withCounts = await User.withCount('posts').get();
 ### One to One (hasOne)
 
 ```javascript
+const { Model } = require('outlet-orm');
+
 class User extends Model {
   profile() {
     return this.hasOne(Profile, 'user_id');
@@ -308,6 +322,8 @@ const profile = await user.profile().get();
 ### One to Many (hasMany)
 
 ```javascript
+const { Model } = require('outlet-orm');
+
 class User extends Model {
   posts() {
     return this.hasMany(Post, 'user_id');
@@ -321,6 +337,8 @@ const posts = await user.posts().get();
 ### Belongs To (belongsTo)
 
 ```javascript
+const { Model } = require('outlet-orm');
+
 class Post extends Model {
   author() {
     return this.belongsTo(User, 'user_id');
@@ -334,6 +352,8 @@ const author = await post.author().get();
 ### Many to Many (belongsToMany)
 
 ```javascript
+const { Model } = require('outlet-orm');
+
 class User extends Model {
   roles() {
     return this.belongsToMany(
@@ -359,6 +379,8 @@ await user.roles().sync([1, 3]);       // Synchroniser (remplace tout)
 Accéder à une relation distante via un modèle intermédiaire.
 
 ```javascript
+const { Model } = require('outlet-orm');
+
 class User extends Model {
   // User -> Post -> Comment
   comments() {
@@ -373,6 +395,8 @@ const allComments = await user.comments().get();
 ### Has One Through (hasOneThrough)
 
 ```javascript
+const { Model } = require('outlet-orm');
+
 class User extends Model {
   // User -> Profile -> Country
   country() {
@@ -389,6 +413,8 @@ const country = await user.country().get();
 Les relations polymorphiques permettent à un modèle d'appartenir à plusieurs autres modèles.
 
 ```javascript
+const { Model } = require('outlet-orm');
+
 // Configuration du morph map
 Model.setMorphMap({
   'posts': Post,
@@ -460,6 +486,8 @@ users.forEach(user => {
 Les casts convertissent automatiquement les attributs:
 
 ```javascript
+const { Model } = require('outlet-orm');
+
 class User extends Model {
   static casts = {
     id: 'int',              // ou 'integer'
@@ -476,6 +504,8 @@ class User extends Model {
 ### Attributs cachés
 
 ```javascript
+const { Model } = require('outlet-orm');
+
 class User extends Model {
   static hidden = ['password', 'secret_token'];
 }
@@ -505,6 +535,8 @@ if (user && await bcrypt.compare(password, user.getAttribute('password'))) {
 ### Timestamps
 
 ```javascript
+const { Model } = require('outlet-orm');
+
 // Activés par défaut (created_at, updated_at)
 class User extends Model {
   static timestamps = true;
