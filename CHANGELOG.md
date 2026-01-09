@@ -2,7 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
-## [3.0.0] - 2025-01-XX
+## [3.1.0] - 2026-01-09
+
+### 🚀 New Features
+
+#### Simplified Connection Access
+- **`Model.getConnection()`**: New static method to access the database connection directly from Model
+- No need to import `DatabaseConnection` for most use cases
+- Automatic connection initialization from `.env` file
+
+### 📚 Documentation
+- Updated all documentation to use simplified `Model.getConnection()` pattern
+- Improved examples showing automatic connection from `.env`
+- Added TypeScript types for `getConnection()` method
+
+### 🔧 Improvements
+- Cleaner API: Users only need to import `Model` for most operations
+- Better developer experience with less boilerplate code
+- Consistent documentation across all guides
+
+---
+
+## [3.0.0] - 2025-01-08
 
 ### 🚀 Major Features
 

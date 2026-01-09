@@ -242,6 +242,8 @@ declare module 'outlet-orm' {
 
     // Static methods
     static setConnection(connection: DatabaseConnection): void;
+    /** Get the active database connection (v3.0.0+) */
+    static getConnection(): DatabaseConnection;
     static query<T extends Model>(this: new () => T): QueryBuilder<T>;
     static all<T extends Model>(this: new () => T): Promise<T[]>;
     static find<T extends Model>(this: new () => T, id: any): Promise<T | null>;

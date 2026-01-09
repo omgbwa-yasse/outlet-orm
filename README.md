@@ -5,6 +5,8 @@
 
 Un ORM JavaScript inspiré de Laravel Eloquent pour Node.js avec support pour MySQL, PostgreSQL et SQLite.
 
+📚 **[Documentation complète disponible dans `/docs`](./docs/INDEX.md)**
+
 ## ✅ Prérequis et compatibilité
 
 - Node.js >= 18 (recommandé/exigé)
@@ -75,18 +77,45 @@ outlet-migrate migrate
 
 ### Configuration de la connexion
 
-Outlet ORM peut charger automatiquement le provider (driver) et les paramètres d'accès à la base de données depuis un fichier `.env` dans votre application.
+Outlet ORM charge automatiquement la connexion depuis le fichier `.env`. **Plus besoin d'importer DatabaseConnection !**
+
+#### Fichier `.env`
+
+```env
+DB_DRIVER=mysql
+DB_HOST=localhost
+DB_DATABASE=myapp
+DB_USER=root
+DB_PASSWORD=secret
+DB_PORT=3306
+```
+
+#### Utilisation simplifiée
+
+```javascript
+const { Model } = require('outlet-orm');
+
+class User extends Model {
+  static table = 'users';
+}
+
+// C'est tout ! La connexion est automatique
+const users = await User.all();
+```
+
+#### Configuration manuelle (optionnel)
+
+Si vous avez besoin de contrôler la connexion :
 
 ```javascript
 const { DatabaseConnection, Model } = require('outlet-orm');
 
 // Option 1 – via .env (aucun paramètre nécessaire)
-// DB_DRIVER=mysql, DB_HOST=localhost, DB_DATABASE=myapp, DB_USER=root, DB_PASSWORD=secret
 const db = new DatabaseConnection();
 
-// Option 2 – via objet de configuration (prend le dessus sur .env)
+// Option 2 – via objet de configuration
 const db = new DatabaseConnection({
-  driver: 'mysql',      // 'mysql' | 'postgres' | 'sqlite'
+  driver: 'mysql',
   host: 'localhost',
   database: 'myapp',
   user: 'root',
@@ -94,7 +123,7 @@ const db = new DatabaseConnection({
   port: 3306
 });
 
-// Définir la connexion par défaut
+// Définir la connexion manuellement (optionnel)
 Model.setConnection(db);
 ```
 
@@ -113,11 +142,14 @@ Model.setConnection(db);
 ### Importation
 
 ```javascript
-// CommonJS
-const { DatabaseConnection, Model } = require('outlet-orm');
+// CommonJS - Import simple (connexion automatique via .env)
+const { Model } = require('outlet-orm');
 
 // ES Modules
-import { DatabaseConnection, Model } from 'outlet-orm';
+import { Model } from 'outlet-orm';
+
+// Si besoin de contrôle manuel sur la connexion
+const { DatabaseConnection, Model } = require('outlet-orm');
 ```
 
 ### Définir un modèle
@@ -766,17 +798,18 @@ try {
 Mode debug pour analyser vos requêtes:
 
 ```javascript
-const { DatabaseConnection } = require('outlet-orm');
+const { Model } = require('outlet-orm');
 
 // Activer le logging
-DatabaseConnection.enableQueryLog();
+const db = Model.getConnection();
+db.enableQueryLog();
 
 // Exécuter des requêtes
 await User.where('status', 'active').get();
 await Post.with('author').get();
 
 // Récupérer le log
-const queries = DatabaseConnection.getQueryLog();
+const queries = db.getQueryLog();
 console.log(queries);
 // [
 //   { sql: 'SELECT * FROM users WHERE status = ?', params: ['active'], duration: 15, timestamp: Date },
@@ -784,13 +817,13 @@ console.log(queries);
 // ]
 
 // Vider le log
-DatabaseConnection.flushQueryLog();
+db.flushQueryLog();
 
 // Désactiver le logging
-DatabaseConnection.disableQueryLog();
+db.disableQueryLog();
 
 // Vérifier si actif
-if (DatabaseConnection.isLogging()) {
+if (db.isLogging()) {
   console.log('Logging actif');
 }
 ```
@@ -830,6 +863,7 @@ if (DatabaseConnection.isLogging()) {
 | Méthode | Description |
 |---------|-------------|
 | `setConnection(db)` | Définit la connexion par défaut |
+| `getConnection()` | Récupère la connexion (v3.0.0+) |
 | `setMorphMap(map)` | Définit le mapping polymorphique |
 | `query()` | Retourne un QueryBuilder |
 | `all()` | Tous les enregistrements |

@@ -14,27 +14,22 @@ npm install outlet-orm sqlite3
 
 ## Configuration Initiale
 
-### 1. Créer une connexion à la base de données
+### 1. Créer le fichier `.env`
 
-```javascript
-const { DatabaseConnection, Model } = require('outlet-orm');
-
-const db = new DatabaseConnection({
-  driver: 'mysql',
-  host: 'localhost',
-  database: 'myapp',
-  user: 'root',
-  password: 'secret',
-  port: 3306
-});
-
-// Définir comme connexion par défaut
-Model.setConnection(db);
+```env
+DB_DRIVER=mysql
+DB_HOST=localhost
+DB_DATABASE=myapp
+DB_USER=root
+DB_PASSWORD=secret
+DB_PORT=3306
 ```
 
 ### 2. Créer votre premier modèle
 
 ```javascript
+const { Model } = require('outlet-orm');
+
 class User extends Model {
   static table = 'users';
   static fillable = ['name', 'email', 'password'];
@@ -44,6 +39,9 @@ class User extends Model {
     email_verified: 'boolean'
   };
 }
+```
+
+> 💡 **Connexion automatique** : Pas besoin d'importer `DatabaseConnection` ! Le Model se connecte automatiquement via `.env`.
 ```
 
 ### 3. Utiliser le modèle

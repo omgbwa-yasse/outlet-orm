@@ -642,9 +642,8 @@ outlet-migrate
 
 ```javascript
 // Si la table migrations est corrompue
-const { DatabaseConnection } = require('outlet-orm');
-const db = new DatabaseConnection(config);
-await db.connect();
+const { Model } = require('outlet-orm');
+const db = Model.getConnection();
 
 // Supprimer et recréer
 await db.execute('DROP TABLE migrations');

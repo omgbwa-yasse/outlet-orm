@@ -49,6 +49,15 @@ class Model {
   }
 
   /**
+   * Get the current database connection
+   * @returns {DatabaseConnection}
+   */
+  static getConnection() {
+    this.ensureConnection();
+    return this.connection;
+  }
+
+  /**
    * Set the default database connection for all models
    * @param {DatabaseConnection} connection
    */
