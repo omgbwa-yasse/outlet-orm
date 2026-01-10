@@ -164,6 +164,14 @@ class TrashController {
 ### Suppression en cascade
 
 ```javascript
+const { Model } = require('outlet-orm');
+
+// Définition des modèles
+class Post extends Model {
+  static table = 'posts';
+  static softDeletes = true;
+}
+
 class User extends Model {
   static table = 'users';
   static softDeletes = true;

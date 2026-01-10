@@ -46,7 +46,26 @@ import {
 ### Définir un modèle
 
 ```typescript
-import { Model } from 'outlet-orm';
+import { 
+  Model,
+  HasOneRelation,
+  HasManyRelation,
+  BelongsToRelation,
+  BelongsToManyRelation 
+} from 'outlet-orm';
+
+// Définition des modèles liés
+class Post extends Model {
+  static table = 'posts';
+}
+
+class Profile extends Model {
+  static table = 'profiles';
+}
+
+class Role extends Model {
+  static table = 'roles';
+}
 
 interface UserAttributes {
   id: number;
@@ -344,6 +363,25 @@ import {
   MorphManyRelation
 } from 'outlet-orm';
 
+// Définition des modèles liés
+class Profile extends Model { static table = 'profiles'; }
+class Role extends Model { static table = 'roles'; }
+class Comment extends Model { static table = 'comments'; }
+
+class Post extends Model {
+  static table = 'posts';
+
+  // Appartient à
+  author(): BelongsToRelation {
+    return this.belongsTo(User, 'user_id');
+  }
+
+  // Polymorphique
+  comments(): MorphManyRelation {
+    return this.morphMany(Comment, 'commentable');
+  }
+}
+
 class User extends Model {
   static table = 'users';
 
@@ -360,20 +398,6 @@ class User extends Model {
   // Plusieurs-à-plusieurs
   roles(): BelongsToManyRelation {
     return this.belongsToMany(Role, 'role_user', 'user_id', 'role_id');
-  }
-}
-
-class Post extends Model {
-  static table = 'posts';
-
-  // Appartient à
-  author(): BelongsToRelation {
-    return this.belongsTo(User, 'user_id');
-  }
-
-  // Polymorphique
-  comments(): MorphManyRelation {
-    return this.morphMany(Comment, 'commentable');
   }
 }
 ```
@@ -439,9 +463,9 @@ if (!result.valid) {
 
 ```typescript
 // models/index.ts
-import { Model, DatabaseConnection } from 'outlet-orm';
+import { Model, DatabaseConnection, QueryBuilder } from 'outlet-orm';
 
-// Configuration
+// Configuration (optionnel si .env est configuré)
 const db = new DatabaseConnection({
   driver: 'mysql',
   host: process.env.DB_HOST || 'localhost',
@@ -452,6 +476,22 @@ const db = new DatabaseConnection({
 });
 
 Model.setConnection(db);
+
+// Post Model (défini en premier car référencé par User)
+export class Post extends Model {
+  static table = 'posts';
+  static fillable = ['title', 'content', 'user_id', 'status'];
+  static softDeletes = true;
+
+  static scopes = {
+    published: (q: QueryBuilder<Post>) => q.where('status', 'published'),
+    draft: (q: QueryBuilder<Post>) => q.where('status', 'draft')
+  };
+
+  author() {
+    return this.belongsTo(User, 'user_id');
+  }
+}
 
 // User Model
 export class User extends Model {
@@ -467,22 +507,6 @@ export class User extends Model {
   // Méthodes personnalisées
   async getPostCount(): Promise<number> {
     return await Post.where('user_id', this.getAttribute('id')).count();
-  }
-}
-
-// Post Model
-export class Post extends Model {
-  static table = 'posts';
-  static fillable = ['title', 'content', 'user_id', 'status'];
-  static softDeletes = true;
-
-  static scopes = {
-    published: (q: QueryBuilder) => q.where('status', 'published'),
-    draft: (q: QueryBuilder) => q.where('status', 'draft')
-  };
-
-  author() {
-    return this.belongsTo(User, 'user_id');
   }
 }
 

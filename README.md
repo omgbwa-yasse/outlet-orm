@@ -157,6 +157,10 @@ const { DatabaseConnection, Model } = require('outlet-orm');
 ```javascript
 const { Model } = require('outlet-orm');
 
+// Définition des modèles liés (voir Relations)
+class Post extends Model { static table = 'posts'; }
+class Profile extends Model { static table = 'profiles'; }
+
 class User extends Model {
   static table = 'users';
   static primaryKey = 'id';           // Par défaut: 'id'
@@ -349,7 +353,11 @@ const withCounts = await User.withCount('posts').get();
 ```javascript
 const { Model } = require('outlet-orm');
 
+class Profile extends Model { static table = 'profiles'; }
+
 class User extends Model {
+  static table = 'users';
+  
   profile() {
     return this.hasOne(Profile, 'user_id');
   }
@@ -364,7 +372,11 @@ const profile = await user.profile().get();
 ```javascript
 const { Model } = require('outlet-orm');
 
+class Post extends Model { static table = 'posts'; }
+
 class User extends Model {
+  static table = 'users';
+  
   posts() {
     return this.hasMany(Post, 'user_id');
   }
@@ -379,7 +391,11 @@ const posts = await user.posts().get();
 ```javascript
 const { Model } = require('outlet-orm');
 
+class User extends Model { static table = 'users'; }
+
 class Post extends Model {
+  static table = 'posts';
+  
   author() {
     return this.belongsTo(User, 'user_id');
   }
@@ -394,7 +410,11 @@ const author = await post.author().get();
 ```javascript
 const { Model } = require('outlet-orm');
 
+class Role extends Model { static table = 'roles'; }
+
 class User extends Model {
+  static table = 'users';
+  
   roles() {
     return this.belongsToMany(
       Role,

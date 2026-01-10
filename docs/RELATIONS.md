@@ -21,6 +21,8 @@ Outlet ORM supporte toutes les relations Eloquent-style pour lier vos modèles.
 Un utilisateur a un profil.
 
 ```javascript
+const { Model } = require('outlet-orm');
+
 class User extends Model {
   static table = 'users';
 
@@ -52,6 +54,8 @@ console.log(user.profile); // { id: 1, bio: '...', avatar: '...' }
 Un utilisateur a plusieurs posts.
 
 ```javascript
+const { Model } = require('outlet-orm');
+
 class User extends Model {
   static table = 'users';
 
@@ -82,6 +86,12 @@ console.log(post.author); // { id: 1, name: 'John' }
 Inverse de hasOne et hasMany.
 
 ```javascript
+const { Model } = require('outlet-orm');
+
+// Définitions des modèles liés
+class User extends Model { static table = 'users'; }
+class Post extends Model { static table = 'posts'; }
+
 class Comment extends Model {
   static table = 'comments';
 
@@ -355,12 +365,19 @@ for (const post of user.posts) {
 ### Blog complet
 
 ```javascript
-class User extends Model {
-  static table = 'users';
+const { Model } = require('outlet-orm');
 
-  posts() { return this.hasMany(Post, 'user_id'); }
-  profile() { return this.hasOne(Profile, 'user_id'); }
-  roles() { return this.belongsToMany(Role, 'role_user', 'user_id', 'role_id'); }
+// Définition de tous les modèles
+class Profile extends Model { static table = 'profiles'; }
+class Role extends Model { static table = 'roles'; }
+class Tag extends Model { static table = 'tags'; }
+class Image extends Model { static table = 'images'; }
+
+class Comment extends Model {
+  static table = 'comments';
+
+  post() { return this.belongsTo(Post, 'post_id'); }
+  author() { return this.belongsTo(User, 'user_id'); }
 }
 
 class Post extends Model {
@@ -372,11 +389,12 @@ class Post extends Model {
   image() { return this.morphOne(Image, 'imageable'); }
 }
 
-class Comment extends Model {
-  static table = 'comments';
+class User extends Model {
+  static table = 'users';
 
-  post() { return this.belongsTo(Post, 'post_id'); }
-  author() { return this.belongsTo(User, 'user_id'); }
+  posts() { return this.hasMany(Post, 'user_id'); }
+  profile() { return this.hasOne(Profile, 'user_id'); }
+  roles() { return this.belongsToMany(Role, 'role_user', 'user_id', 'role_id'); }
 }
 
 // Requête complète

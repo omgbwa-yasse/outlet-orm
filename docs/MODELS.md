@@ -7,6 +7,15 @@ Les modèles dans Outlet ORM suivent le pattern Active Record, inspiré de Larav
 ```javascript
 const { Model } = require('outlet-orm');
 
+// Définition des modèles liés (voir Relations pour plus de détails)
+class Post extends Model {
+  static table = 'posts';
+}
+
+class Profile extends Model {
+  static table = 'profiles';
+}
+
 class User extends Model {
   // Nom de la table (obligatoire)
   static table = 'users';

@@ -42,6 +42,11 @@
 ```javascript
 const { Model } = require('outlet-orm');
 
+// Définition du modèle Post (voir Relations)
+class Post extends Model {
+  static table = 'posts';
+}
+
 // Définir un modèle (connexion automatique via .env)
 class User extends Model {
   static table = 'users';
