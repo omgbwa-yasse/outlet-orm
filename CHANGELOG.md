@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.0] - 2026-01-09
+
+### 📚 Documentation
+- Fixed missing model definitions in all documentation examples
+- All code examples now show complete, runnable code
+- Added `Post`, `Profile`, `Role`, `Comment` definitions where referenced
+- Improved TypeScript examples with proper model ordering
+
+---
+
 ## [3.1.0] - 2026-01-09
 
 ### 🚀 New Features
