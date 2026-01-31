@@ -32,56 +32,69 @@ Si aucun driver n'est installé, un message d'erreur explicite vous indiquera le
 
 Organisez votre projet utilisant Outlet ORM comme suit :
 
+> 🔐 **Sécurité** : Voir le [Guide de Sécurité](./docs/SECURITY.md) pour les bonnes pratiques.
+
 ```
 mon-projet/
-├── .env                        # Configuration de la base de données
+├── .env                        # ⚠️ JAMAIS commité (dans .gitignore)
+├── .env.example                # Template sans secrets
+├── .gitignore                  # Exclure .env, node_modules, logs
 ├── package.json
+├── config/                     # 🔒 Configuration centralisée
+│   ├── app.js                  # Config générale
+│   ├── database.js             # Config DB (lit .env)
+│   └── security.js             # Rate limit, helmet, CORS...
 ├── database/
 │   ├── config.js               # Config migrations (généré par outlet-init)
 │   └── migrations/             # Vos fichiers de migration
-│       ├── 20240101_create_users_table.js
-│       └── 20240102_create_posts_table.js
 ├── models/                     # Vos classes Model
 │   ├── User.js
 │   ├── Post.js
 │   └── Comment.js
 ├── controllers/                # Vos contrôleurs (logique métier)
 │   ├── UserController.js
-│   ├── PostController.js
-│   └── CommentController.js
+│   └── PostController.js
 ├── routes/                     # Vos fichiers de routes
 │   ├── index.js
-│   ├── userRoutes.js
-│   └── postRoutes.js
-├── middlewares/                # Vos middlewares
-│   ├── auth.js
-│   └── validation.js
+│   └── userRoutes.js
+├── middlewares/                # 🔒 Middlewares de sécurité
+│   ├── auth.js                 # Authentification JWT
+│   ├── authorization.js        # Contrôle des permissions (RBAC)
+│   ├── rateLimiter.js          # Protection anti-DDoS
+│   ├── validator.js            # Validation des entrées
+│   └── errorHandler.js         # Gestion centralisée des erreurs
 ├── services/                   # Vos services (logique réutilisable)
 │   ├── AuthService.js
 │   └── EmailService.js
-├── assets/                     # Ressources statiques
-│   ├── images/                 # Images (png, jpg, svg...)
-│   ├── videos/                 # Fichiers vidéo
-│   ├── icons/                  # Icônes
-│   ├── fonts/                  # Polices personnalisées
-│   ├── css/                    # Feuilles de style
-│   └── js/                     # Scripts front-end
+├── utils/                      # 🔒 Utilitaires sécurité
+│   ├── hash.js                 # Hachage mots de passe (bcrypt)
+│   └── token.js                # Génération tokens sécurisés
+├── validators/                 # 🔒 Schémas de validation
+│   └── userValidator.js
+├── public/                     # ✅ Seul dossier accessible publiquement
+│   ├── images/
+│   ├── css/
+│   └── js/
+├── uploads/                    # ⚠️ Fichiers uploadés (validés)
+├── logs/                       # 📋 Journaux (non versionnés)
 ├── src/                        # Votre code applicatif
 │   └── index.js
 └── tests/                      # Vos tests
     └── models.test.js
 ```
 
-| Dossier | Rôle | Créé par |
+| Dossier | Rôle | Sécurité |
 |---------|------|----------|
-| `database/config.js` | Configuration des migrations | `outlet-init` |
-| `database/migrations/` | Fichiers de migration | `outlet-migrate make` |
-| `models/` | Vos classes Model | Vous (recommandé) |
-| `controllers/` | Vos contrôleurs (logique métier) | Vous (recommandé) |
-| `routes/` | Définition des routes API/Web | Vous (recommandé) |
-| `middlewares/` | Middlewares d'authentification, validation, etc. | Vous (recommandé) |
-| `services/` | Services réutilisables (email, auth, etc.) | Vous (recommandé) |
-| `assets/` | Ressources statiques (images, vidéos, icônes, fonts, css, js) | Vous (recommandé) |
+| `config/` | Configuration centralisée | 🔒 Lit les secrets depuis .env |
+| `database/` | Migrations et config DB | `outlet-init` |
+| `models/` | Classes Model avec `hidden` et `fillable` | 🔒 Mass assignment protection |
+| `controllers/` | Logique métier | Valider les entrées |
+| `routes/` | Définition des routes API/Web | 🔒 Appliquer middlewares auth |
+| `middlewares/` | Auth, validation, rate limiting | 🔒 **Critique pour la sécurité** |
+| `services/` | Services réutilisables | Isoler la logique sensible |
+| `utils/` | Hash, tokens, encryption | 🔒 Ne jamais exposer |
+| `public/` | Seul dossier accessible | ✅ Fichiers statiques sûrs |
+| `logs/` | Journaux d'accès/erreurs | 📋 Dans .gitignore |
 
 ## ✨ Fonctionnalités clés
 

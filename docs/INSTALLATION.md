@@ -32,56 +32,61 @@ npm install sqlite3
 
 Après installation, organisez votre projet comme suit :
 
+> 🔐 **Sécurité** : Voir le [Guide de Sécurité](SECURITY.md) pour les bonnes pratiques.
+
 ```
 mon-projet/
-├── .env                        # Configuration de la base de données
+├── .env                        # ⚠️ JAMAIS commité (dans .gitignore)
+├── .env.example                # Template sans secrets
+├── .gitignore                  # Exclure .env, node_modules, logs
 ├── package.json
+├── config/                     # 🔒 Configuration centralisée
+│   ├── app.js                  # Config générale
+│   ├── database.js             # Config DB (lit .env)
+│   └── security.js             # Rate limit, helmet, CORS...
 ├── database/
 │   ├── config.js               # Config migrations (généré par outlet-init)
-│   └── migrations/             # Vos fichiers de migration
-│       ├── 20240101_create_users_table.js
-│       └── 20240102_create_posts_table.js
-├── models/                     # Vos classes Model (recommandé)
+│   └── migrations/
+├── models/                     # Vos classes Model
 │   ├── User.js
-│   ├── Post.js
-│   └── Comment.js
-├── controllers/                # Vos contrôleurs (logique métier)
+│   └── Post.js
+├── controllers/                # Vos contrôleurs
 │   ├── UserController.js
-│   ├── PostController.js
-│   └── CommentController.js
-├── routes/                     # Vos fichiers de routes
+│   └── PostController.js
+├── routes/                     # Vos routes
 │   ├── index.js
-│   ├── userRoutes.js
-│   └── postRoutes.js
-├── middlewares/                # Vos middlewares
-│   ├── auth.js
-│   └── validation.js
-├── services/                   # Vos services (logique réutilisable)
-│   ├── AuthService.js
-│   └── EmailService.js
-├── assets/                     # Ressources statiques
-│   ├── images/                 # Images (png, jpg, svg...)
-│   ├── videos/                 # Fichiers vidéo
-│   ├── icons/                  # Icônes
-│   ├── fonts/                  # Polices personnalisées
-│   ├── css/                    # Feuilles de style
-│   └── js/                     # Scripts front-end
-├── src/                        # Votre code applicatif
+│   └── userRoutes.js
+├── middlewares/                # 🔒 Middlewares de sécurité
+│   ├── auth.js                 # Authentification JWT
+│   ├── authorization.js        # Contrôle des permissions
+│   ├── rateLimiter.js          # Protection anti-DDoS
+│   ├── validator.js            # Validation des entrées
+│   └── errorHandler.js         # Gestion des erreurs
+├── services/                   # Services métier
+├── utils/                      # 🔒 Utilitaires sécurité
+│   ├── hash.js                 # Hachage (bcrypt)
+│   └── token.js                # Tokens JWT
+├── validators/                 # 🔒 Schémas de validation
+├── public/                     # ✅ Fichiers statiques publics
+│   ├── images/
+│   ├── css/
+│   └── js/
+├── uploads/                    # ⚠️ Fichiers uploadés
+├── logs/                       # 📋 Journaux (non versionnés)
+├── src/
 │   └── index.js
-└── tests/                      # Vos tests
-    └── models.test.js
+└── tests/
 ```
 
-| Dossier | Rôle | Créé par |
+| Dossier | Rôle | Sécurité |
 |---------|------|----------|
-| `database/config.js` | Configuration des migrations | `outlet-init` |
-| `database/migrations/` | Fichiers de migration | `outlet-migrate make` |
-| `models/` | Vos classes Model | Vous (recommandé) |
-| `controllers/` | Vos contrôleurs (logique métier) | Vous (recommandé) |
-| `routes/` | Définition des routes API/Web | Vous (recommandé) |
-| `middlewares/` | Middlewares d'authentification, validation, etc. | Vous (recommandé) |
-| `services/` | Services réutilisables (email, auth, etc.) | Vous (recommandé) |
-| `assets/` | Ressources statiques (images, vidéos, icônes, fonts, css, js) | Vous (recommandé) |
+| `config/` | Configuration centralisée | 🔒 Lit .env |
+| `database/` | Migrations | `outlet-init` |
+| `models/` | Classes Model | 🔒 `hidden`, `fillable` |
+| `middlewares/` | Auth, validation, rate limit | 🔒 **Critique** |
+| `utils/` | Hash, tokens | 🔒 Ne pas exposer |
+| `public/` | Fichiers statiques | ✅ Seul dossier public |
+| `logs/` | Journaux | 📋 `.gitignore` |
 
 ## Configuration
 

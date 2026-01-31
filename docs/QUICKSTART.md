@@ -14,56 +14,41 @@ npm install outlet-orm sqlite3
 
 ## Structure de Projet Recommandée
 
+> 🔐 **Sécurité** : Voir le [Guide de Sécurité](SECURITY.md) pour les bonnes pratiques.
+
 ```
 mon-projet/
-├── .env                        # Configuration de la base de données
+├── .env                        # ⚠️ JAMAIS commité
+├── .env.example                # Template sans secrets
+├── .gitignore
 ├── package.json
+├── config/                     # 🔒 Configuration
+│   └── security.js             # Rate limit, helmet...
 ├── database/
-│   ├── config.js               # Config migrations (généré par outlet-init)
-│   └── migrations/             # Vos fichiers de migration
-│       ├── 20240101_create_users_table.js
-│       └── 20240102_create_posts_table.js
-├── models/                     # Vos classes Model (recommandé)
-│   ├── User.js
-│   ├── Post.js
-│   └── Comment.js
-├── controllers/                # Vos contrôleurs (logique métier)
-│   ├── UserController.js
-│   ├── PostController.js
-│   └── CommentController.js
-├── routes/                     # Vos fichiers de routes
-│   ├── index.js
-│   ├── userRoutes.js
-│   └── postRoutes.js
-├── middlewares/                # Vos middlewares
+│   ├── config.js               # Config migrations
+│   └── migrations/
+├── models/                     # Vos classes Model
+├── controllers/                # Logique métier
+├── routes/                     # Routes API/Web
+├── middlewares/                # 🔒 Auth, validation, rate limit
 │   ├── auth.js
-│   └── validation.js
-├── services/                   # Vos services (logique réutilisable)
-│   ├── AuthService.js
-│   └── EmailService.js
-├── assets/                     # Ressources statiques
-│   ├── images/                 # Images (png, jpg, svg...)
-│   ├── videos/                 # Fichiers vidéo
-│   ├── icons/                  # Icônes
-│   ├── fonts/                  # Polices personnalisées
-│   ├── css/                    # Feuilles de style
-│   └── js/                     # Scripts front-end
-├── src/                        # Votre code applicatif
+│   ├── validator.js
+│   └── errorHandler.js
+├── services/                   # Services métier
+├── utils/                      # 🔒 Hash, tokens
+├── public/                     # ✅ Fichiers statiques publics
+├── logs/                       # 📋 Journaux
+├── src/
 │   └── index.js
-└── tests/                      # Vos tests
-    └── models.test.js
+└── tests/
 ```
 
-| Dossier | Rôle | Créé par |
+| Dossier | Rôle | Sécurité |
 |---------|------|----------|
-| `database/config.js` | Configuration des migrations | `outlet-init` |
-| `database/migrations/` | Fichiers de migration | `outlet-migrate make` |
-| `models/` | Vos classes Model | Vous (recommandé) |
-| `controllers/` | Vos contrôleurs (logique métier) | Vous (recommandé) |
-| `routes/` | Définition des routes API/Web | Vous (recommandé) |
-| `middlewares/` | Middlewares d'authentification, validation, etc. | Vous (recommandé) |
-| `services/` | Services réutilisables (email, auth, etc.) | Vous (recommandé) |
-| `assets/` | Ressources statiques (images, vidéos, icônes, fonts, css, js) | Vous (recommandé) |
+| `config/` | Configuration | 🔒 Lit .env |
+| `middlewares/` | Auth, validation | 🔒 **Critique** |
+| `utils/` | Hash, tokens | 🔒 Ne pas exposer |
+| `public/` | Fichiers statiques | ✅ Seul dossier public |
 
 ## Configuration Initiale
 

@@ -23,6 +23,9 @@
 - [Validation](VALIDATION.md)
 - [Query Logging](QUERY_LOGGING.md)
 
+### 🔐 Sécurité
+- [**Guide de Sécurité Backend**](SECURITY.md) - Structure sécurisée, middlewares, bonnes pratiques
+
 ### 📘 TypeScript (v4.0.0+)
 - [**TypeScript Guide Complet**](TYPESCRIPT.md) - Generic Model, Schema Builder typé, Migrations typées
 

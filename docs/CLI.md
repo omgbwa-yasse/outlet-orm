@@ -35,14 +35,20 @@ node node_modules/outlet-orm/bin/init.js
 ```
 
 Crée :
-- `database/config.js` - Configuration de la base de données
+- `config/` - Configuration centralisée (app, database, security)
+- `database/config.js` - Configuration des migrations
 - `database/migrations/` - Dossier des migrations
 - `models/` - Dossier des modèles
 - `controllers/` - Dossier des contrôleurs
 - `routes/` - Dossier des routes
-- `middlewares/` - Dossier des middlewares
+- `middlewares/` - Dossier des middlewares (auth, validation, errorHandler)
 - `services/` - Dossier des services
-- `assets/` - Dossier des ressources statiques (images, videos, icons, fonts, css, js)
+- `utils/` - Utilitaires (hash, token)
+- `validators/` - Schémas de validation
+- `public/` - Fichiers statiques publics (images, css, js)
+- `logs/` - Journaux d'application
+- `.env.example` - Template de configuration
+- `.gitignore` - Fichiers à ignorer
 
 ### migrate
 

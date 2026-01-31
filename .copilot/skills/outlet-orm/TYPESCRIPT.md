@@ -22,42 +22,35 @@
 
 ## Recommended Project Structure
 
+> 🔐 **Security**: See the Security Guide for TypeScript security patterns.
+
 ```
 my-project/
-├── .env                        # Database configuration
+├── .env                        # ⚠️ NEVER commit
+├── .gitignore
 ├── package.json
-├── tsconfig.json               # TypeScript config
+├── tsconfig.json
+├── config/                     # 🔒 Configuration
+│   └── security.ts
 ├── database/
-│   ├── config.js
 │   └── migrations/
-│       └── 20240101_create_users_table.ts
 ├── src/
 │   ├── models/                 # Typed Model classes
-│   │   ├── User.ts
-│   │   ├── Post.ts
-│   │   └── index.ts
-│   ├── controllers/            # Your controllers
-│   │   ├── UserController.ts
-│   │   └── PostController.ts
-│   ├── routes/                 # Your API routes
-│   │   ├── api.ts
-│   │   └── web.ts
-│   ├── middlewares/            # Custom middlewares
+│   │   ├── User.ts             # hidden: ['password']
+│   │   └── Post.ts
+│   ├── controllers/
+│   ├── routes/
+│   ├── middlewares/            # 🔒 Auth, validation
 │   │   ├── auth.ts
-│   │   └── validation.ts
-│   ├── services/               # Business logic services
-│   │   ├── UserService.ts
-│   │   └── EmailService.ts
-│   ├── types/                  # Custom type definitions
-│   │   └── models.d.ts
+│   │   └── validator.ts
+│   ├── services/
+│   ├── utils/                  # 🔒 Hash, tokens
+│   │   ├── hash.ts
+│   │   └── token.ts
+│   ├── types/
 │   └── index.ts
-├── assets/                     # Static assets
-│   ├── images/
-│   ├── videos/
-│   ├── icons/
-│   ├── fonts/
-│   ├── css/
-│   └── js/
+├── public/                     # ✅ Only public folder
+├── logs/                       # 📋 Not versioned
 └── tests/
 ```
 
