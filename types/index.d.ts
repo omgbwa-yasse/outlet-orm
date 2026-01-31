@@ -2,6 +2,50 @@
 
 declare module 'outlet-orm' {
 
+  // ==================== Type Utilities ====================
+
+  /** Event names for Model lifecycle hooks */
+  export type ModelEventName =
+    | 'creating' | 'created'
+    | 'updating' | 'updated'
+    | 'saving' | 'saved'
+    | 'deleting' | 'deleted'
+    | 'restoring' | 'restored';
+
+  /** SQL WHERE operators */
+  export type WhereOperator =
+    | '=' | '!=' | '<>'
+    | '>' | '>=' | '<' | '<='
+    | 'LIKE' | 'NOT LIKE' | 'like' | 'not like'
+    | 'IN' | 'NOT IN' | 'in' | 'not in'
+    | 'BETWEEN' | 'NOT BETWEEN'
+    | 'IS NULL' | 'IS NOT NULL';
+
+  /** Base attributes every model has */
+  export interface BaseModelAttributes {
+    id?: number | string;
+    created_at?: Date | string;
+    updated_at?: Date | string;
+    deleted_at?: Date | string | null;
+  }
+
+  /** Insert operation result */
+  export interface InsertResult {
+    insertId: number | string;
+    affectedRows: number;
+  }
+
+  /** Update operation result */
+  export interface UpdateResult {
+    affectedRows: number;
+    changedRows?: number;
+  }
+
+  /** Delete operation result */
+  export interface DeleteResult {
+    affectedRows: number;
+  }
+
   // ==================== Database Connection ====================
 
   export interface DatabaseConfig {
@@ -39,18 +83,18 @@ declare module 'outlet-orm' {
     static isLogging(): boolean;
 
     select(table: string, query: QueryObject): Promise<any[]>;
-    insert(table: string, data: Record<string, any>): Promise<{ insertId: any; affectedRows: number }>;
+    insert(table: string, data: Record<string, any>): Promise<InsertResult>;
     insertMany(table: string, data: Record<string, any>[]): Promise<{ affectedRows: number }>;
-    update(table: string, data: Record<string, any>, query: QueryObject): Promise<{ affectedRows: number }>;
-    delete(table: string, query: QueryObject): Promise<{ affectedRows: number }>;
+    update(table: string, data: Record<string, any>, query: QueryObject): Promise<UpdateResult>;
+    delete(table: string, query: QueryObject): Promise<DeleteResult>;
     count(table: string, query: QueryObject): Promise<number>;
     executeRawQuery(sql: string, params?: any[]): Promise<any[]>;
     /** Execute raw SQL and return driver-native results (used by migrations) */
     execute(sql: string, params?: any[]): Promise<any>;
     /** Atomically increment a column respecting query wheres */
-    increment(table: string, column: string, query: QueryObject, amount?: number): Promise<{ affectedRows: number }>;
+    increment(table: string, column: string, query: QueryObject, amount?: number): Promise<UpdateResult>;
     /** Atomically decrement a column respecting query wheres */
-    decrement(table: string, column: string, query: QueryObject, amount?: number): Promise<{ affectedRows: number }>;
+    decrement(table: string, column: string, query: QueryObject, amount?: number): Promise<UpdateResult>;
     close(): Promise<void>;
     /** Backwards-compatible alias used by CLI */
     disconnect(): Promise<void>;
@@ -72,7 +116,7 @@ declare module 'outlet-orm' {
 
   export interface WhereClause {
     column?: string;
-    operator?: string;
+    operator?: WhereOperator | string;
     value?: any;
     values?: any[];
     type: 'basic' | 'in' | 'notIn' | 'null' | 'notNull' | 'between' | 'like';
@@ -178,7 +222,32 @@ declare module 'outlet-orm' {
 
   export type CastType = 'int' | 'integer' | 'float' | 'double' | 'string' | 'bool' | 'boolean' | 'array' | 'json' | 'date' | 'datetime' | 'timestamp';
 
-  export type ValidationRule = 'required' | 'string' | 'number' | 'numeric' | 'email' | 'boolean' | 'date' | `min:${number}` | `max:${number}` | `in:${string}` | `regex:${string}`;
+  /** Individual validation rule types */
+  export type ValidationRule =
+    | 'required'
+    | 'string'
+    | 'number'
+    | 'numeric'
+    | 'integer'
+    | 'email'
+    | 'url'
+    | 'boolean'
+    | 'date'
+    | 'array'
+    | 'object'
+    | 'nullable'
+    | `min:${number}`
+    | `max:${number}`
+    | `between:${number},${number}`
+    | `in:${string}`
+    | `not_in:${string}`
+    | `regex:${string}`
+    | `size:${number}`
+    | `digits:${number}`
+    | `digits_between:${number},${number}`;
+
+  /** Validation rule as pipe-separated string */
+  export type ValidationRuleString = string;
 
   export interface ValidationResult {
     valid: boolean;
@@ -187,7 +256,11 @@ declare module 'outlet-orm' {
 
   export type EventCallback<T extends Model = Model> = (model: T) => boolean | void | Promise<boolean | void>;
 
-  export class Model {
+  /**
+   * Base Model class with optional generic for typed attributes
+   * @template TAttributes - Type of model attributes (defaults to Record<string, any>)
+   */
+  export class Model<TAttributes extends Record<string, any> = Record<string, any>> {
     static table: string;
     static primaryKey: string;
     static timestamps: boolean;
@@ -204,21 +277,25 @@ declare module 'outlet-orm' {
     static globalScopes: Record<string, (qb: QueryBuilder<any>) => void>;
 
     // Events
-    static eventListeners: Record<string, EventCallback[]>;
+    static eventListeners: Record<ModelEventName, EventCallback[]>;
 
     // Validation
-    static rules: Record<string, string | ValidationRule[]>;
+    static rules: Record<string, ValidationRuleString | ValidationRule[]>;
 
-    attributes: Record<string, any>;
-    original: Record<string, any>;
+    /** Model attributes with optional typing */
+    attributes: TAttributes;
+    /** Original attributes before modifications */
+    original: TAttributes;
+    /** Loaded relations */
     relations: Record<string, any>;
+    /** Whether the model exists in database */
     exists: boolean;
 
-    constructor(attributes?: Record<string, any>);
+    constructor(attributes?: Partial<TAttributes>);
 
-    // Event registration
-    static on(event: string, callback: EventCallback): void;
-    static fireEvent(event: string, model: Model): Promise<boolean>;
+    // Event registration with typed event names
+    static on(event: ModelEventName, callback: EventCallback): void;
+    static fireEvent(event: ModelEventName, model: Model): Promise<boolean>;
     static creating(callback: EventCallback): void;
     static created(callback: EventCallback): void;
     static updating(callback: EventCallback): void;
@@ -273,16 +350,21 @@ declare module 'outlet-orm' {
     /** Control visibility of hidden attributes (false = hide, true = show) */
     static withoutHidden<T extends Model>(this: new () => T, show?: boolean): QueryBuilder<T>;
 
-    // Instance methods
-    fill(attributes: Record<string, any>): this;
+    // Instance methods with typed attributes
+    /** Fill model with attributes */
+    fill(attributes: Partial<TAttributes>): this;
+    /** Set a single attribute with type safety */
+    setAttribute<K extends keyof TAttributes>(key: K, value: TAttributes[K]): this;
     setAttribute(key: string, value: any): this;
+    /** Get a single attribute with type safety */
+    getAttribute<K extends keyof TAttributes>(key: K): TAttributes[K];
     getAttribute(key: string): any;
     castAttribute(key: string, value: any): any;
     save(): Promise<this>;
     destroy(): Promise<boolean>;
-    getDirty(): Record<string, any>;
+    getDirty(): Partial<TAttributes>;
     isDirty(): boolean;
-    toJSON(): Record<string, any>;
+    toJSON(): TAttributes;
     /** Load relations on an existing instance. Supports dot-notation and arrays. */
     load(...relations: string[] | [string[]]): Promise<this>;
 
@@ -315,6 +397,21 @@ declare module 'outlet-orm' {
       localKey?: string,
       throughLocalKey?: string
     ): HasManyThroughRelation<T>;
+    /** Has one through intermediate model */
+    hasOneThrough<T extends Model>(
+      relatedFinal: new () => T,
+      through: new () => Model,
+      foreignKeyOnThrough?: string,
+      throughKeyOnFinal?: string,
+      localKey?: string,
+      throughLocalKey?: string
+    ): HasOneThroughRelation<T>;
+    /** Polymorphic one-to-one relation */
+    morphOne<T extends Model>(related: new () => T, name: string, typeColumn?: string, idColumn?: string, localKey?: string): MorphOneRelation<T>;
+    /** Polymorphic one-to-many relation */
+    morphMany<T extends Model>(related: new () => T, name: string, typeColumn?: string, idColumn?: string, localKey?: string): MorphManyRelation<T>;
+    /** Inverse polymorphic relation */
+    morphTo<T extends Model>(): MorphToRelation<T>;
   }
 
   // ==================== Relations ====================
@@ -378,5 +475,186 @@ declare module 'outlet-orm' {
   export class MorphToRelation<T extends Model> extends Relation<T> {
     get(): Promise<T | null>;
     eagerLoad(models: Model[], relationName: string, constraint?: (qb: QueryBuilder<T>) => void): Promise<void>;
+  }
+
+  // ==================== Schema Builder (Migrations) ====================
+
+  /** Foreign key action types */
+  export type ForeignKeyAction = 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION' | 'SET DEFAULT';
+
+  /** Schema builder for database migrations */
+  export interface SchemaBuilder {
+    /** Create a new table */
+    createTable(name: string, callback: (table: TableBuilder) => void): Promise<void>;
+    /** Drop a table */
+    dropTable(name: string): Promise<void>;
+    /** Drop a table if it exists */
+    dropTableIfExists(name: string): Promise<void>;
+    /** Rename a table */
+    renameTable(from: string, to: string): Promise<void>;
+    /** Check if table exists */
+    hasTable(name: string): Promise<boolean>;
+    /** Modify an existing table */
+    table(name: string, callback: (table: TableBuilder) => void): Promise<void>;
+    /** Check if column exists */
+    hasColumn(table: string, column: string): Promise<boolean>;
+  }
+
+  /** Table builder for creating/modifying tables */
+  export interface TableBuilder {
+    // Primary keys
+    /** Auto-incrementing primary key */
+    id(name?: string): ColumnBuilder;
+    /** Big integer auto-incrementing primary key */
+    bigIncrements(name?: string): ColumnBuilder;
+    /** UUID primary key */
+    uuid(name?: string): ColumnBuilder;
+
+    // Numeric types
+    /** Integer column */
+    integer(name: string): ColumnBuilder;
+    /** Big integer column */
+    bigInteger(name: string): ColumnBuilder;
+    /** Small integer column */
+    smallInteger(name: string): ColumnBuilder;
+    /** Tiny integer column */
+    tinyInteger(name: string): ColumnBuilder;
+    /** Decimal column */
+    decimal(name: string, precision?: number, scale?: number): ColumnBuilder;
+    /** Float column */
+    float(name: string, precision?: number, scale?: number): ColumnBuilder;
+    /** Double column */
+    double(name: string, precision?: number, scale?: number): ColumnBuilder;
+
+    // String types
+    /** String/VARCHAR column */
+    string(name: string, length?: number): ColumnBuilder;
+    /** Text column */
+    text(name: string): ColumnBuilder;
+    /** Medium text column */
+    mediumText(name: string): ColumnBuilder;
+    /** Long text column */
+    longText(name: string): ColumnBuilder;
+    /** Char column */
+    char(name: string, length?: number): ColumnBuilder;
+
+    // Boolean
+    /** Boolean column */
+    boolean(name: string): ColumnBuilder;
+
+    // Date/Time
+    /** Date column */
+    date(name: string): ColumnBuilder;
+    /** DateTime column */
+    dateTime(name: string): ColumnBuilder;
+    /** Timestamp column */
+    timestamp(name: string): ColumnBuilder;
+    /** Time column */
+    time(name: string): ColumnBuilder;
+    /** Year column */
+    year(name: string): ColumnBuilder;
+    /** Add created_at and updated_at columns */
+    timestamps(): void;
+    /** Add nullable deleted_at column for soft deletes */
+    softDeletes(): void;
+
+    // Binary
+    /** Binary/Blob column */
+    binary(name: string): ColumnBuilder;
+    /** Blob column */
+    blob(name: string): ColumnBuilder;
+
+    // JSON
+    /** JSON column */
+    json(name: string): ColumnBuilder;
+    /** JSONB column (PostgreSQL) */
+    jsonb(name: string): ColumnBuilder;
+
+    // Enum
+    /** Enum column */
+    enum(name: string, values: string[]): ColumnBuilder;
+
+    // Indexes
+    /** Add primary key constraint */
+    primary(columns: string | string[]): void;
+    /** Add unique constraint */
+    unique(columns: string | string[]): void;
+    /** Add index */
+    index(columns: string | string[], name?: string): void;
+    /** Add foreign key */
+    foreign(column: string): ForeignKeyBuilder;
+
+    // Modifications
+    /** Drop a column */
+    dropColumn(name: string | string[]): void;
+    /** Rename a column */
+    renameColumn(from: string, to: string): void;
+    /** Drop an index */
+    dropIndex(name: string): void;
+    /** Drop a unique constraint */
+    dropUnique(name: string): void;
+    /** Drop a foreign key */
+    dropForeign(name: string): void;
+  }
+
+  /** Column builder for column definitions */
+  export interface ColumnBuilder {
+    /** Make column nullable */
+    nullable(): this;
+    /** Set default value */
+    default(value: any): this;
+    /** Make column unsigned (numeric only) */
+    unsigned(): this;
+    /** Add unique constraint */
+    unique(): this;
+    /** Make column primary key */
+    primary(): this;
+    /** Add index */
+    index(): this;
+    /** Add auto increment */
+    autoIncrement(): this;
+    /** Add comment */
+    comment(text: string): this;
+    /** Add after clause (MySQL) */
+    after(column: string): this;
+    /** Add first clause (MySQL) */
+    first(): this;
+    /** Set character set */
+    charset(charset: string): this;
+    /** Set collation */
+    collation(collation: string): this;
+    /** Add references for foreign key */
+    references(column: string): ForeignKeyBuilder;
+  }
+
+  /** Foreign key builder */
+  export interface ForeignKeyBuilder {
+    /** Referenced table */
+    on(table: string): this;
+    /** Referenced column */
+    references(column: string): this;
+    /** On delete action */
+    onDelete(action: ForeignKeyAction): this;
+    /** On update action */
+    onUpdate(action: ForeignKeyAction): this;
+  }
+
+  /** Migration interface for typed migrations */
+  export interface MigrationInterface {
+    /** Run the migration */
+    up(schema: SchemaBuilder): Promise<void>;
+    /** Reverse the migration */
+    down(schema: SchemaBuilder): Promise<void>;
+  }
+
+  /** Schema class export */
+  export class Schema {
+    static create(name: string, callback: (table: TableBuilder) => void): Promise<void>;
+    static drop(name: string): Promise<void>;
+    static dropIfExists(name: string): Promise<void>;
+    static table(name: string, callback: (table: TableBuilder) => void): Promise<void>;
+    static rename(from: string, to: string): Promise<void>;
+    static hasTable(name: string): Promise<boolean>;
+    static hasColumn(table: string, column: string): Promise<boolean>;
   }
 }

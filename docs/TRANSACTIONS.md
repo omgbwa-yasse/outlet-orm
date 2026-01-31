@@ -2,6 +2,8 @@
 
 Les transactions garantissent l'intégrité des données en regroupant plusieurs opérations en une unité atomique.
 
+> 📁 **Utilisation** : Dans vos fichiers `src/` ou services — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+
 ## Principe
 
 Une transaction suit le modèle ACID :

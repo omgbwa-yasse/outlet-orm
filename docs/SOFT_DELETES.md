@@ -2,6 +2,8 @@
 
 Le soft delete (suppression douce) permet de marquer les enregistrements comme "supprimés" sans les supprimer réellement de la base de données.
 
+> 📁 **Configuration** : Dans `models/` + migration dans `database/migrations/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+
 ## Principe
 
 Au lieu de supprimer une ligne, on met à jour une colonne `deleted_at` avec la date de suppression. Les requêtes normales excluent automatiquement ces enregistrements.

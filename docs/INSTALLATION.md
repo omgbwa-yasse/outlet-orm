@@ -28,6 +28,35 @@ npm install sqlite3
 
 > 💡 Si aucun driver n'est installé, un message d'erreur explicite vous indiquera lequel installer.
 
+## Structure de Projet Recommandée
+
+Après installation, organisez votre projet comme suit :
+
+```
+mon-projet/
+├── .env                        # Configuration de la base de données
+├── package.json
+├── database/
+│   ├── config.js               # Config migrations (généré par outlet-init)
+│   └── migrations/             # Vos fichiers de migration
+│       ├── 20240101_create_users_table.js
+│       └── 20240102_create_posts_table.js
+├── models/                     # Vos classes Model (recommandé)
+│   ├── User.js
+│   ├── Post.js
+│   └── Comment.js
+├── src/                        # Votre code applicatif
+│   └── index.js
+└── tests/                      # Vos tests
+    └── models.test.js
+```
+
+| Dossier | Rôle | Créé par |
+|---------|------|----------|
+| `database/config.js` | Configuration des migrations | `outlet-init` |
+| `database/migrations/` | Fichiers de migration | `outlet-migrate make` |
+| `models/` | Vos classes Model | Vous (recommandé) |
+
 ## Configuration
 
 ### Option 1 : Via fichier `.env` (recommandé) - Connexion automatique

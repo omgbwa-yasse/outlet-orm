@@ -2,20 +2,24 @@
 
 Les events permettent d'exécuter du code à différentes étapes du cycle de vie d'un modèle.
 
+> 📁 **Emplacement** : Définissez vos events dans `models/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+>
+> 📘 **TypeScript** : Utilisez le type `ModelEventName` pour les noms d'événements. Voir [TYPESCRIPT.md](TYPESCRIPT.md)
+
 ## Events disponibles
 
-| Event | Moment | Peut annuler |
-|-------|--------|--------------|
-| `creating` | Avant INSERT | ✅ Oui |
-| `created` | Après INSERT | ❌ Non |
-| `updating` | Avant UPDATE | ✅ Oui |
-| `updated` | Après UPDATE | ❌ Non |
-| `saving` | Avant INSERT ou UPDATE | ✅ Oui |
-| `saved` | Après INSERT ou UPDATE | ❌ Non |
-| `deleting` | Avant DELETE | ✅ Oui |
-| `deleted` | Après DELETE | ❌ Non |
-| `restoring` | Avant restauration (soft delete) | ✅ Oui |
-| `restored` | Après restauration | ❌ Non |
+| Event | Moment | Peut annuler | Type TypeScript |
+|-------|--------|--------------|------------------|
+| `creating` | Avant INSERT | ✅ Oui | `'creating'` |
+| `created` | Après INSERT | ❌ Non | `'created'` |
+| `updating` | Avant UPDATE | ✅ Oui | `'updating'` |
+| `updated` | Après UPDATE | ❌ Non | `'updated'` |
+| `saving` | Avant INSERT ou UPDATE | ✅ Oui | `'saving'` |
+| `saved` | Après INSERT ou UPDATE | ❌ Non | `'saved'` |
+| `deleting` | Avant DELETE | ✅ Oui | `'deleting'` |
+| `deleted` | Après DELETE | ❌ Non | `'deleted'` |
+| `restoring` | Avant restauration (soft delete) | ✅ Oui | `'restoring'` |
+| `restored` | Après restauration | ❌ Non | `'restored'` |
 
 ## Enregistrer des events
 

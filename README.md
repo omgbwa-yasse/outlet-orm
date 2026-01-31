@@ -28,6 +28,35 @@ Outlet ORM utilise des peerDependencies optionnelles pour les drivers de base de
 
 Si aucun driver n'est installé, un message d'erreur explicite vous indiquera lequel installer lors de la connexion.
 
+## 📁 Structure de Projet Recommandée
+
+Organisez votre projet utilisant Outlet ORM comme suit :
+
+```
+mon-projet/
+├── .env                        # Configuration de la base de données
+├── package.json
+├── database/
+│   ├── config.js               # Config migrations (généré par outlet-init)
+│   └── migrations/             # Vos fichiers de migration
+│       ├── 20240101_create_users_table.js
+│       └── 20240102_create_posts_table.js
+├── models/                     # Vos classes Model
+│   ├── User.js
+│   ├── Post.js
+│   └── Comment.js
+├── src/                        # Votre code applicatif
+│   └── index.js
+└── tests/                      # Vos tests
+    └── models.test.js
+```
+
+| Dossier | Rôle | Créé par |
+|---------|------|----------|
+| `database/config.js` | Configuration des migrations | `outlet-init` |
+| `database/migrations/` | Fichiers de migration | `outlet-migrate make` |
+| `models/` | Vos classes Model | Vous (recommandé) |
+
 ## ✨ Fonctionnalités clés
 
 - **API inspirée d'Eloquent** (Active Record) pour un usage fluide
@@ -56,7 +85,7 @@ Si aucun driver n'est installé, un message d'erreur explicite vous indiquera le
 - **CLI pratiques**: `outlet-init`, `outlet-migrate`, `outlet-convert`
 - **Configuration via `.env`** (chargée automatiquement)
 - **Multi-base de données**: MySQL, PostgreSQL et SQLite
-- **Types TypeScript** fournis
+- **Types TypeScript complets** avec Generic Model et Schema Builder typé (v4.0.0+)
 
 ## ⚡ Démarrage Rapide
 
@@ -1070,6 +1099,64 @@ outlet-convert
 - [Détection des Relations](docs/RELATIONS_DETECTION.md)
 - [Guide de démarrage rapide](docs/QUICKSTART.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [**TypeScript (complet)**](docs/TYPESCRIPT.md)
+
+## 📘 TypeScript Support
+
+Outlet ORM v4.0.0 inclut des définitions TypeScript complètes avec support des **generics pour les attributs typés**.
+
+### Modèles typés
+
+```typescript
+import { Model, HasManyRelation } from 'outlet-orm';
+
+interface UserAttributes {
+  id: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'user';
+  created_at: Date;
+}
+
+class User extends Model<UserAttributes> {
+  static table = 'users';
+  static fillable = ['name', 'email', 'role'];
+
+  posts(): HasManyRelation<Post> {
+    return this.hasMany(Post, 'user_id');
+  }
+}
+
+// Type-safe getAttribute/setAttribute
+const user = await User.find(1);
+const name: string = user.getAttribute('name');     // ✅ Type inféré
+const role: 'admin' | 'user' = user.getAttribute('role');
+```
+
+### Migrations typées
+
+```typescript
+import { MigrationInterface, Schema, TableBuilder } from 'outlet-orm';
+
+export const migration: MigrationInterface = {
+  name: 'create_users_table',
+  
+  async up(): Promise<void> {
+    await Schema.create('users', (table: TableBuilder) => {
+      table.id();
+      table.string('name');
+      table.string('email').unique();
+      table.timestamps();
+    });
+  },
+
+  async down(): Promise<void> {
+    await Schema.dropIfExists('users');
+  }
+};
+```
+
+📖 [Guide TypeScript complet](docs/TYPESCRIPT.md)
 
 ## 🤝 Contribution
 

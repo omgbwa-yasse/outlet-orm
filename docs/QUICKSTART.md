@@ -12,6 +12,33 @@ npm install outlet-orm pg
 npm install outlet-orm sqlite3
 ```
 
+## Structure de Projet Recommandée
+
+```
+mon-projet/
+├── .env                        # Configuration de la base de données
+├── package.json
+├── database/
+│   ├── config.js               # Config migrations (généré par outlet-init)
+│   └── migrations/             # Vos fichiers de migration
+│       ├── 20240101_create_users_table.js
+│       └── 20240102_create_posts_table.js
+├── models/                     # Vos classes Model (recommandé)
+│   ├── User.js
+│   ├── Post.js
+│   └── Comment.js
+├── src/                        # Votre code applicatif
+│   └── index.js
+└── tests/                      # Vos tests
+    └── models.test.js
+```
+
+| Dossier | Rôle | Créé par |
+|---------|------|----------|
+| `database/config.js` | Configuration des migrations | `outlet-init` |
+| `database/migrations/` | Fichiers de migration | `outlet-migrate make` |
+| `models/` | Vos classes Model | Vous (recommandé) |
+
 ## Configuration Initiale
 
 ### 1. Créer le fichier `.env`

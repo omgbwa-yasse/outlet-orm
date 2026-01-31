@@ -1,6 +1,8 @@
 # 📘 API Reference
 
-Référence complète de l'API Outlet ORM v3.0.0.
+Référence complète de l'API Outlet ORM v4.0.0.
+
+> 📘 **TypeScript** : Voir [TYPESCRIPT.md](TYPESCRIPT.md) pour les interfaces et types génériques.
 
 ## Table des matières
 

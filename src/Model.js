@@ -24,7 +24,7 @@ class Model {
     creating: [],
     created: [],
     updating: [],
-    updating: [],
+    updated: [],
     saving: [],
     saved: [],
     deleting: [],

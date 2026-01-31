@@ -1,6 +1,6 @@
 # 📚 Outlet ORM - Documentation Complète
 
-> **Version 3.0.0** - Un ORM JavaScript inspiré de Laravel Eloquent pour Node.js
+> **Version 4.0.0** - Un ORM JavaScript/TypeScript inspiré de Laravel Eloquent pour Node.js
 
 ## Table des matières
 
@@ -14,13 +14,16 @@
 - [Relations](RELATIONS.md)
 - [Détection automatique des relations](RELATIONS_DETECTION.md)
 
-### ⚡ Fonctionnalités avancées (v3.0.0)
+### ⚡ Fonctionnalités avancées
 - [Transactions](TRANSACTIONS.md)
 - [Soft Deletes](SOFT_DELETES.md)
 - [Scopes (Globaux et Locaux)](SCOPES.md)
 - [Events / Hooks](EVENTS.md)
 - [Validation](VALIDATION.md)
 - [Query Logging](QUERY_LOGGING.md)
+
+### 📘 TypeScript (v4.0.0+)
+- [**TypeScript Guide Complet**](TYPESCRIPT.md) - Generic Model, Schema Builder typé, Migrations typées
 
 ### 🛠️ Outils
 - [Migrations](MIGRATIONS.md)
@@ -29,7 +32,6 @@
 ### 🏗️ Référence
 - [Architecture](ARCHITECTURE.md)
 - [API Reference](API_REFERENCE.md)
-- [TypeScript](TYPESCRIPT.md)
 
 ### 📋 Autres
 - [Changelog](../CHANGELOG.md)
@@ -64,7 +66,19 @@ const users = await User.with('posts').where('status', 'active').get();
 
 > 💡 **Connexion automatique** : Créez simplement un fichier `.env` avec vos paramètres de connexion. Le Model se connecte automatiquement à la première utilisation.
 
-## Nouveautés v3.0.0
+## Nouveautés v4.0.0
+
+| Fonctionnalité | Description |
+|----------------|-------------|
+| 📘 **Generic Model** | `Model<TAttributes>` pour typage fort des attributs |
+| 🔒 **Type-safe getAttribute** | Retourne le type correct basé sur votre interface |
+| 🏗️ **Schema Builder typé** | Interfaces complètes pour migrations typées |
+| 📝 **MigrationInterface** | Structure standard pour migrations TypeScript |
+| ✅ **ValidationRule étendu** | `url`, `array`, `integer`, `alpha`, etc. |
+| 🎯 **ModelEventName** | Union type pour tous les événements |
+| 🔍 **WhereOperator** | Union type pour tous les opérateurs |
+
+### Fonctionnalités héritées (v3.0.0)
 
 | Fonctionnalité | Description |
 |----------------|-------------|
@@ -74,8 +88,6 @@ const users = await User.with('posts').where('status', 'active').get();
 | 📣 **Events** | Hooks sur le cycle de vie des modèles |
 | ✅ **Validation** | Règles de validation intégrées |
 | 📊 **Query Logging** | Mode debug pour analyser les requêtes |
-| 🐘 **PostgreSQL Pool** | Connexions poolées pour de meilleures performances |
-| 🛡️ **SQL Sanitization** | Protection contre l'injection SQL |
 
 ## Support
 
