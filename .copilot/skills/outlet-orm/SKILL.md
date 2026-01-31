@@ -73,6 +73,25 @@ my-project/
 │   ├── User.js
 │   ├── Post.js
 │   └── Comment.js
+├── controllers/                # Your controllers
+│   ├── UserController.js
+│   └── PostController.js
+├── routes/                     # Your API routes
+│   ├── api.js
+│   └── web.js
+├── middlewares/                # Custom middlewares
+│   ├── auth.js
+│   └── validation.js
+├── services/                   # Business logic services
+│   ├── UserService.js
+│   └── EmailService.js
+├── assets/                     # Static assets
+│   ├── images/
+│   ├── videos/
+│   ├── icons/
+│   ├── fonts/
+│   ├── css/
+│   └── js/
 ├── src/                        # Your application code
 │   └── index.js
 └── tests/                      # Your tests
@@ -85,7 +104,12 @@ my-project/
 |--------|---------|------------|
 | `database/config.js` | Migration configuration | `outlet-init` |
 | `database/migrations/` | Migration files | `outlet-migrate make` |
-| `models/` | Your Model classes | You (recommended) |
+| `models/` | Your Model classes | `outlet-init` |
+| `controllers/` | Request handling logic | `outlet-init` |
+| `routes/` | API and web routes | `outlet-init` |
+| `middlewares/` | Custom middleware functions | `outlet-init` |
+| `services/` | Business logic services | `outlet-init` |
+| `assets/` | Static assets (images, css, js, etc.) | `outlet-init` |
 
 ### Quick Setup Commands
 

@@ -36,9 +36,28 @@ my-project/
 │   │   ├── User.ts
 │   │   ├── Post.ts
 │   │   └── index.ts
+│   ├── controllers/            # Your controllers
+│   │   ├── UserController.ts
+│   │   └── PostController.ts
+│   ├── routes/                 # Your API routes
+│   │   ├── api.ts
+│   │   └── web.ts
+│   ├── middlewares/            # Custom middlewares
+│   │   ├── auth.ts
+│   │   └── validation.ts
+│   ├── services/               # Business logic services
+│   │   ├── UserService.ts
+│   │   └── EmailService.ts
 │   ├── types/                  # Custom type definitions
 │   │   └── models.d.ts
 │   └── index.ts
+├── assets/                     # Static assets
+│   ├── images/
+│   ├── videos/
+│   ├── icons/
+│   ├── fonts/
+│   ├── css/
+│   └── js/
 └── tests/
 ```
 

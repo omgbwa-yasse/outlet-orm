@@ -2,7 +2,7 @@
 
 Le Query Builder d'Outlet ORM offre une interface fluide pour construire des requêtes SQL.
 
-> 📁 **Utilisation** : Dans vos fichiers `models/` ou `src/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Utilisation** : Dans vos fichiers `models/`, `controllers/`, `services/` ou `src/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
 >
 > 📘 **TypeScript** : Le type `WhereOperator` définit tous les opérateurs disponibles. Voir [TYPESCRIPT.md](TYPESCRIPT.md)
 

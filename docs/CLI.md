@@ -38,6 +38,11 @@ Crée :
 - `database/config.js` - Configuration de la base de données
 - `database/migrations/` - Dossier des migrations
 - `models/` - Dossier des modèles
+- `controllers/` - Dossier des contrôleurs
+- `routes/` - Dossier des routes
+- `middlewares/` - Dossier des middlewares
+- `services/` - Dossier des services
+- `assets/` - Dossier des ressources statiques (images, videos, icons, fonts, css, js)
 
 ### migrate
 

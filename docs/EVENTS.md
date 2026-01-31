@@ -2,7 +2,7 @@
 
 Les events permettent d'exécuter du code à différentes étapes du cycle de vie d'un modèle.
 
-> 📁 **Emplacement** : Définissez vos events dans `models/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Emplacement** : Définissez vos events dans `models/` ou `services/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
 >
 > 📘 **TypeScript** : Utilisez le type `ModelEventName` pour les noms d'événements. Voir [TYPESCRIPT.md](TYPESCRIPT.md)
 

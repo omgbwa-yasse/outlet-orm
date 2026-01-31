@@ -4,7 +4,7 @@ Outlet ORM v4.0.0 inclut un système de validation intégré pour valider les do
 
 > 📘 **TypeScript** : Le type `ValidationRule` inclut toutes les règles disponibles. Voir [TYPESCRIPT.md](TYPESCRIPT.md).
 
-> 📁 **Emplacement** : Définissez vos règles dans `models/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Emplacement** : Définissez vos règles dans `models/` et validez dans `controllers/` ou `middlewares/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
 
 ## Configuration
 

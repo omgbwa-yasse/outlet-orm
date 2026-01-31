@@ -2,7 +2,9 @@
 
 Référence complète de l'API Outlet ORM v4.0.0.
 
-> 📘 **TypeScript** : Voir [TYPESCRIPT.md](TYPESCRIPT.md) pour les interfaces et types génériques.
+> � **Structure** : Utilisez ces APIs dans `models/`, `controllers/`, `services/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+>
+> �📘 **TypeScript** : Voir [TYPESCRIPT.md](TYPESCRIPT.md) pour les interfaces et types génériques.
 
 ## Table des matières
 

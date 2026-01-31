@@ -2,6 +2,8 @@
 
 Le convertisseur SQL d'Outlet ORM analyse intelligemment votre schéma de base de données pour générer **automatiquement** toutes les relations entre vos modèles.
 
+> 📁 **Génération** : Les modèles générés vont dans `models/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+
 ## 🎯 Types de Relations Détectées
 
 ### 1. **belongsTo** (Appartient à)

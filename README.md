@@ -45,6 +45,27 @@ mon-projet/
 │   ├── User.js
 │   ├── Post.js
 │   └── Comment.js
+├── controllers/                # Vos contrôleurs (logique métier)
+│   ├── UserController.js
+│   ├── PostController.js
+│   └── CommentController.js
+├── routes/                     # Vos fichiers de routes
+│   ├── index.js
+│   ├── userRoutes.js
+│   └── postRoutes.js
+├── middlewares/                # Vos middlewares
+│   ├── auth.js
+│   └── validation.js
+├── services/                   # Vos services (logique réutilisable)
+│   ├── AuthService.js
+│   └── EmailService.js
+├── assets/                     # Ressources statiques
+│   ├── images/                 # Images (png, jpg, svg...)
+│   ├── videos/                 # Fichiers vidéo
+│   ├── icons/                  # Icônes
+│   ├── fonts/                  # Polices personnalisées
+│   ├── css/                    # Feuilles de style
+│   └── js/                     # Scripts front-end
 ├── src/                        # Votre code applicatif
 │   └── index.js
 └── tests/                      # Vos tests
@@ -56,6 +77,11 @@ mon-projet/
 | `database/config.js` | Configuration des migrations | `outlet-init` |
 | `database/migrations/` | Fichiers de migration | `outlet-migrate make` |
 | `models/` | Vos classes Model | Vous (recommandé) |
+| `controllers/` | Vos contrôleurs (logique métier) | Vous (recommandé) |
+| `routes/` | Définition des routes API/Web | Vous (recommandé) |
+| `middlewares/` | Middlewares d'authentification, validation, etc. | Vous (recommandé) |
+| `services/` | Services réutilisables (email, auth, etc.) | Vous (recommandé) |
+| `assets/` | Ressources statiques (images, vidéos, icônes, fonts, css, js) | Vous (recommandé) |
 
 ## ✨ Fonctionnalités clés
 

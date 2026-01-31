@@ -2,7 +2,62 @@
 
 Ce document décrit l'architecture et la structure du code de l'ORM Eloquent JS.
 
-## Structure des Dossiers
+## Structure du Projet Utilisateur
+
+Voici la structure recommandée pour un projet utilisant Outlet ORM :
+
+```
+mon-projet/
+├── .env                        # Configuration de la base de données
+├── package.json
+├── database/
+│   ├── config.js               # Config migrations (généré par outlet-init)
+│   └── migrations/             # Vos fichiers de migration
+│       ├── 20240101_create_users_table.js
+│       └── 20240102_create_posts_table.js
+├── models/                     # Vos classes Model
+│   ├── User.js
+│   ├── Post.js
+│   └── Comment.js
+├── controllers/                # Vos contrôleurs (logique métier)
+│   ├── UserController.js
+│   ├── PostController.js
+│   └── CommentController.js
+├── routes/                     # Vos fichiers de routes
+│   ├── index.js
+│   ├── userRoutes.js
+│   └── postRoutes.js
+├── middlewares/                # Vos middlewares
+│   ├── auth.js
+│   └── validation.js
+├── services/                   # Vos services (logique réutilisable)
+│   ├── AuthService.js
+│   └── EmailService.js
+├── assets/                     # Ressources statiques
+│   ├── images/                 # Images (png, jpg, svg...)
+│   ├── videos/                 # Fichiers vidéo
+│   ├── icons/                  # Icônes
+│   ├── fonts/                  # Polices personnalisées
+│   ├── css/                    # Feuilles de style
+│   └── js/                     # Scripts front-end
+├── src/                        # Votre code applicatif
+│   └── index.js
+└── tests/                      # Vos tests
+    └── models.test.js
+```
+
+| Dossier | Rôle | Créé par |
+|---------|------|----------|
+| `database/config.js` | Configuration des migrations | `outlet-init` |
+| `database/migrations/` | Fichiers de migration | `outlet-migrate make` |
+| `models/` | Vos classes Model | Vous (recommandé) |
+| `controllers/` | Vos contrôleurs (logique métier) | Vous (recommandé) |
+| `routes/` | Définition des routes API/Web | Vous (recommandé) |
+| `middlewares/` | Middlewares d'authentification, validation, etc. | Vous (recommandé) |
+| `services/` | Services réutilisables (email, auth, etc.) | Vous (recommandé) |
+| `assets/` | Ressources statiques (images, vidéos, icônes, fonts, css, js) | Vous (recommandé) |
+
+## Structure Interne de l'ORM
 
 ```
 src/

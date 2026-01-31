@@ -17,7 +17,18 @@ my-project/
 │       ├── 20240101_120000_create_users_table.js
 │       ├── 20240102_140000_create_posts_table.js
 │       └── 20240103_090000_add_email_to_users_table.js
-└── models/                     # Your Model classes
+├── models/                     # Your Model classes
+├── controllers/                # Your controllers
+├── routes/                     # Your API routes
+├── middlewares/                # Custom middlewares
+├── services/                   # Business logic services
+└── assets/                     # Static assets
+    ├── images/
+    ├── videos/
+    ├── icons/
+    ├── fonts/
+    ├── css/
+    └── js/
 ```
 
 ---

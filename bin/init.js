@@ -93,6 +93,37 @@ module.exports = db;
     fs.writeFileSync(configPath, configContent);
     console.log(`\n✅ Fichier de configuration créé: ${configPath}`);
 
+    // Create project structure directories
+    const directories = [
+      'database',
+      'database/migrations',
+      'models',
+      'controllers',
+      'routes',
+      'middlewares',
+      'services',
+      'assets',
+      'assets/images',
+      'assets/videos',
+      'assets/icons',
+      'assets/fonts',
+      'assets/css',
+      'assets/js',
+      'src',
+      'tests'
+    ];
+
+    console.log('\n📁 Création de la structure de projet...');
+    for (const dir of directories) {
+      const dirPath = path.join(process.cwd(), dir);
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+        console.log(`  ✅ ${dir}/`);
+      } else {
+        console.log(`  ⏭️  ${dir}/ (existe déjà)`);
+      }
+    }
+
     // Generate example model
     const modelContent = `const { Model } = require('outlet-orm');
 const db = require('./database');

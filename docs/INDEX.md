@@ -7,6 +7,7 @@
 ### 🚀 Démarrage
 - [Guide de démarrage rapide](QUICKSTART.md)
 - [Installation et Configuration](INSTALLATION.md)
+- [Structure de Projet](INSTALLATION.md#structure-de-projet-recommandée)
 
 ### 📖 Guides essentiels
 - [Modèles et CRUD](MODELS.md)

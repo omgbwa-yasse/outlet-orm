@@ -19,6 +19,25 @@ my-project/
 │   ├── User.js
 │   ├── Post.js
 │   └── Comment.js
+├── controllers/                # Your controllers
+│   ├── UserController.js
+│   └── PostController.js
+├── routes/                     # Your API routes
+│   ├── api.js
+│   └── web.js
+├── middlewares/                # Custom middlewares
+│   ├── auth.js
+│   └── validation.js
+├── services/                   # Business logic services
+│   ├── UserService.js
+│   └── EmailService.js
+├── assets/                     # Static assets
+│   ├── images/
+│   ├── videos/
+│   ├── icons/
+│   ├── fonts/
+│   ├── css/
+│   └── js/
 ├── src/                        # Your application code
 │   └── index.js
 └── tests/                      # Your tests

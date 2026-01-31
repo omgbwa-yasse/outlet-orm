@@ -2,7 +2,7 @@
 
 Outlet ORM v4.0.0 inclut des définitions TypeScript complètes avec support des **generics pour les attributs typés**.
 
-> 📁 **Emplacement recommandé** : `models/` et `src/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Emplacement recommandé** : `models/`, `controllers/`, `services/` et `src/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
 
 ## Nouveautés v4.0.0
 

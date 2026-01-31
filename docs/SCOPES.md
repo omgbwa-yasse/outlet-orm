@@ -2,7 +2,7 @@
 
 Les scopes permettent de définir des contraintes de requête réutilisables sur vos modèles.
 
-> 📁 **Emplacement** : Définissez vos scopes dans `models/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Emplacement** : Définissez vos scopes dans `models/` ou `services/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
 >
 > 📘 **TypeScript** : Les scopes sont typés avec `ScopeFunction`. Voir [TYPESCRIPT.md](TYPESCRIPT.md)
 
