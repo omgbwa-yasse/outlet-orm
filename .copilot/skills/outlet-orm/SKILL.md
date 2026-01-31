@@ -1,10 +1,10 @@
 ---
 name: outlet-orm-best-practices
-description: Outlet ORM is a Laravel Eloquent-inspired ORM for Node.js with MySQL, PostgreSQL, and SQLite support. Use this skill when working with Outlet ORM models, queries, relationships, migrations, and database operations. v4.0.0 adds full TypeScript support with generic models.
+description: Outlet ORM is a Laravel Eloquent-inspired ORM for Node.js with MySQL, PostgreSQL, and SQLite support. Use this skill when working with Outlet ORM models, queries, relationships, migrations, and database operations. v4.1.0 adds full TypeScript support with generic models and Copilot Skills integration.
 license: MIT
 metadata:
   author: omgbwa-yasse
-  version: "4.0.0"
+  version: "4.1.0"
   source: https://github.com/omgbwa-yasse/outlet-orm
   npm: https://www.npmjs.com/package/outlet-orm
 ---
@@ -13,7 +13,7 @@ metadata:
 
 Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for Node.js/TypeScript with support for MySQL, PostgreSQL, and SQLite.
 
-> 🆕 **v4.0.0** : Support TypeScript complet avec Generic Model, Schema Builder typé et MigrationInterface.
+> 🆕 **v4.1.0** : Support TypeScript complet avec Generic Model, Schema Builder typé, MigrationInterface et intégration Copilot Skills.
 
 ## Documentation Index
 

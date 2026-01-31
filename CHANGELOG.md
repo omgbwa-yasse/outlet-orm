@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.1.0] - 2026-01-30
+
+### 🚀 New Features
+- **Copilot Skills Integration**: Added `.copilot/skills/outlet-orm/` for AI agent documentation access
+- Improved project structure for better AI-assisted development
+
+### 📚 Documentation
+- Moved skill documentation to standard `.copilot/skills/` location
+- AI agents can now automatically discover and use Outlet ORM documentation
+
+---
+
 ## [4.0.0-alpha.1] - 2026-01-30
 
 ### 🚀 Major Features - TypeScript Enhancement
