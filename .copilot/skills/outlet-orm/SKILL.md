@@ -25,6 +25,7 @@ Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for N
 | **[MIGRATIONS.md](MIGRATIONS.md)** | Schema Builder, CLI tools, column types, foreign keys |
 | **[ADVANCED.md](ADVANCED.md)** | Transactions, Soft Deletes, Events, Validation, Best Practices |
 | **[TYPESCRIPT.md](TYPESCRIPT.md)** | TypeScript types, generics, typed models, migrations |
+| **[SECURITY.md](SECURITY.md)** | 🔐 Security best practices, authentication, authorization |
 | **[API.md](API.md)** | Complete API Reference |
 
 ---
@@ -39,6 +40,7 @@ Reference these guidelines when:
 - Setting up migrations  [MIGRATIONS.md](MIGRATIONS.md)
 - Implementing transactions, soft deletes, events  [ADVANCED.md](ADVANCED.md)
 - Using TypeScript with typed models  [TYPESCRIPT.md](TYPESCRIPT.md)
+- Securing your backend application  [SECURITY.md](SECURITY.md)
 
 ---
 

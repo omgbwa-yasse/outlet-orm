@@ -1,6 +1,6 @@
 # Outlet ORM - Advanced Features
 
-[← Back to Index](SKILL.md) | [Previous: Migrations](MIGRATIONS.md) | [Next: API Reference →](API.md)
+[← Back to Index](SKILL.md) | [Previous: Migrations](MIGRATIONS.md) | [Next: Security →](SECURITY.md)
 
 > 📘 **TypeScript** : Use `ModelEventName` for events, `ValidationRule` for validation. See [TYPESCRIPT.md](TYPESCRIPT.md)
 
