@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [5.0.0] - 2026-02-01
+
+### 🏗️ Major Refactoring - Project Structure
+
+#### Centralized `src/` Directory
+- **BREAKING**: All source code is now centralized in `src/`
+- Moved `lib/Database/`, `lib/Migrations/`, `lib/Schema/` → `src/`
+- New exports available from main module:
+  - `Schema`, `Blueprint`, `ColumnDefinition`, `ForeignKeyDefinition`
+  - `Migration`, `MigrationManager`
+
+#### New Import Style (Recommended)
+```javascript
+// ✅ New way (v5.0.0+)
+const { 
+  Model, 
+  DatabaseConnection, 
+  Migration, 
+  MigrationManager, 
+  Schema 
+} = require('outlet-orm');
+```
+
+#### Backward Compatibility
+- `lib/` paths still work with **deprecation warnings**
+- Will be removed in v6.0.0
+- Migration guide: Replace `require('outlet-orm/lib/...')` with `require('outlet-orm')`
+
+### ⚠️ Breaking Changes
+- Package version bumped to 5.0.0 (major release)
+- `lib/` folder is deprecated (warnings emitted on import)
+- Migration files should use `const { Migration } = require('outlet-orm');`
+
+### 📦 Package Updates
+- Removed `lib/**` from `files` in package.json
+- Updated lint scripts to exclude `lib/`
+
+---
+
 ## [4.1.0] - 2026-01-30
 
 ### 🚀 New Features

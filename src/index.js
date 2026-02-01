@@ -14,10 +14,18 @@ const MorphOneRelation = require('./Relations/MorphOneRelation');
 const MorphManyRelation = require('./Relations/MorphManyRelation');
 const MorphToRelation = require('./Relations/MorphToRelation');
 
+// Schema & Migrations (v5.0.0 - moved from lib/)
+const { Schema, Blueprint, ColumnDefinition, ForeignKeyDefinition } = require('./Schema/Schema');
+const Migration = require('./Migrations/Migration');
+const MigrationManager = require('./Migrations/MigrationManager');
+
 module.exports = {
+  // Core
   Model,
   QueryBuilder,
   DatabaseConnection,
+
+  // Relations
   Relation,
   HasOneRelation,
   HasManyRelation,
@@ -27,5 +35,15 @@ module.exports = {
   HasOneThroughRelation,
   MorphOneRelation,
   MorphManyRelation,
-  MorphToRelation
+  MorphToRelation,
+
+  // Schema Builder (v5.0.0)
+  Schema,
+  Blueprint,
+  ColumnDefinition,
+  ForeignKeyDefinition,
+
+  // Migrations (v5.0.0)
+  Migration,
+  MigrationManager
 };

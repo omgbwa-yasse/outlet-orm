@@ -128,7 +128,7 @@ function getCreateMigrationTemplate(tableName) {
  * Migration: Create ${tableName} table
  */
 
-const Migration = require('../../lib/Migrations/Migration');
+const { Migration } = require('outlet-orm');
 
 class Create${capitalize(tableName)}Table extends Migration {
   /**
@@ -165,7 +165,7 @@ function getAlterMigrationTemplate(tableName) {
  * Migration: Alter ${tableName} table
  */
 
-const Migration = require('../../lib/Migrations/Migration');
+const { Migration } = require('outlet-orm');
 
 class Alter${capitalize(tableName)}Table extends Migration {
   /**
@@ -261,8 +261,7 @@ async function runNonInteractive(cmd, flags) {
     }
   }
 
-  const { DatabaseConnection } = require('../lib/Database/DatabaseConnection');
-  const MigrationManager = require('../lib/Migrations/MigrationManager');
+  const { DatabaseConnection, MigrationManager } = require('../src');
 
   const connection = new DatabaseConnection(dbConfig);
   await connection.connect();
@@ -370,8 +369,7 @@ async function runMigrationCommands() {
     }
   }
 
-  const { DatabaseConnection } = require('../lib/Database/DatabaseConnection');
-  const MigrationManager = require('../lib/Migrations/MigrationManager');
+  const { DatabaseConnection, MigrationManager } = require('../src');
 
   const connection = new DatabaseConnection(dbConfig);
   await connection.connect();

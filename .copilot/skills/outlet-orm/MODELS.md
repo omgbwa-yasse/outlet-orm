@@ -6,23 +6,25 @@
 
 ---
 
-## Recommended Project Structure
+## Recommended Project Structure (Layered Architecture)
 
 > 🔐 **Security**: Use `hidden` for sensitive fields, `fillable` for mass assignment protection.
 
 ```
 my-project/
 ├── .env                        # ⚠️ NEVER commit
-├── config/                     # 🔒 Configuration
+├── src/
+│   ├── controllers/            # 🎮 HTTP handling only
+│   ├── services/               # ⚙️ Business logic
+│   ├── repositories/           # 📦 Data access layer
+│   ├── models/                 # 📊 Your Model classes
+│   │   ├── User.js             # hidden: ['password']
+│   │   └── Post.js
+│   ├── middlewares/            # 🔒 Auth, validation
+│   ├── config/                 # 🔒 Configuration
+│   └── utils/                  # 🔒 Hash, tokens
 ├── database/
-├── models/                     # Your Model classes
-│   ├── User.js                 # hidden: ['password']
-│   └── Post.js
-├── controllers/
-├── routes/
-├── middlewares/                # 🔒 Auth, validation
-├── services/
-├── utils/                      # 🔒 Hash, tokens
+│   └── migrations/
 ├── public/                     # ✅ Only public folder
 └── tests/
 ```

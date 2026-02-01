@@ -1,8 +1,8 @@
-# Outlet ORM - TypeScript Best Practices (v4.0.0)
+# Outlet ORM - TypeScript Best Practices (v5.0.0)
 
 [← Back to Index](SKILL.md) | [Previous: Advanced](ADVANCED.md)
 
-> 🆕 **v4.0.0** : Support complet des generics avec `Model<TAttributes>`, Schema Builder typé, et `MigrationInterface`.
+> 🆕 **v5.0.0** : Support complet des generics avec `Model<TAttributes>`, Schema Builder typé, `MigrationInterface`, et architecture en couches recommandée.
 
 ---
 
@@ -20,7 +20,7 @@
 
 ---
 
-## Recommended Project Structure
+## Recommended Project Structure (Layered Architecture)
 
 > 🔐 **Security**: See the Security Guide for TypeScript security patterns.
 
@@ -30,25 +30,28 @@ my-project/
 ├── .gitignore
 ├── package.json
 ├── tsconfig.json
-├── config/                     # 🔒 Configuration
-│   └── security.ts
-├── database/
-│   └── migrations/
 ├── src/
-│   ├── models/                 # Typed Model classes
+│   ├── index.ts                # Entry point
+│   ├── controllers/            # 🎮 HTTP handling only
+│   │   └── UserController.ts
+│   ├── services/               # ⚙️ Business logic
+│   │   └── UserService.ts
+│   ├── repositories/           # 📦 Data access layer
+│   │   └── UserRepository.ts
+│   ├── models/                 # 📊 Typed Model classes
 │   │   ├── User.ts             # hidden: ['password']
 │   │   └── Post.ts
-│   ├── controllers/
-│   ├── routes/
 │   ├── middlewares/            # 🔒 Auth, validation
 │   │   ├── auth.ts
 │   │   └── validator.ts
-│   ├── services/
+│   ├── config/                 # 🔒 Configuration
+│   │   └── security.ts
 │   ├── utils/                  # 🔒 Hash, tokens
 │   │   ├── hash.ts
 │   │   └── token.ts
-│   ├── types/
-│   └── index.ts
+│   └── types/                  # Custom TypeScript types
+├── database/
+│   └── migrations/
 ├── public/                     # ✅ Only public folder
 ├── logs/                       # 📋 Not versioned
 └── tests/

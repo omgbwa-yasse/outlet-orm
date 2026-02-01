@@ -6,23 +6,28 @@
 
 ---
 
-## Project Structure for Migrations
+## Project Structure for Migrations (Layered Architecture)
 
 > 🔐 **Security**: Database credentials should be in `.env` (never committed).
 
 ```
 my-project/
 ├── .env                        # ⚠️ NEVER commit
-├── config/
-│   └── database.js             # Reads from .env
+├── src/
+│   ├── controllers/            # 🎮 HTTP handling only
+│   ├── services/               # ⚙️ Business logic
+│   ├── repositories/           # 📦 Data access layer
+│   ├── models/                 # 📊 outlet-orm models
+│   ├── middlewares/            # 🔒 Security
+│   ├── config/
+│   │   └── database.js         # Reads from .env
+│   └── utils/                  # 🔒 Hash, tokens
 ├── database/
 │   ├── config.js               # Migration config
 │   └── migrations/
-├── models/
-├── middlewares/                # 🔒 Security
-├── utils/                      # 🔒 Hash, tokens
 ├── public/                     # ✅ Static files
-└── logs/                       # 📋 Not versioned
+├── logs/                       # 📋 Not versioned
+└── tests/
 ```
 
 ---

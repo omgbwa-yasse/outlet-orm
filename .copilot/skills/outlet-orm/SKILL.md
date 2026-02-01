@@ -4,7 +4,7 @@ description: Outlet ORM is a Laravel Eloquent-inspired ORM for Node.js with MySQ
 license: MIT
 metadata:
   author: omgbwa-yasse
-  version: "4.1.0"
+  version: "5.0.0"
   source: https://github.com/omgbwa-yasse/outlet-orm
   npm: https://www.npmjs.com/package/outlet-orm
 ---
@@ -13,7 +13,7 @@ metadata:
 
 Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for Node.js/TypeScript with support for MySQL, PostgreSQL, and SQLite.
 
-> 🆕 **v4.1.0** : Support TypeScript complet avec Generic Model, Schema Builder typé, MigrationInterface et intégration Copilot Skills.
+> 🆕 **v5.0.0** : Support TypeScript complet avec Generic Model, Schema Builder typé, MigrationInterface et intégration Copilot Skills. Architecture en couches recommandée (Controllers → Services → Repositories → Models).
 
 ## Documentation Index
 
@@ -58,53 +58,96 @@ npm install outlet-orm
 
 ---
 
-## Recommended Project Structure
+## Recommended Project Structure (Layered Architecture)
 
-When using Outlet ORM, organize your project as follows:
+When using Outlet ORM, organize your project following the **Layered Architecture** pattern:
 
 > 🔐 **Security**: See the [Security Guide](../../../docs/SECURITY.md) for best practices.
 
 ```
 my-project/
-├── .env                        # ⚠️ NEVER commit (in .gitignore)
-├── .env.example                # Template without secrets
+├── .env                           # ⚠️ NEVER commit (in .gitignore)
+├── .env.example                   # Template without secrets
 ├── .gitignore
 ├── package.json
-├── config/                     # 🔒 Centralized configuration
-│   ├── app.js
-│   ├── database.js
-│   └── security.js             # Rate limit, helmet, CORS
-├── database/
-│   ├── config.js               # Migration config
-│   └── migrations/
-├── models/                     # Model classes
-├── controllers/                # Business logic
-├── routes/                     # API/Web routes
-├── middlewares/                # 🔒 Security critical
-│   ├── auth.js                 # JWT authentication
-│   ├── authorization.js        # RBAC permissions
-│   ├── rateLimiter.js
-│   ├── validator.js
-│   └── errorHandler.js
-├── services/                   # Business services
-├── utils/                      # 🔒 Hash, tokens
-├── validators/                 # Validation schemas
-├── public/                     # ✅ Only public folder
-├── logs/                       # 📋 Not versioned
 ├── src/
-│   └── index.js
+│   ├── index.js                   # Entry point
+│   ├── controllers/               # 🎮 Presentation Layer
+│   │   └── UserController.js
+│   ├── services/                  # ⚙️ Business Logic Layer
+│   │   └── UserService.js
+│   ├── repositories/              # 📦 Data Access Layer
+│   │   └── UserRepository.js
+│   ├── models/                    # 📊 Models Layer (outlet-orm)
+│   │   └── User.js
+│   ├── middlewares/               # 🔒 Auth, validation, rate limit
+│   │   ├── auth.js
+│   │   ├── validator.js
+│   │   └── errorHandler.js
+│   ├── routes/                    # 🛤️ Route definitions
+│   │   └── index.js
+│   ├── config/                    # 🔒 Configuration
+│   │   ├── database.js
+│   │   └── security.js
+│   └── utils/                     # 🔒 Hash, tokens, helpers
+│       └── helpers.js
+├── database/
+│   ├── config.js                  # Migration CLI config
+│   └── migrations/
+├── public/                        # ✅ Static files only
+├── logs/                          # 📋 Not versioned
 └── tests/
+    ├── unit/
+    └── integration/
 ```
 
-### Key Folders
+### Architecture Flow
 
-| Folder | Purpose | Security |
-|--------|---------|----------|
-| `config/` | Centralized configuration | 🔒 Reads .env |
-| `models/` | Model classes | 🔒 `hidden`, `fillable` |
-| `middlewares/` | Auth, validation, rate limit | 🔒 **Critical** |
-| `utils/` | Hash, tokens | 🔒 Never expose |
-| `public/` | Static files | ✅ Only public folder |
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        HTTP REQUEST                         │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  🛤️ ROUTES          Route to correct controller             │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  🔒 MIDDLEWARES      Validation, Auth, Rate Limiting        │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  🎮 CONTROLLERS      HTTP handling (req/res) only           │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  ⚙️ SERVICES         Business logic, business rules         │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  📦 REPOSITORIES     Data access abstraction (CRUD)         │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  📊 MODELS           outlet-orm (User, Post, etc.)          │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                        DATABASE                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Layer Responsibilities
+
+| Layer | Files | Responsibility | Security |
+|-------|-------|----------------|----------|
+| **Controllers** | `src/controllers/` | HTTP only (req/res) | Input validation |
+| **Services** | `src/services/` | Business logic, rules | Authorization |
+| **Repositories** | `src/repositories/` | DB abstraction, queries | Sanitization |
+| **Models** | `src/models/` | Data structure, relations | Fillable/Hidden |
+| **Middlewares** | `src/middlewares/` | Auth, validation, errors | 🔒 **Critical** |
+| **Config** | `src/config/` | Environment variables | 🔒 Reads .env |
+| **Utils** | `src/utils/` | Hash, tokens, helpers | 🔒 Never expose |
 
 ### Quick Setup Commands
 

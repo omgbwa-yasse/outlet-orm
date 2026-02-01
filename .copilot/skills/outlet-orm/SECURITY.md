@@ -30,28 +30,34 @@
 
 ---
 
-## Secure Project Structure
+## Secure Project Structure (Layered Architecture)
 
 ```
 my-project/
-├── .env                    # ⚠️ NEVER commit
-├── .env.example            # Template without secrets
+├── .env                       # ⚠️ NEVER commit
+├── .env.example               # Template without secrets
 ├── .gitignore
-├── config/                 # 🔒 Centralized config
-│   └── security.js         # Rate limit, helmet, CORS
-├── middlewares/            # 🔒 CRITICAL for security
-│   ├── auth.js             # JWT authentication
-│   ├── authorization.js    # RBAC permissions
-│   ├── rateLimiter.js      # Anti-DDoS
-│   ├── validator.js        # Input validation
-│   └── errorHandler.js     # Error handling
-├── utils/                  # 🔒 Security utilities
-│   ├── hash.js             # Bcrypt password hashing
-│   └── token.js            # JWT token generation
-├── validators/             # 🔒 Validation schemas
-├── public/                 # ✅ Only public folder
-├── logs/                   # 📋 Not versioned
-└── ...
+├── src/
+│   ├── controllers/           # 🎮 HTTP handling only
+│   ├── services/              # ⚙️ Business logic
+│   ├── repositories/          # 📦 Data access layer
+│   ├── models/                # 📊 outlet-orm models
+│   ├── middlewares/           # 🔒 CRITICAL for security
+│   │   ├── auth.js            # JWT authentication
+│   │   ├── authorization.js   # RBAC permissions
+│   │   ├── rateLimiter.js     # Anti-DDoS
+│   │   ├── validator.js       # Input validation
+│   │   └── errorHandler.js    # Error handling
+│   ├── config/                # 🔒 Centralized config
+│   │   └── security.js        # Rate limit, helmet, CORS
+│   ├── utils/                 # 🔒 Security utilities
+│   │   ├── hash.js            # Bcrypt password hashing
+│   │   └── token.js           # JWT token generation
+│   └── validators/            # 🔒 Validation schemas
+├── public/                    # ✅ Only public folder
+├── logs/                      # 📋 Not versioned
+└── tests/
+```
 ```
 
 ---

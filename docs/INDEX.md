@@ -1,13 +1,17 @@
 # 📚 Outlet ORM - Documentation Complète
 
-> **Version 4.0.0** - Un ORM JavaScript/TypeScript inspiré de Laravel Eloquent pour Node.js
+> **Version 5.0.0** - Un ORM JavaScript/TypeScript inspiré de Laravel Eloquent pour Node.js
 
 ## Table des matières
 
 ### 🚀 Démarrage
 - [Guide de démarrage rapide](QUICKSTART.md)
 - [Installation et Configuration](INSTALLATION.md)
-- [Structure de Projet](INSTALLATION.md#structure-de-projet-recommandée)
+- [Structure de Projet (Architecture en Couches)](INSTALLATION.md#structure-de-projet-recommandée-architecture-en-couches)
+
+### 🏗️ Architecture Recommandée
+- [Architecture en Couches](ARCHITECTURE.md) - Controllers → Services → Repositories → Models
+- [Sécurité Backend](SECURITY.md) - Middlewares, validation, bonnes pratiques
 
 ### 📖 Guides essentiels
 - [Modèles et CRUD](MODELS.md)
@@ -26,15 +30,15 @@
 ### 🔐 Sécurité
 - [**Guide de Sécurité Backend**](SECURITY.md) - Structure sécurisée, middlewares, bonnes pratiques
 
-### 📘 TypeScript (v4.0.0+)
+### 📘 TypeScript (v5.0.0+)
 - [**TypeScript Guide Complet**](TYPESCRIPT.md) - Generic Model, Schema Builder typé, Migrations typées
 
 ### 🛠️ Outils
 - [Migrations](MIGRATIONS.md)
 - [CLI (outlet-init, outlet-migrate, outlet-convert)](CLI.md)
 
-### 🏗️ Référence
-- [Architecture](ARCHITECTURE.md)
+### 📚 Référence
+- [Architecture Interne de l'ORM](ARCHITECTURE.md#structure-interne-de-lorm)
 - [API Reference](API_REFERENCE.md)
 
 ### 📋 Autres
@@ -70,10 +74,12 @@ const users = await User.with('posts').where('status', 'active').get();
 
 > 💡 **Connexion automatique** : Créez simplement un fichier `.env` avec vos paramètres de connexion. Le Model se connecte automatiquement à la première utilisation.
 
-## Nouveautés v4.0.0
+## Nouveautés v5.0.0
 
 | Fonctionnalité | Description |
 |----------------|-------------|
+| 🏗️ **Architecture en Couches** | Structure recommandée Controllers → Services → Repositories → Models |
+| 📁 **Source Centralisée** | Tout le code dans `src/` (migration depuis `lib/`) |
 | 📘 **Generic Model** | `Model<TAttributes>` pour typage fort des attributs |
 | 🔒 **Type-safe getAttribute** | Retourne le type correct basé sur votre interface |
 | 🏗️ **Schema Builder typé** | Interfaces complètes pour migrations typées |
@@ -82,7 +88,7 @@ const users = await User.with('posts').where('status', 'active').get();
 | 🎯 **ModelEventName** | Union type pour tous les événements |
 | 🔍 **WhereOperator** | Union type pour tous les opérateurs |
 
-### Fonctionnalités héritées (v3.0.0)
+### Fonctionnalités héritées (v3.0.0+)
 
 | Fonctionnalité | Description |
 |----------------|-------------|

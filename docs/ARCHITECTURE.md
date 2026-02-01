@@ -1,53 +1,198 @@
 # Architecture du Code
 
-Ce document décrit l'architecture et la structure du code de l'ORM Eloquent JS.
+Ce document décrit l'architecture et la structure du code de l'ORM Outlet ORM.
 
-## Structure du Projet Utilisateur
+## Structure du Projet Utilisateur (Architecture en Couches)
 
-Voici la structure recommandée pour un projet utilisant Outlet ORM :
+Voici la structure recommandée pour un projet utilisant Outlet ORM, basée sur le pattern **Architecture en Couches** :
 
 > 🔐 **Sécurité** : Voir le [Guide de Sécurité](SECURITY.md) pour les bonnes pratiques.
 
 ```
 mon-projet/
-├── .env                        # ⚠️ JAMAIS commité (dans .gitignore)
-├── .env.example                # Template sans secrets
+├── .env                           # ⚠️ JAMAIS commité (dans .gitignore)
+├── .env.example                   # Template sans secrets
 ├── .gitignore
 ├── package.json
-├── config/                     # 🔒 Configuration centralisée
-│   ├── app.js
-│   ├── database.js
-│   └── security.js             # Rate limit, helmet, CORS
-├── database/
-│   ├── config.js               # Config migrations
-│   └── migrations/
-├── models/                     # Classes Model (hidden, fillable)
-├── controllers/                # Logique métier
-├── routes/                     # Routes API/Web
-├── middlewares/                # 🔒 Sécurité critique
-│   ├── auth.js                 # JWT authentication
-│   ├── authorization.js        # RBAC
-│   ├── rateLimiter.js
-│   ├── validator.js
-│   └── errorHandler.js
-├── services/                   # Services métier
-├── utils/                      # 🔒 Hash, tokens, encryption
-├── validators/                 # Schémas de validation
-├── public/                     # ✅ Seul dossier accessible
-├── uploads/                    # ⚠️ Fichiers uploadés
-├── logs/                       # 📋 Non versionnés
 ├── src/
-│   └── index.js
+│   ├── index.js                   # Point d'entrée
+│   ├── controllers/               # 🎮 Couche Présentation
+│   │   ├── UserController.js
+│   │   └── PostController.js
+│   ├── services/                  # ⚙️ Couche Métier (Business Logic)
+│   │   ├── UserService.js
+│   │   └── PostService.js
+│   ├── repositories/              # 📦 Couche Accès Données
+│   │   ├── UserRepository.js
+│   │   └── PostRepository.js
+│   ├── models/                    # 📊 Couche Modèles (outlet-orm)
+│   │   ├── User.js
+│   │   ├── Post.js
+│   │   └── index.js
+│   ├── middlewares/               # 🔒 Sécurité critique
+│   │   ├── auth.js                # JWT authentication
+│   │   ├── authorization.js       # RBAC
+│   │   ├── rateLimiter.js
+│   │   ├── validator.js
+│   │   └── errorHandler.js
+│   ├── routes/                    # 🛤️ Définition des routes
+│   │   └── index.js
+│   ├── config/                    # 🔒 Configuration centralisée
+│   │   ├── app.js
+│   │   ├── database.js
+│   │   └── security.js            # Rate limit, helmet, CORS
+│   ├── utils/                     # 🔒 Hash, tokens, encryption
+│   │   ├── hash.js
+│   │   └── token.js
+│   └── validators/                # Schémas de validation
+├── database/
+│   ├── config.js                  # Config migrations
+│   └── migrations/
+├── public/                        # ✅ Seul dossier accessible
+├── uploads/                       # ⚠️ Fichiers uploadés
+├── logs/                          # 📋 Non versionnés
 └── tests/
+    ├── unit/
+    └── integration/
 ```
 
-| Dossier | Rôle | Sécurité |
-|---------|------|----------|
-| `config/` | Configuration centralisée | 🔒 Secrets via .env |
-| `models/` | Classes Model | 🔒 `hidden`, `fillable` |
-| `middlewares/` | Auth, validation, rate limiting | 🔒 **Critique** |
-| `utils/` | Hash, tokens | 🔒 Ne pas exposer |
-| `public/` | Fichiers statiques | ✅ Seul dossier public |
+### Flux de l'Architecture en Couches
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        REQUÊTE HTTP                         │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  🛤️ ROUTES          Routage vers le bon controller          │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  🔒 MIDDLEWARES      Validation, Auth, Rate Limiting        │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  🎮 CONTROLLERS      Gestion HTTP (req/res) uniquement      │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  ⚙️ SERVICES         Logique métier, règles business        │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  📦 REPOSITORIES     Abstraction accès données (CRUD)       │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  📊 MODELS           outlet-orm (User, Post, etc.)          │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     BASE DE DONNÉES                         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Responsabilités par Couche
+
+| Couche | Fichiers | Responsabilité | Sécurité |
+|--------|----------|----------------|----------|
+| **Controllers** | `src/controllers/` | HTTP uniquement (req/res) | Validation entrée |
+| **Services** | `src/services/` | Logique métier, règles | Autorisation |
+| **Repositories** | `src/repositories/` | Abstraction BDD, requêtes | Sanitization |
+| **Models** | `src/models/` | Structure données, relations | Fillable/Hidden |
+| **Middlewares** | `src/middlewares/` | Auth, validation, erreurs | 🔒 **Critique** |
+| **Config** | `src/config/` | Variables d'environnement | 🔒 Lit .env |
+| **Utils** | `src/utils/` | Hash, tokens, helpers | 🔒 Ne pas exposer |
+
+### Exemple d'Implémentation
+
+```javascript
+// src/models/User.js - Couche Modèle
+const { Model } = require('outlet-orm');
+
+class User extends Model {
+  static table = 'users';
+  static fillable = ['name', 'email', 'password'];
+  static hidden = ['password'];
+}
+module.exports = User;
+
+// src/repositories/UserRepository.js - Couche Repository
+const User = require('../models/User');
+
+class UserRepository {
+  async findById(id) {
+    return User.find(id);
+  }
+  async findByEmail(email) {
+    return User.where('email', email).first();
+  }
+  async create(data) {
+    return User.create(data);
+  }
+  async update(id, data) {
+    const user = await User.find(id);
+    if (user) {
+      user.fill(data);
+      await user.save();
+    }
+    return user;
+  }
+}
+module.exports = new UserRepository();
+
+// src/services/UserService.js - Couche Service
+const userRepository = require('../repositories/UserRepository');
+const bcrypt = require('bcrypt');
+
+class UserService {
+  async register(data) {
+    // Logique métier : validation, hash password
+    const existing = await userRepository.findByEmail(data.email);
+    if (existing) throw new Error('Email déjà utilisé');
+    
+    data.password = await bcrypt.hash(data.password, 10);
+    return userRepository.create(data);
+  }
+  
+  async authenticate(email, password) {
+    const user = await userRepository.findByEmail(email);
+    if (!user) return null;
+    
+    const valid = await bcrypt.compare(password, user.getAttribute('password'));
+    return valid ? user : null;
+  }
+}
+module.exports = new UserService();
+
+// src/controllers/UserController.js - Couche Controller
+const userService = require('../services/UserService');
+
+class UserController {
+  async register(req, res) {
+    try {
+      const user = await userService.register(req.body);
+      res.status(201).json({ success: true, user });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+  
+  async login(req, res) {
+    try {
+      const user = await userService.authenticate(req.body.email, req.body.password);
+      if (!user) {
+        return res.status(401).json({ success: false, message: 'Identifiants invalides' });
+      }
+      // Générer JWT token...
+      res.json({ success: true, user, token: '...' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+}
+module.exports = new UserController();
+```
 
 ## Structure Interne de l'ORM
 

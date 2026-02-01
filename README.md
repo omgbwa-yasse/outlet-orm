@@ -30,71 +30,171 @@ Si aucun driver n'est installé, un message d'erreur explicite vous indiquera le
 
 ## 📁 Structure de Projet Recommandée
 
-Organisez votre projet utilisant Outlet ORM comme suit :
+Organisez votre projet utilisant Outlet ORM avec une **architecture en couches** (recommandée pour la production) :
 
 > 🔐 **Sécurité** : Voir le [Guide de Sécurité](./docs/SECURITY.md) pour les bonnes pratiques.
 
 ```
 mon-projet/
-├── .env                        # ⚠️ JAMAIS commité (dans .gitignore)
-├── .env.example                # Template sans secrets
-├── .gitignore                  # Exclure .env, node_modules, logs
+├── .env                          # ⚠️ JAMAIS commité (dans .gitignore)
+├── .env.example                  # Template sans secrets
+├── .gitignore
 ├── package.json
-├── config/                     # 🔒 Configuration centralisée
-│   ├── app.js                  # Config générale
-│   ├── database.js             # Config DB (lit .env)
-│   └── security.js             # Rate limit, helmet, CORS...
+│
+├── src/                          # 📦 Code source centralisé
+│   ├── index.js                  # Point d'entrée de l'application
+│   │
+│   ├── config/                   # ⚙️ Configuration
+│   │   ├── app.js                # Config générale (port, env)
+│   │   ├── database.js           # Config DB (lit .env)
+│   │   └── security.js           # CORS, helmet, rate limit
+│   │
+│   ├── models/                   # 📊 Couche Data (Entities)
+│   │   ├── index.js              # Export centralisé des models
+│   │   ├── User.js
+│   │   ├── Post.js
+│   │   └── Comment.js
+│   │
+│   ├── repositories/             # 🗄️ Couche Accès Données
+│   │   ├── BaseRepository.js     # Méthodes CRUD génériques
+│   │   ├── UserRepository.js     # Requêtes spécifiques User
+│   │   └── PostRepository.js
+│   │
+│   ├── services/                 # 💼 Couche Métier (Business Logic)
+│   │   ├── AuthService.js        # Logique d'authentification
+│   │   ├── UserService.js        # Logique métier utilisateur
+│   │   ├── PostService.js
+│   │   └── EmailService.js       # Service externe (emails)
+│   │
+│   ├── controllers/              # 🎮 Couche Présentation (HTTP)
+│   │   ├── AuthController.js
+│   │   ├── UserController.js
+│   │   └── PostController.js
+│   │
+│   ├── routes/                   # 🛤️ Définition des routes
+│   │   ├── index.js              # Agrégateur de routes
+│   │   ├── auth.routes.js
+│   │   ├── user.routes.js
+│   │   └── post.routes.js
+│   │
+│   ├── middlewares/              # 🔒 Middlewares
+│   │   ├── auth.js               # JWT verification
+│   │   ├── authorize.js          # RBAC / permissions
+│   │   ├── rateLimiter.js        # Protection DDoS
+│   │   ├── validator.js          # Validation request body
+│   │   └── errorHandler.js       # Gestion centralisée erreurs
+│   │
+│   ├── validators/               # ✅ Schémas de validation
+│   │   ├── authValidator.js
+│   │   └── userValidator.js
+│   │
+│   └── utils/                    # 🔧 Utilitaires
+│       ├── hash.js               # bcrypt wrapper
+│       ├── token.js              # JWT helpers
+│       ├── logger.js             # Winston/Pino config
+│       └── response.js           # Formatage réponses API
+│
 ├── database/
-│   ├── config.js               # Config migrations (généré par outlet-init)
-│   └── migrations/             # Vos fichiers de migration
-├── models/                     # Vos classes Model
-│   ├── User.js
-│   ├── Post.js
-│   └── Comment.js
-├── controllers/                # Vos contrôleurs (logique métier)
-│   ├── UserController.js
-│   └── PostController.js
-├── routes/                     # Vos fichiers de routes
-│   ├── index.js
-│   └── userRoutes.js
-├── middlewares/                # 🔒 Middlewares de sécurité
-│   ├── auth.js                 # Authentification JWT
-│   ├── authorization.js        # Contrôle des permissions (RBAC)
-│   ├── rateLimiter.js          # Protection anti-DDoS
-│   ├── validator.js            # Validation des entrées
-│   └── errorHandler.js         # Gestion centralisée des erreurs
-├── services/                   # Vos services (logique réutilisable)
-│   ├── AuthService.js
-│   └── EmailService.js
-├── utils/                      # 🔒 Utilitaires sécurité
-│   ├── hash.js                 # Hachage mots de passe (bcrypt)
-│   └── token.js                # Génération tokens sécurisés
-├── validators/                 # 🔒 Schémas de validation
-│   └── userValidator.js
-├── public/                     # ✅ Seul dossier accessible publiquement
+│   ├── config.js                 # Config migrations (outlet-init)
+│   ├── migrations/               # Fichiers de migration
+│   └── seeders/                  # Données de test/démo
+│       └── UserSeeder.js
+│
+├── public/                       # ✅ Fichiers statiques publics
 │   ├── images/
 │   ├── css/
 │   └── js/
-├── uploads/                    # ⚠️ Fichiers uploadés (validés)
-├── logs/                       # 📋 Journaux (non versionnés)
-├── src/                        # Votre code applicatif
-│   └── index.js
-└── tests/                      # Vos tests
-    └── models.test.js
+│
+├── uploads/                      # ⚠️ Fichiers uploadés
+│
+├── logs/                         # 📋 Journaux (non versionnés)
+│
+└── tests/                        # 🧪 Tests
+    ├── unit/                     # Tests unitaires
+    │   ├── services/
+    │   └── models/
+    ├── integration/              # Tests d'intégration
+    │   └── api/
+    └── fixtures/                 # Données de test
+        └── users.json
 ```
 
-| Dossier | Rôle | Sécurité |
-|---------|------|----------|
-| `config/` | Configuration centralisée | 🔒 Lit les secrets depuis .env |
-| `database/` | Migrations et config DB | `outlet-init` |
-| `models/` | Classes Model avec `hidden` et `fillable` | 🔒 Mass assignment protection |
-| `controllers/` | Logique métier | Valider les entrées |
-| `routes/` | Définition des routes API/Web | 🔒 Appliquer middlewares auth |
-| `middlewares/` | Auth, validation, rate limiting | 🔒 **Critique pour la sécurité** |
-| `services/` | Services réutilisables | Isoler la logique sensible |
-| `utils/` | Hash, tokens, encryption | 🔒 Ne jamais exposer |
-| `public/` | Seul dossier accessible | ✅ Fichiers statiques sûrs |
-| `logs/` | Journaux d'accès/erreurs | 📋 Dans .gitignore |
+### 🏗️ Architecture en Couches
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      HTTP Request                           │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  MIDDLEWARES: auth → validate → rateLimiter → errorHandler │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  ROUTES → CONTROLLERS (Couche Présentation)                 │
+│  Reçoit la requête, appelle le service, retourne réponse   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  SERVICES (Couche Métier / Business Logic)                  │
+│  Logique métier, orchestration, règles business            │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  REPOSITORIES (Couche Accès Données)                        │
+│  Abstraction des requêtes DB, utilise les Models           │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  MODELS (Outlet ORM) → DATABASE                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 📋 Rôle de chaque couche
+
+| Couche | Dossier | Responsabilité | Dépend de |
+|--------|---------|----------------|-----------|
+| **Présentation** | `controllers/` | Traiter HTTP, valider entrées, formater réponses | Services |
+| **Métier** | `services/` | Logique business, orchestration, règles | Repositories |
+| **Données** | `repositories/` | Requêtes DB complexes, abstraction | Models |
+| **Entités** | `models/` | Définition des entités, relations, validations | Outlet ORM |
+
+### ✅ Avantages de cette architecture
+
+- **Testabilité** : Chaque couche peut être testée indépendamment
+- **Maintenabilité** : Séparation claire des responsabilités
+- **Scalabilité** : Facile d'ajouter de nouvelles fonctionnalités
+- **Réutilisabilité** : Services utilisables depuis CLI, workers, etc.
+
+### 📝 Exemple de flux
+
+```javascript
+// routes/user.routes.js
+router.get('/users/:id', auth, UserController.show);
+
+// controllers/UserController.js
+async show(req, res) {
+  const user = await userService.findById(req.params.id);
+  res.json({ data: user });
+}
+
+// services/UserService.js
+async findById(id) {
+  const user = await userRepository.findWithPosts(id);
+  if (!user) throw new NotFoundError('User not found');
+  return user;
+}
+
+// repositories/UserRepository.js
+async findWithPosts(id) {
+  return User.with('posts').find(id);
+}
+```
 
 ## ✨ Fonctionnalités clés
 

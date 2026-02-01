@@ -2,7 +2,7 @@
  * Example Migration: Alter Users Table (Add Phone Column)
  */
 
-const Migration = require('../../lib/Migrations/Migration');
+const { Migration } = require('outlet-orm');
 
 class AddPhoneToUsersTable extends Migration {
   /**

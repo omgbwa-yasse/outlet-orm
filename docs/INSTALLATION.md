@@ -220,43 +220,11 @@ async function testConnection() {
 testConnection();
 ```
 
-## Structure de projet recommandée
+## Référence rapide de la structure
 
-```
-my-project/
-├── .env                    # Configuration
-├── package.json
-├── database/
-│   ├── config.js          # Configuration exportée
-│   └── migrations/        # Fichiers de migration
-├── models/
-│   ├── User.js
-│   ├── Post.js
-│   └── index.js           # Export tous les modèles
-├── controllers/            # Vos contrôleurs
-│   ├── UserController.js
-│   └── PostController.js
-├── routes/                 # Vos fichiers de routes
-│   ├── index.js
-│   └── userRoutes.js
-├── middlewares/            # Vos middlewares
-│   ├── auth.js
-│   └── validation.js
-├── services/               # Vos services
-│   ├── AuthService.js
-│   └── EmailService.js
-├── assets/                 # Ressources statiques
-│   ├── images/
-│   ├── videos/
-│   ├── icons/
-│   ├── fonts/
-│   ├── css/
-│   └── js/
-└── src/
-    └── index.js           # Point d'entrée
-```
+> Voir la section **Structure de Projet Recommandée (Architecture en Couches)** ci-dessus pour la structure complète.
 
-### Exemple de `models/index.js`
+### Exemple de `src/models/index.js`
 
 ```javascript
 const { Model } = require('outlet-orm');
