@@ -2,7 +2,7 @@
  * Migration: Alter ci table
  */
 
-const Migration = require('../../lib/Migrations/Migration');
+const { Migration } = require('outlet-orm');
 
 class AlterCiTable extends Migration {
   /**

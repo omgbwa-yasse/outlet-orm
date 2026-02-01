@@ -1,0 +1,427 @@
+# Outlet ORM - Models & CRUD
+
+[← Back to Index](SKILL.md) | [Next: Queries →](QUERIES.md)
+
+> 📘 **TypeScript** : Use `Model<TAttributes>` for typed attributes. See [TYPESCRIPT.md](TYPESCRIPT.md#generic-model-v400)
+
+---
+
+## Recommended Project Structure (Layered Architecture)
+
+> 🔐 **Security**: Use `hidden` for sensitive fields, `fillable` for mass assignment protection.
+
+```
+my-project/
+├── .env                        # ⚠️ NEVER commit
+├── src/
+│   ├── controllers/            # 🎮 HTTP handling only
+│   ├── services/               # ⚙️ Business logic
+│   ├── repositories/           # 📦 Data access layer
+│   ├── models/                 # 📊 Your Model classes
+│   │   ├── User.js             # hidden: ['password']
+│   │   └── Post.js
+│   ├── middlewares/            # 🔒 Auth, validation
+│   ├── config/                 # 🔒 Configuration
+│   └── utils/                  # 🔒 Hash, tokens
+├── database/
+│   └── migrations/
+├── public/                     # ✅ Only public folder
+└── tests/
+```
+
+---
+
+## Model Definition
+
+### Complete Model Example
+
+```javascript
+const { Model } = require('outlet-orm');
+
+// Define related models first
+class Post extends Model {
+  static table = 'posts';
+}
+
+class Profile extends Model {
+  static table = 'profiles';
+}
+
+class User extends Model {
+  // Required: Table name
+  static table = 'users';
+  
+  // Optional: Primary key (default: 'id')
+  static primaryKey = 'id';
+  
+  // Auto-manage created_at/updated_at
+  static timestamps = true;
+  
+  // Enable soft deletes (deleted_at)
+  static softDeletes = true;
+  
+  // Mass assignable fields
+  static fillable = ['name', 'email', 'password', 'role'];
+  
+  // Hidden from JSON output
+  static hidden = ['password', 'remember_token'];
+  
+  // Auto type casting
+  static casts = {
+    id: 'int',
+    email_verified: 'boolean',
+    preferences: 'json',
+    birthday: 'date',
+    balance: 'float'
+  };
+  
+  // Validation rules
+  static rules = {
+    name: 'required|string|min:2|max:100',
+    email: 'required|email',
+    password: 'required|min:8',
+    role: 'in:admin,user,guest'
+  };
+  
+  // Relations
+  posts() {
+    return this.hasMany(Post, 'user_id');
+  }
+  
+  profile() {
+    return this.hasOne(Profile, 'user_id');
+  }
+}
+```
+
+---
+
+## Static Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `table` | string | **required** | Table name |
+| `primaryKey` | string | `'id'` | Primary key column |
+| `timestamps` | boolean | `true` | Auto-manage created_at/updated_at |
+| `softDeletes` | boolean | `false` | Enable soft delete |
+| `DELETED_AT` | string | `'deleted_at'` | Soft delete column name |
+| `fillable` | array | `[]` | Mass assignable fields |
+| `hidden` | array | `[]` | Hidden from JSON |
+| `casts` | object | `{}` | Type casting definitions |
+| `rules` | object | `{}` | Validation rules |
+| `connection` | object | `null` | Custom DB connection |
+
+---
+
+## Type Casting
+
+```javascript
+class User extends Model {
+  static casts = {
+    id: 'int',              // or 'integer'
+    age: 'integer',
+    balance: 'float',       // or 'double'
+    is_active: 'boolean',   // or 'bool'
+    metadata: 'json',       // Parse as JSON object
+    settings: 'array',      // Parse as JSON array
+    birthday: 'date'        // Convert to Date
+  };
+}
+
+const user = await User.find(1);
+console.log(typeof user.getAttribute('age'));       // 'number'
+console.log(typeof user.getAttribute('is_active')); // 'boolean'
+console.log(user.getAttribute('metadata'));         // Object
+```
+
+### Cast Types
+
+| Type | Description |
+|------|-------------|
+| `int` / `integer` | Integer number |
+| `float` / `double` | Floating point number |
+| `boolean` / `bool` | Boolean value |
+| `json` | Parse JSON to object |
+| `array` | Parse JSON to array |
+| `date` | Convert to Date object |
+
+---
+
+## CRUD Operations
+
+### Create
+
+```javascript
+// Method 1: create() - Create and save
+const user = await User.create({
+  name: 'John Doe',
+  email: 'john@example.com',
+  password: 'secret123'
+});
+
+// Method 2: new + save()
+const user = new User({
+  name: 'Jane Doe',
+  email: 'jane@example.com'
+});
+user.setAttribute('password', 'secret456');
+await user.save();
+
+// Method 3: Raw insert (no model instance returned)
+await User.insert({ name: 'Bob', email: 'bob@example.com' });
+
+// Insert multiple
+await User.insert([
+  { name: 'User 1', email: 'user1@example.com' },
+  { name: 'User 2', email: 'user2@example.com' }
+]);
+```
+
+### Read
+
+```javascript
+// All records
+const users = await User.all();
+
+// Find by ID
+const user = await User.find(1);
+const user = await User.findOrFail(1); // Throws if not found
+
+// First result
+const firstUser = await User.first();
+
+// With conditions
+const activeUsers = await User
+  .where('status', 'active')
+  .where('age', '>', 18)
+  .get();
+
+// With relations (Eager Loading)
+const usersWithPosts = await User
+  .with('posts', 'profile')
+  .get();
+
+// Order and limit
+const recentUsers = await User
+  .orderBy('created_at', 'desc')
+  .limit(10)
+  .get();
+```
+
+### Update
+
+```javascript
+// Instance update
+const user = await User.find(1);
+user.setAttribute('name', 'Updated Name');
+await user.save();
+
+// Bulk update
+await User
+  .where('status', 'pending')
+  .update({ status: 'active' });
+
+// Update and fetch (like Prisma)
+const updated = await User
+  .where('id', 1)
+  .updateAndFetch({ name: 'Neo' }, ['profile', 'posts']);
+
+// Helpers by ID
+const user = await User.updateAndFetchById(1, { name: 'Trinity' }, ['profile']);
+await User.updateById(2, { status: 'active' });
+```
+
+### Delete
+
+```javascript
+// Instance delete
+const user = await User.find(1);
+await user.destroy(); // Soft delete if enabled
+
+// Bulk delete
+await User
+  .where('status', 'banned')
+  .delete();
+
+// Force delete (permanent, even with soft deletes)
+await user.forceDelete();
+```
+
+---
+
+## Attribute Methods
+
+### Getting Attributes
+
+```javascript
+const user = await User.find(1);
+
+// Get single attribute
+const name = user.getAttribute('name');
+
+// Get all attributes as object
+const attrs = user.toJSON();
+
+// Check if modified
+const isDirty = user.isDirty();
+const dirty = user.getDirty(); // Get modified attributes
+```
+
+### Setting Attributes
+
+```javascript
+const user = new User();
+
+// Set single attribute
+user.setAttribute('name', 'John');
+
+// Fill multiple attributes
+user.fill({
+  name: 'John',
+  email: 'john@example.com'
+});
+```
+
+---
+
+## Hidden Attributes
+
+```javascript
+class User extends Model {
+  static hidden = ['password', 'secret_token'];
+}
+
+// Normal query - hidden fields excluded
+const user = await User.find(1);
+console.log(user.toJSON()); // password excluded
+
+// Include hidden fields
+const user = await User.withHidden().where('email', email).first();
+console.log(user.toJSON()); // password included
+
+// Control with boolean
+const user = await User.withoutHidden(true).first();  // true = show
+const user = await User.withoutHidden(false).first(); // false = hide
+
+// Use case: Authentication
+const user = await User.withHidden().where('email', email).first();
+if (user && await bcrypt.compare(password, user.getAttribute('password'))) {
+  // Authentication successful
+}
+```
+
+---
+
+## Timestamps
+
+```javascript
+// Enabled by default
+class User extends Model {
+  static timestamps = true; // created_at, updated_at
+}
+
+// Disable timestamps
+class Log extends Model {
+  static timestamps = false;
+}
+
+// Auto-managed on create/update
+const user = await User.create({ name: 'John' });
+console.log(user.getAttribute('created_at')); // Current date
+
+user.setAttribute('name', 'Jane');
+await user.save();
+console.log(user.getAttribute('updated_at')); // Updated automatically
+```
+
+---
+
+## Mass Assignment Protection
+
+```javascript
+class User extends Model {
+  static fillable = ['name', 'email', 'age'];
+}
+
+// OK - all fields are in fillable
+const user = await User.create({
+  name: 'John',
+  email: 'john@example.com',
+  age: 30
+});
+
+// 'role' will be IGNORED (not in fillable)
+const user2 = await User.create({
+  name: 'Jane',
+  role: 'admin'  // Ignored!
+});
+```
+
+---
+
+## Multiple Connections
+
+```javascript
+const { DatabaseConnection, Model } = require('outlet-orm');
+
+// Create connections
+const mysqlDb = new DatabaseConnection({
+  driver: 'mysql',
+  host: 'localhost',
+  database: 'app_db'
+});
+
+const postgresDb = new DatabaseConnection({
+  driver: 'postgres',
+  host: 'localhost',
+  database: 'analytics_db'
+});
+
+// Assign to models
+class User extends Model {
+  static table = 'users';
+  static connection = mysqlDb;
+}
+
+class Analytics extends Model {
+  static table = 'events';
+  static connection = postgresDb;
+}
+
+// Close when done
+await mysqlDb.close();
+await postgresDb.close();
+```
+
+---
+
+## Environment Variables
+
+Configure via `.env` file (auto-loaded):
+
+```env
+DB_DRIVER=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_DATABASE=myapp
+DB_USER=root
+DB_PASSWORD=secret
+```
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DB_DRIVER` | `mysql`, `postgres`, `sqlite` | `mysql` |
+| `DB_HOST` | Database host | `localhost` |
+| `DB_PORT` | Connection port | Driver default |
+| `DB_USER` / `DB_USERNAME` | Username | - |
+| `DB_PASSWORD` | Password | - |
+| `DB_DATABASE` / `DB_NAME` | Database name | - |
+| `DB_FILE` / `SQLITE_DB` | SQLite file path | `:memory:` |
+
+---
+
+## Next Steps
+
+- [Query Builder →](QUERIES.md)
+- [Relations →](RELATIONS.md)
+- [Advanced Features →](ADVANCED.md)

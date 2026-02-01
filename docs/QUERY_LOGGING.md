@@ -2,6 +2,10 @@
 
 Le query logging permet de tracer et débugger les requêtes SQL exécutées par votre application.
 
+> � **Utilisation** : Activez dans `services/` ou `middlewares/` pour le débug — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+>
+> �📘 **TypeScript** : Le type `QueryLogEntry` définit la structure des entrées de log. Voir [TYPESCRIPT.md](TYPESCRIPT.md#querylogentry)
+
 ## Activer le logging
 
 ```javascript

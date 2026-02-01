@@ -2,7 +2,7 @@
  * Migration: Create users table
  */
 
-const Migration = require('../../lib/Migrations/Migration');
+const { Migration } = require('outlet-orm');
 
 class CreateUsersTable extends Migration {
   /**

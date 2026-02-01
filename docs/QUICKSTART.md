@@ -12,6 +12,158 @@ npm install outlet-orm pg
 npm install outlet-orm sqlite3
 ```
 
+## Structure de Projet Recommandée (Architecture en Couches)
+
+> 🔐 **Sécurité** : Voir le [Guide de Sécurité](SECURITY.md) pour les bonnes pratiques.
+
+L'architecture en couches sépare clairement les responsabilités :
+
+```
+mon-projet/
+├── .env                           # ⚠️ JAMAIS commité
+├── .env.example                   # Template sans secrets
+├── .gitignore
+├── package.json
+├── src/
+│   ├── index.js                   # Point d'entrée
+│   ├── controllers/               # 🎮 Couche Présentation
+│   │   └── UserController.js
+│   ├── services/                  # ⚙️ Couche Métier (Business Logic)
+│   │   └── UserService.js
+│   ├── repositories/              # 📦 Couche Accès Données
+│   │   └── UserRepository.js
+│   ├── models/                    # 📊 Couche Modèles (outlet-orm)
+│   │   └── User.js
+│   ├── middlewares/               # 🔒 Auth, validation, rate limit
+│   │   ├── auth.js
+│   │   ├── validator.js
+│   │   └── errorHandler.js
+│   ├── routes/                    # 🛤️ Définition des routes
+│   │   └── index.js
+│   ├── config/                    # 🔒 Configuration
+│   │   ├── database.js
+│   │   └── security.js
+│   └── utils/                     # 🔒 Hash, tokens, helpers
+│       └── helpers.js
+├── database/
+│   ├── config.js                  # Config migrations CLI
+│   └── migrations/
+├── public/                        # ✅ Fichiers statiques publics
+├── logs/                          # 📋 Journaux
+└── tests/
+    ├── unit/
+    └── integration/
+```
+
+### Flux de l'Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        REQUÊTE HTTP                         │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  🛤️ ROUTES          Routage vers le bon controller          │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  🔒 MIDDLEWARES      Validation, Auth, Rate Limiting        │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  🎮 CONTROLLERS      Gestion HTTP (req/res) uniquement      │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  ⚙️ SERVICES         Logique métier, règles business        │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  📦 REPOSITORIES     Abstraction accès données (CRUD)       │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  📊 MODELS           outlet-orm (User, Post, etc.)          │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     BASE DE DONNÉES                         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Responsabilités par Couche
+
+| Couche | Fichiers | Responsabilité | Sécurité |
+|--------|----------|----------------|----------|
+| **Controllers** | `src/controllers/` | HTTP uniquement (req/res) | Validation entrée |
+| **Services** | `src/services/` | Logique métier, règles | Autorisation |
+| **Repositories** | `src/repositories/` | Abstraction BDD, requêtes | Sanitization |
+| **Models** | `src/models/` | Structure données, relations | Fillable/Hidden |
+| **Middlewares** | `src/middlewares/` | Auth, validation, erreurs | 🔒 **Critique** |
+| **Config** | `src/config/` | Variables d'environnement | 🔒 Lit .env |
+| **Utils** | `src/utils/` | Hash, tokens, helpers | 🔒 Ne pas exposer |
+
+### Exemple d'Implémentation
+
+```javascript
+// src/models/User.js - Couche Modèle
+const { Model } = require('outlet-orm');
+
+class User extends Model {
+  static table = 'users';
+  static fillable = ['name', 'email', 'password'];
+  static hidden = ['password'];
+}
+module.exports = User;
+
+// src/repositories/UserRepository.js - Couche Repository
+const User = require('../models/User');
+
+class UserRepository {
+  async findById(id) {
+    return User.find(id);
+  }
+  async findByEmail(email) {
+    return User.where('email', email).first();
+  }
+  async create(data) {
+    return User.create(data);
+  }
+}
+module.exports = new UserRepository();
+
+// src/services/UserService.js - Couche Service
+const userRepository = require('../repositories/UserRepository');
+const bcrypt = require('bcrypt');
+
+class UserService {
+  async register(data) {
+    // Logique métier : validation, hash password
+    const existing = await userRepository.findByEmail(data.email);
+    if (existing) throw new Error('Email déjà utilisé');
+    
+    data.password = await bcrypt.hash(data.password, 10);
+    return userRepository.create(data);
+  }
+}
+module.exports = new UserService();
+
+// src/controllers/UserController.js - Couche Controller
+const userService = require('../services/UserService');
+
+class UserController {
+  async register(req, res) {
+    try {
+      const user = await userService.register(req.body);
+      res.status(201).json({ success: true, user });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+}
+module.exports = new UserController();
+```
+
 ## Configuration Initiale
 
 ### 1. Créer le fichier `.env`

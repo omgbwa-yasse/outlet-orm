@@ -2,7 +2,7 @@
  * Example Migration: Create Blog Tables (Posts, Categories, Tags)
  */
 
-const Migration = require('../../lib/Migrations/Migration');
+const { Migration } = require('outlet-orm');
 
 class CreateBlogTables extends Migration {
   /**

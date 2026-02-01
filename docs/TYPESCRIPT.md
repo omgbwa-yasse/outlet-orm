@@ -1,6 +1,17 @@
 # 📘 TypeScript
 
-Outlet ORM v3.0.0 inclut des définitions TypeScript complètes.
+Outlet ORM v4.0.0 inclut des définitions TypeScript complètes avec support des **generics pour les attributs typés**.
+
+> 📁 **Emplacement recommandé** : `models/`, `controllers/`, `services/` et `src/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+
+## Nouveautés v4.0.0
+
+- ✅ **Generic Model** : Typez vos attributs avec `Model<TAttributes>`
+- ✅ **Type-safe `getAttribute/setAttribute`** : Autocomplétion et vérification de types
+- ✅ **Schema Builder typé** : Interfaces complètes pour les migrations
+- ✅ **Event names contraints** : `ModelEventName` union type
+- ✅ **WHERE operators typés** : `WhereOperator` union type
+- ✅ **Validation rules étendues** : `url`, `array`, `integer`, etc.
 
 ## Installation
 
@@ -20,12 +31,80 @@ Aucune installation de `@types/outlet-orm` n'est nécessaire.
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
+    "lib": ["ES2020"],
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
   }
 }
 ```
+
+---
+
+## Generic Model (v4.0.0+)
+
+### Définir une interface d'attributs
+
+```typescript
+interface UserAttributes {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+  age?: number;
+  role: 'admin' | 'user' | 'moderator';
+  created_at: Date;
+  updated_at: Date;
+}
+```
+
+### Créer un modèle typé
+
+```typescript
+import { Model, HasManyRelation, HasOneRelation } from 'outlet-orm';
+
+class User extends Model<UserAttributes> {
+  static readonly table = 'users';
+  static readonly fillable = ['name', 'email', 'password', 'age', 'role'];
+  static readonly hidden = ['password'];
+  
+  static readonly casts = {
+    id: 'int' as const,
+    age: 'int' as const,
+    created_at: 'datetime' as const,
+    updated_at: 'datetime' as const
+  };
+
+  posts(): HasManyRelation<Post> {
+    return this.hasMany(Post, 'user_id');
+  }
+}
+```
+
+### Type-safe getAttribute/setAttribute
+
+```typescript
+const user = await User.find(1);
+
+if (user) {
+  // ✅ TypeScript connaît les types
+  const name: string = user.getAttribute('name');
+  const age: number | undefined = user.getAttribute('age');
+  const role: 'admin' | 'user' | 'moderator' = user.getAttribute('role');
+
+  // ✅ Type-safe setAttribute
+  user.setAttribute('name', 'New Name');
+  user.setAttribute('age', 30);
+  
+  // ❌ TypeScript error: Argument of type '"invalid"' is not assignable
+  // user.setAttribute('role', 'invalid');
+  
+  await user.save();
+}
+```
+
+---
 
 ## Utilisation de base
 
@@ -39,7 +118,10 @@ import {
   HasOneRelation,
   HasManyRelation,
   BelongsToRelation,
-  BelongsToManyRelation
+  BelongsToManyRelation,
+  SchemaBuilder,
+  TableBuilder,
+  MigrationInterface
 } from 'outlet-orm';
 ```
 
@@ -77,7 +159,7 @@ interface UserAttributes {
   updated_at: string;
 }
 
-class User extends Model {
+class User extends Model<UserAttributes> {
   static table = 'users';
   static primaryKey = 'id';
   static timestamps = true;
@@ -98,15 +180,15 @@ class User extends Model {
   };
 
   // Relations typées
-  posts(): HasManyRelation {
+  posts(): HasManyRelation<Post> {
     return this.hasMany(Post, 'user_id');
   }
 
-  profile(): HasOneRelation {
+  profile(): HasOneRelation<Profile> {
     return this.hasOne(Profile, 'user_id');
   }
 
-  roles(): BelongsToManyRelation {
+  roles(): BelongsToManyRelation<Role> {
     return this.belongsToMany(Role, 'role_user', 'user_id', 'role_id');
   }
 }
@@ -143,7 +225,7 @@ async function main() {
     .limit(10)
     .get();
 
-  // activeUsers est Model[]
+  // activeUsers est User[]
   for (const u of activeUsers) {
     console.log(u.getAttribute('email'));
   }
@@ -458,6 +540,206 @@ if (!result.valid) {
   });
 }
 ```
+
+---
+
+## Schema Builder typé (v4.0.0+)
+
+Le Schema Builder offre des interfaces TypeScript complètes pour créer des migrations type-safe.
+
+### Interfaces disponibles
+
+```typescript
+import { 
+  SchemaBuilder, 
+  TableBuilder, 
+  ColumnBuilder,
+  ForeignKeyBuilder,
+  MigrationInterface 
+} from 'outlet-orm';
+```
+
+### Création de tables
+
+```typescript
+import { Schema } from 'outlet-orm';
+
+await Schema.create('users', (table: TableBuilder) => {
+  // Colonnes avec types
+  table.id();                                    // BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+  table.string('name', 100);                     // VARCHAR(100)
+  table.string('email').unique();                // VARCHAR(255) UNIQUE
+  table.string('password');
+  table.text('bio').nullable();                  // TEXT NULL
+  table.integer('age').unsigned();               // INT UNSIGNED
+  table.decimal('balance', 10, 2).default('0');  // DECIMAL(10,2) DEFAULT '0'
+  table.boolean('is_active').default(true);      // TINYINT(1) DEFAULT 1
+  table.enum('status', ['active', 'inactive', 'banned']);
+  table.json('settings').nullable();
+  table.timestamps();                            // created_at, updated_at
+  table.softDeletes();                           // deleted_at
+  
+  // Index
+  table.index(['email', 'status']);
+});
+```
+
+### Clés étrangères
+
+```typescript
+await Schema.create('posts', (table: TableBuilder) => {
+  table.id();
+  table.string('title');
+  table.text('content');
+  table.unsignedBigInteger('user_id');
+  table.unsignedBigInteger('category_id').nullable();
+  table.timestamps();
+
+  // Clés étrangères avec options
+  table.foreign('user_id')
+    .references('id')
+    .on('users')
+    .onDelete('CASCADE')
+    .onUpdate('CASCADE');
+
+  table.foreign('category_id')
+    .references('id')
+    .on('categories')
+    .onDelete('SET NULL');
+});
+```
+
+### Modification de tables
+
+```typescript
+await Schema.table('users', (table: TableBuilder) => {
+  table.string('phone', 20).nullable().after('email');
+  table.dropColumn('bio');
+  table.renameColumn('old_name', 'new_name');
+  table.dropIndex('users_email_index');
+});
+```
+
+---
+
+## Migrations typées (v4.0.0+)
+
+L'interface `MigrationInterface` garantit une structure cohérente pour toutes vos migrations.
+
+### Structure d'une migration
+
+```typescript
+import { MigrationInterface, Schema, TableBuilder } from 'outlet-orm';
+
+export const migration: MigrationInterface = {
+  name: 'create_users_table',
+  
+  async up(): Promise<void> {
+    await Schema.create('users', (table: TableBuilder) => {
+      table.id();
+      table.string('name');
+      table.string('email').unique();
+      table.string('password');
+      table.timestamps();
+    });
+  },
+
+  async down(): Promise<void> {
+    await Schema.dropIfExists('users');
+  }
+};
+```
+
+### Migration complète avec relations
+
+```typescript
+import { MigrationInterface, Schema, TableBuilder } from 'outlet-orm';
+
+// Migration pour les posts avec clés étrangères
+export const postsTableMigration: MigrationInterface = {
+  name: 'create_posts_table',
+  
+  async up(): Promise<void> {
+    await Schema.create('posts', (table: TableBuilder) => {
+      table.id();
+      table.string('title', 200);
+      table.text('content');
+      table.string('slug').unique();
+      table.unsignedBigInteger('user_id');
+      table.unsignedBigInteger('category_id').nullable();
+      table.enum('status', ['draft', 'published', 'archived']).default('draft');
+      table.integer('views').unsigned().default(0);
+      table.timestamps();
+      table.softDeletes();
+
+      // Index composite pour performance
+      table.index(['user_id', 'status']);
+      table.index(['created_at']);
+
+      // Clés étrangères
+      table.foreign('user_id')
+        .references('id')
+        .on('users')
+        .onDelete('CASCADE');
+
+      table.foreign('category_id')
+        .references('id')
+        .on('categories')
+        .onDelete('SET NULL');
+    });
+  },
+
+  async down(): Promise<void> {
+    await Schema.dropIfExists('posts');
+  }
+};
+```
+
+### Table pivot many-to-many
+
+```typescript
+export const tagsTableMigration: MigrationInterface = {
+  name: 'create_tags_and_pivot_table',
+  
+  async up(): Promise<void> {
+    // Table tags
+    await Schema.create('tags', (table: TableBuilder) => {
+      table.id();
+      table.string('name', 50).unique();
+      table.string('slug', 50).unique();
+      table.timestamps();
+    });
+
+    // Table pivot post_tag
+    await Schema.create('post_tag', (table: TableBuilder) => {
+      table.unsignedBigInteger('post_id');
+      table.unsignedBigInteger('tag_id');
+      table.timestamp('created_at').useCurrent();
+
+      // Clé primaire composite
+      table.primary(['post_id', 'tag_id']);
+
+      // Clés étrangères
+      table.foreign('post_id')
+        .references('id')
+        .on('posts')
+        .onDelete('CASCADE');
+
+      table.foreign('tag_id')
+        .references('id')
+        .on('tags')
+        .onDelete('CASCADE');
+    });
+  },
+
+  async down(): Promise<void> {
+    await Schema.dropIfExists('post_tag');
+    await Schema.dropIfExists('tags');
+  }
+};
+```
+
+---
 
 ## Exemple complet
 

@@ -28,6 +28,66 @@ npm install sqlite3
 
 > 💡 Si aucun driver n'est installé, un message d'erreur explicite vous indiquera lequel installer.
 
+## Structure de Projet Recommandée
+
+Après installation, organisez votre projet comme suit :
+
+> 🔐 **Sécurité** : Voir le [Guide de Sécurité](SECURITY.md) pour les bonnes pratiques.
+
+```
+mon-projet/
+├── .env                        # ⚠️ JAMAIS commité (dans .gitignore)
+├── .env.example                # Template sans secrets
+├── .gitignore                  # Exclure .env, node_modules, logs
+├── package.json
+├── config/                     # 🔒 Configuration centralisée
+│   ├── app.js                  # Config générale
+│   ├── database.js             # Config DB (lit .env)
+│   └── security.js             # Rate limit, helmet, CORS...
+├── database/
+│   ├── config.js               # Config migrations (généré par outlet-init)
+│   └── migrations/
+├── models/                     # Vos classes Model
+│   ├── User.js
+│   └── Post.js
+├── controllers/                # Vos contrôleurs
+│   ├── UserController.js
+│   └── PostController.js
+├── routes/                     # Vos routes
+│   ├── index.js
+│   └── userRoutes.js
+├── middlewares/                # 🔒 Middlewares de sécurité
+│   ├── auth.js                 # Authentification JWT
+│   ├── authorization.js        # Contrôle des permissions
+│   ├── rateLimiter.js          # Protection anti-DDoS
+│   ├── validator.js            # Validation des entrées
+│   └── errorHandler.js         # Gestion des erreurs
+├── services/                   # Services métier
+├── utils/                      # 🔒 Utilitaires sécurité
+│   ├── hash.js                 # Hachage (bcrypt)
+│   └── token.js                # Tokens JWT
+├── validators/                 # 🔒 Schémas de validation
+├── public/                     # ✅ Fichiers statiques publics
+│   ├── images/
+│   ├── css/
+│   └── js/
+├── uploads/                    # ⚠️ Fichiers uploadés
+├── logs/                       # 📋 Journaux (non versionnés)
+├── src/
+│   └── index.js
+└── tests/
+```
+
+| Dossier | Rôle | Sécurité |
+|---------|------|----------|
+| `config/` | Configuration centralisée | 🔒 Lit .env |
+| `database/` | Migrations | `outlet-init` |
+| `models/` | Classes Model | 🔒 `hidden`, `fillable` |
+| `middlewares/` | Auth, validation, rate limit | 🔒 **Critique** |
+| `utils/` | Hash, tokens | 🔒 Ne pas exposer |
+| `public/` | Fichiers statiques | ✅ Seul dossier public |
+| `logs/` | Journaux | 📋 `.gitignore` |
+
 ## Configuration
 
 ### Option 1 : Via fichier `.env` (recommandé) - Connexion automatique
@@ -160,24 +220,11 @@ async function testConnection() {
 testConnection();
 ```
 
-## Structure de projet recommandée
+## Référence rapide de la structure
 
-```
-my-project/
-├── .env                    # Configuration
-├── package.json
-├── database/
-│   ├── config.js          # Configuration exportée
-│   └── migrations/        # Fichiers de migration
-├── models/
-│   ├── User.js
-│   ├── Post.js
-│   └── index.js           # Export tous les modèles
-└── src/
-    └── index.js           # Point d'entrée
-```
+> Voir la section **Structure de Projet Recommandée (Architecture en Couches)** ci-dessus pour la structure complète.
 
-### Exemple de `models/index.js`
+### Exemple de `src/models/index.js`
 
 ```javascript
 const { Model } = require('outlet-orm');

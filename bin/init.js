@@ -93,6 +93,190 @@ module.exports = db;
     fs.writeFileSync(configPath, configContent);
     console.log(`\n✅ Fichier de configuration créé: ${configPath}`);
 
+    // Create project structure directories
+    const directories = [
+      'config',
+      'database',
+      'database/migrations',
+      'models',
+      'controllers',
+      'routes',
+      'middlewares',
+      'services',
+      'utils',
+      'validators',
+      'public',
+      'public/images',
+      'public/css',
+      'public/js',
+      'uploads',
+      'logs',
+      'src',
+      'tests'
+    ];
+
+    console.log('\n📁 Création de la structure de projet...');
+    for (const dir of directories) {
+      const dirPath = path.join(process.cwd(), dir);
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+        console.log(`  ✅ ${dir}/`);
+      } else {
+        console.log(`  ⏭️  ${dir}/ (existe déjà)`);
+      }
+    }
+
+    // Generate .gitignore
+    const gitignoreContent = `# Secrets
+.env
+.env.local
+.env.production
+
+# Logs
+logs/
+*.log
+
+# Uploads
+uploads/
+
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+`;
+
+    const gitignorePath = path.join(process.cwd(), '.gitignore');
+    if (!fs.existsSync(gitignorePath)) {
+      fs.writeFileSync(gitignorePath, gitignoreContent);
+      console.log(`\n✅ .gitignore créé`);
+    }
+
+    // Generate .env.example
+    const envExampleContent = `# Base de données
+DB_DRIVER=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_DATABASE=myapp
+DB_USER=your_user
+DB_PASSWORD=your_password
+
+# Sécurité
+JWT_SECRET=your_jwt_secret_here
+JWT_EXPIRES_IN=15m
+
+# Application
+NODE_ENV=development
+PORT=3000
+
+# CORS
+CORS_ORIGIN=http://localhost:3000
+`;
+
+    const envExamplePath = path.join(process.cwd(), '.env.example');
+    if (!fs.existsSync(envExamplePath)) {
+      fs.writeFileSync(envExamplePath, envExampleContent);
+      console.log(`✅ .env.example créé`);
+    }
+
+    // Generate config/security.js
+    const securityConfigContent = `/**
+ * Configuration de sécurité
+ * npm install helmet express-rate-limit xss-clean hpp
+ */
+
+module.exports = {
+  // Rate limiting (100 requêtes/15min par IP)
+  rateLimit: {
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: { error: 'Trop de requêtes, réessayez plus tard' }
+  },
+
+  // Rate limiting strict pour auth (5 tentatives/15min)
+  authRateLimit: {
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { error: 'Trop de tentatives de connexion' }
+  },
+
+  // CORS
+  cors: {
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  },
+
+  // JWT
+  jwt: {
+    secret: process.env.JWT_SECRET,
+    expiresIn: process.env.JWT_EXPIRES_IN || '15m'
+  }
+};
+`;
+
+    const securityConfigPath = path.join(process.cwd(), 'config', 'security.js');
+    if (!fs.existsSync(securityConfigPath)) {
+      fs.writeFileSync(securityConfigPath, securityConfigContent);
+      console.log(`✅ config/security.js créé`);
+    }
+
+    // Generate middlewares/errorHandler.js
+    const errorHandlerContent = `/**
+ * Gestionnaire d'erreurs centralisé
+ */
+const errorHandler = (err, req, res, next) => {
+  console.error(\`[\${new Date().toISOString()}] Error:\`, err);
+
+  const isDev = process.env.NODE_ENV === 'development';
+
+  res.status(err.status || 500).json({
+    error: isDev ? err.message : 'Erreur serveur',
+    stack: isDev ? err.stack : undefined
+  });
+};
+
+module.exports = errorHandler;
+`;
+
+    const errorHandlerPath = path.join(process.cwd(), 'middlewares', 'errorHandler.js');
+    if (!fs.existsSync(errorHandlerPath)) {
+      fs.writeFileSync(errorHandlerPath, errorHandlerContent);
+      console.log(`✅ middlewares/errorHandler.js créé`);
+    }
+
+    // Generate utils/hash.js
+    const hashUtilContent = `/**
+ * Utilitaires de hachage
+ * npm install bcrypt
+ */
+const bcrypt = require('bcrypt');
+
+const SALT_ROUNDS = 12;
+
+const hashPassword = async (password) => {
+  return bcrypt.hash(password, SALT_ROUNDS);
+};
+
+const verifyPassword = async (password, hash) => {
+  return bcrypt.compare(password, hash);
+};
+
+module.exports = { hashPassword, verifyPassword };
+`;
+
+    const hashUtilPath = path.join(process.cwd(), 'utils', 'hash.js');
+    if (!fs.existsSync(hashUtilPath)) {
+      fs.writeFileSync(hashUtilPath, hashUtilContent);
+      console.log(`✅ utils/hash.js créé`);
+    }
+
     // Generate example model
     const modelContent = `const { Model } = require('outlet-orm');
 const db = require('./database');
@@ -100,10 +284,15 @@ const db = require('./database');
 class User extends Model {
   static table = 'users';
   static fillable = ['name', 'email', 'password'];
-  static hidden = ['password'];
+  static hidden = ['password', 'refresh_token']; // 🔒 Ne jamais exposer
   static casts = {
     id: 'int',
     email_verified: 'boolean'
+  };
+  static rules = {
+    name: 'required|string|min:2|max:100',
+    email: 'required|email',
+    password: 'required|min:8'
   };
   static connection = db;
 

@@ -1,6 +1,10 @@
 # ✅ Validation
 
-Outlet ORM v3.0.0 inclut un système de validation intégré pour valider les données avant sauvegarde.
+Outlet ORM v4.0.0 inclut un système de validation intégré pour valider les données avant sauvegarde.
+
+> 📘 **TypeScript** : Le type `ValidationRule` inclut toutes les règles disponibles. Voir [TYPESCRIPT.md](TYPESCRIPT.md).
+
+> 📁 **Emplacement** : Définissez vos règles dans `models/` et validez dans `controllers/` ou `middlewares/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
 
 ## Configuration
 
@@ -32,12 +36,19 @@ class User extends Model {
 | `string` | Doit être une chaîne | `'string'` |
 | `integer` | Doit être un entier | `'integer'` |
 | `numeric` | Doit être numérique | `'numeric'` |
+| `number` | Alias de numeric | `'number'` |
 | `email` | Format email valide | `'email'` |
 | `url` | Format URL valide | `'url'` |
+| `date` | Format date valide | `'date'` |
+| `array` | Doit être un tableau | `'array'` |
+| `alpha` | Lettres uniquement | `'alpha'` |
+| `alphanumeric` | Lettres et chiffres | `'alphanumeric'` |
 | `min:n` | Longueur/valeur minimum | `'min:3'` |
 | `max:n` | Longueur/valeur maximum | `'max:255'` |
 | `in:a,b,c` | Doit être parmi les valeurs | `'in:active,inactive'` |
 | `boolean` | Doit être un booléen | `'boolean'` |
+| `regex:pattern` | Correspond au pattern | `'regex:^[A-Z]+'` |
+| `confirmed` | Doit avoir un champ _confirmation | `'confirmed'` |
 
 ## Utilisation
 

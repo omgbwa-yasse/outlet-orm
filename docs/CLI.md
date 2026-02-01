@@ -2,6 +2,8 @@
 
 Outlet ORM inclut des outils CLI pour la gestion des migrations et l'initialisation de projets.
 
+> 📁 **Génère** : `database/config.js` et `database/migrations/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+
 ## Installation
 
 Les commandes CLI sont disponibles via `npx` :
@@ -33,9 +35,20 @@ node node_modules/outlet-orm/bin/init.js
 ```
 
 Crée :
-- `database/config.js` - Configuration de la base de données
+- `config/` - Configuration centralisée (app, database, security)
+- `database/config.js` - Configuration des migrations
 - `database/migrations/` - Dossier des migrations
 - `models/` - Dossier des modèles
+- `controllers/` - Dossier des contrôleurs
+- `routes/` - Dossier des routes
+- `middlewares/` - Dossier des middlewares (auth, validation, errorHandler)
+- `services/` - Dossier des services
+- `utils/` - Utilitaires (hash, token)
+- `validators/` - Schémas de validation
+- `public/` - Fichiers statiques publics (images, css, js)
+- `logs/` - Journaux d'application
+- `.env.example` - Template de configuration
+- `.gitignore` - Fichiers à ignorer
 
 ### migrate
 

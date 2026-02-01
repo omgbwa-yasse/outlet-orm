@@ -2,6 +2,10 @@
 
 Outlet ORM supporte toutes les relations Eloquent-style pour lier vos modèles.
 
+> 📁 **Emplacement** : Définissez vos relations dans `models/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+>
+> 📘 **TypeScript** : Utilisez les types `HasOneRelation<T>`, `HasManyRelation<T>`, etc. Voir [TYPESCRIPT.md](TYPESCRIPT.md#relations-typées)
+
 ## Types de relations
 
 | Relation | Description | Exemple |

@@ -4,6 +4,10 @@
 
 Le système de migrations d'Outlet ORM est inspiré de Laravel et permet de gérer l'évolution de votre schéma de base de données de manière versionnée et collaborative.
 
+> 📁 **Emplacement** : `database/migrations/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+>
+> 📘 **TypeScript** : Utilisez `MigrationInterface`, `SchemaBuilder`, `TableBuilder` pour des migrations typées. Voir [TYPESCRIPT.md](TYPESCRIPT.md#migrations-typées-v400)
+
 ## 🚀 Commandes CLI
 
 ### Créer une migration

@@ -2,6 +2,100 @@
 
 All notable changes to this project will be documented in this file.
 
+## [5.0.0] - 2026-02-01
+
+### 🏗️ Major Refactoring - Project Structure
+
+#### Centralized `src/` Directory
+- **BREAKING**: All source code is now centralized in `src/`
+- Moved `lib/Database/`, `lib/Migrations/`, `lib/Schema/` → `src/`
+- New exports available from main module:
+  - `Schema`, `Blueprint`, `ColumnDefinition`, `ForeignKeyDefinition`
+  - `Migration`, `MigrationManager`
+
+#### New Import Style (Recommended)
+```javascript
+// ✅ New way (v5.0.0+)
+const { 
+  Model, 
+  DatabaseConnection, 
+  Migration, 
+  MigrationManager, 
+  Schema 
+} = require('outlet-orm');
+```
+
+#### Backward Compatibility
+- `lib/` paths still work with **deprecation warnings**
+- Will be removed in v6.0.0
+- Migration guide: Replace `require('outlet-orm/lib/...')` with `require('outlet-orm')`
+
+### ⚠️ Breaking Changes
+- Package version bumped to 5.0.0 (major release)
+- `lib/` folder is deprecated (warnings emitted on import)
+- Migration files should use `const { Migration } = require('outlet-orm');`
+
+### 📦 Package Updates
+- Removed `lib/**` from `files` in package.json
+- Updated lint scripts to exclude `lib/`
+
+---
+
+## [4.1.0] - 2026-01-30
+
+### 🚀 New Features
+- **Copilot Skills Integration**: Added `.copilot/skills/outlet-orm/` for AI agent documentation access
+- Improved project structure for better AI-assisted development
+
+### 📚 Documentation
+- Moved skill documentation to standard `.copilot/skills/` location
+- AI agents can now automatically discover and use Outlet ORM documentation
+
+---
+
+## [4.0.0-alpha.1] - 2026-01-30
+
+### 🚀 Major Features - TypeScript Enhancement
+
+#### Generic Model Attributes
+- **`Model<TAttributes>`**: Models can now be typed with their attribute interfaces
+- **Type-safe `getAttribute<K>()`**: Returns the correct type based on your interface
+- **Type-safe `setAttribute<K>()`**: Validates attribute names and types at compile time
+- **`BaseModelAttributes`**: Base interface with common fields (id, created_at, updated_at, deleted_at)
+
+#### Schema Builder Types
+- **`SchemaBuilder`**: Interface for schema operations (create, drop, table, rename)
+- **`TableBuilder`**: Complete interface with all column types and modifiers
+- **`ColumnBuilder`**: Chainable interface for column definition (nullable, default, unique, etc.)
+- **`ForeignKeyBuilder`**: Chainable interface for foreign key constraints
+- **`MigrationInterface`**: Standard interface for typed migrations with `up()` and `down()`
+
+#### Type Safety Improvements
+- **`ModelEventName`**: Union type for all model events (creating, created, updating, etc.)
+- **`WhereOperator`**: Union type for all comparison operators (=, !=, >, <, LIKE, etc.)
+- **`InsertResult`**: Typed result with `insertId: number | string` and `affectedRows`
+- **`UpdateResult` / `DeleteResult`**: Typed results with `affectedRows` and `changedRows`
+- **`ValidationRule`**: Extended with missing rules (url, array, integer, numeric, alpha, etc.)
+
+### 🐛 Bug Fixes
+- Fixed duplicate `updating` key in Model.js eventListeners object (was missing `updated` event)
+
+### 📚 Documentation
+- Updated [docs/TYPESCRIPT.md](docs/TYPESCRIPT.md) with Generic Model and Schema Builder sections
+- Created [docs/SKILL/outlet-orm/TYPESCRIPT.md](docs/SKILL/outlet-orm/TYPESCRIPT.md) skill guide
+- Added [examples/typescript-typed-model.ts](examples/typescript-typed-model.ts) example
+- Added [examples/typescript-migration.ts](examples/typescript-migration.ts) example
+
+### ⚠️ Breaking Changes
+- Minimum TypeScript version: 4.7+
+- If extending Model with custom generics, you may need to update your type signatures
+
+### 📦 Dependencies
+- Added `typescript: ^5.3.0` as devDependency
+- Added `@types/node: ^20.10.0` as devDependency
+
+---
+
 ## [3.2.0] - 2026-01-09
 
 ### 📚 Documentation
