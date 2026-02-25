@@ -3,6 +3,19 @@
  * Provides a fluent interface for creating and modifying database tables
  */
 
+function quoteIdentifier(identifier) {
+  if (!identifier || typeof identifier !== 'string') {
+    throw new Error('Invalid SQL identifier');
+  }
+  // Allow only alphanumeric, underscore
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(identifier)) {
+    if (/['";]|--|\/\*|\*\/|xp_|sp_|0x/i.test(identifier)) {
+      throw new Error(`Potentially dangerous SQL identifier: ${identifier}`);
+    }
+  }
+  return `\`${identifier}\``;
+}
+
 class Schema {
   constructor(connection) {
     this.connection = connection;
@@ -52,12 +65,12 @@ class Schema {
 
     switch (driver) {
     case 'mysql':
-      sql = `RENAME TABLE \`${from}\` TO \`${to}\``;
+      sql = `RENAME TABLE ${quoteIdentifier(from)} TO ${quoteIdentifier(to)}`;
       break;
     case 'postgres':
     case 'postgresql':
     case 'sqlite':
-      sql = `ALTER TABLE \`${from}\` RENAME TO \`${to}\``;
+      sql = `ALTER TABLE ${quoteIdentifier(from)} RENAME TO ${quoteIdentifier(to)}`;
       break;
     default:
       throw new Error(`Unsupported driver: ${driver}`);
@@ -72,7 +85,7 @@ class Schema {
    * @param {string} tableName
    */
   async drop(tableName) {
-    const sql = `DROP TABLE \`${tableName}\``;
+    const sql = `DROP TABLE ${quoteIdentifier(tableName)}`;
     await this.connection.execute(sql);
     console.log(`✓ Table '${tableName}' dropped successfully`);
   }
@@ -82,7 +95,7 @@ class Schema {
    * @param {string} tableName
    */
   async dropIfExists(tableName) {
-    const sql = `DROP TABLE IF EXISTS \`${tableName}\``;
+    const sql = `DROP TABLE IF EXISTS ${quoteIdentifier(tableName)}`;
     await this.connection.execute(sql);
     console.log(`✓ Table '${tableName}' dropped if existed`);
   }
@@ -467,7 +480,7 @@ class Blueprint {
     const columnDefinitions = this.columns.map(col => col.toSql(driver)).join(',\n  ');
     const constraints = this.getConstraints();
 
-    let sql = `CREATE TABLE \`${this.tableName}\` (\n  ${columnDefinitions}`;
+    let sql = `CREATE TABLE ${quoteIdentifier(this.tableName)} (\n  ${columnDefinitions}`;
 
     if (constraints) {
       sql += `,\n  ${constraints}`;
@@ -488,7 +501,7 @@ class Blueprint {
     // Add new columns
     const driver = this.connection.config.driver;
     for (const column of this.columns) {
-      let sql = `ALTER TABLE \`${this.tableName}\` ADD COLUMN ${column.toSql(driver)}`;
+      let sql = `ALTER TABLE ${quoteIdentifier(this.tableName)} ADD COLUMN ${column.toSql(driver)}`;
       statements.push(sql);
     }
 
@@ -497,23 +510,23 @@ class Blueprint {
       switch (command.type) {
       case 'dropColumn':
         for (const col of command.columns) {
-          statements.push(`ALTER TABLE \`${this.tableName}\` DROP COLUMN \`${col}\``);
+          statements.push(`ALTER TABLE ${quoteIdentifier(this.tableName)} DROP COLUMN ${quoteIdentifier(col)}`);
         }
         break;
 
       case 'renameColumn':
         if (driver === 'mysql') {
-          statements.push(`ALTER TABLE \`${this.tableName}\` RENAME COLUMN \`${command.from}\` TO \`${command.to}\``);
+          statements.push(`ALTER TABLE ${quoteIdentifier(this.tableName)} RENAME COLUMN ${quoteIdentifier(command.from)} TO ${quoteIdentifier(command.to)}`);
         } else {
-          statements.push(`ALTER TABLE \`${this.tableName}\` RENAME COLUMN \`${command.from}\` TO \`${command.to}\``);
+          statements.push(`ALTER TABLE ${quoteIdentifier(this.tableName)} RENAME COLUMN ${quoteIdentifier(command.from)} TO ${quoteIdentifier(command.to)}`);
         }
         break;
 
       case 'foreign': {
         const fk = command.foreignKey;
         statements.push(
-          `ALTER TABLE \`${this.tableName}\` ADD CONSTRAINT \`${fk.name}\` ` +
-            `FOREIGN KEY (\`${fk.column}\`) REFERENCES \`${fk._ref.table}\`(\`${fk._ref.column}\`)` +
+          `ALTER TABLE ${quoteIdentifier(this.tableName)} ADD CONSTRAINT ${quoteIdentifier(fk.name)} ` +
+            `FOREIGN KEY (${quoteIdentifier(fk.column)}) REFERENCES ${quoteIdentifier(fk._ref.table)}(${quoteIdentifier(fk._ref.column)})` +
             (fk._onDelete ? ` ON DELETE ${fk._onDelete}` : '') +
             (fk._onUpdate ? ` ON UPDATE ${fk._onUpdate}` : '')
         );
@@ -522,30 +535,30 @@ class Blueprint {
 
       case 'dropForeign': {
         const fkName = `${this.tableName}_${command.columns.join('_')}_foreign`;
-        statements.push(`ALTER TABLE \`${this.tableName}\` DROP FOREIGN KEY \`${fkName}\``);
+        statements.push(`ALTER TABLE ${quoteIdentifier(this.tableName)} DROP FOREIGN KEY ${quoteIdentifier(fkName)}`);
         break;
       }
 
       case 'index':
         statements.push(
-          `ALTER TABLE \`${this.tableName}\` ADD INDEX \`${command.name}\` (${command.columns.map(c => `\`${c}\``).join(', ')})`
+          `ALTER TABLE ${quoteIdentifier(this.tableName)} ADD INDEX ${quoteIdentifier(command.name)} (${command.columns.map(c => quoteIdentifier(c)).join(', ')})`
         );
         break;
 
       case 'unique':
         statements.push(
-          `ALTER TABLE \`${this.tableName}\` ADD UNIQUE \`${command.name}\` (${command.columns.map(c => `\`${c}\``).join(', ')})`
+          `ALTER TABLE ${quoteIdentifier(this.tableName)} ADD UNIQUE ${quoteIdentifier(command.name)} (${command.columns.map(c => quoteIdentifier(c)).join(', ')})`
         );
         break;
 
       case 'fulltext':
         statements.push(
-          `ALTER TABLE \`${this.tableName}\` ADD FULLTEXT \`${command.name}\` (${command.columns.map(c => `\`${c}\``).join(', ')})`
+          `ALTER TABLE ${quoteIdentifier(this.tableName)} ADD FULLTEXT ${quoteIdentifier(command.name)} (${command.columns.map(c => quoteIdentifier(c)).join(', ')})`
         );
         break;
 
       case 'dropIndex':
-        statements.push(`ALTER TABLE \`${this.tableName}\` DROP INDEX \`${command.name}\``);
+        statements.push(`ALTER TABLE ${quoteIdentifier(this.tableName)} DROP INDEX ${quoteIdentifier(command.name)}`);
         break;
       }
     }
@@ -566,7 +579,7 @@ class Blueprint {
     // so skip table-level PRIMARY KEY constraints to avoid duplication.
     const hasSqliteAutoInc = driver === 'sqlite' && this.columns.some(col => col.isAutoIncrement);
     if (primaryKeys.length > 0 && !hasSqliteAutoInc) {
-      const pkColumns = primaryKeys.map(col => `\`${col.name}\``).join(', ');
+      const pkColumns = primaryKeys.map(col => quoteIdentifier(col.name)).join(', ');
       constraints.push(`PRIMARY KEY (${pkColumns})`);
     }
 
@@ -574,8 +587,8 @@ class Blueprint {
     for (const command of this.commands) {
       if (command.type === 'foreign') {
         const fk = command.foreignKey;
-        let constraint = `CONSTRAINT \`${fk.name}\` FOREIGN KEY (\`${fk.column}\`) ` +
-                        `REFERENCES \`${fk._ref.table}\`(\`${fk._ref.column}\`)`;
+        let constraint = `CONSTRAINT ${quoteIdentifier(fk.name)} FOREIGN KEY (${quoteIdentifier(fk.column)}) ` +
+                        `REFERENCES ${quoteIdentifier(fk._ref.table)}(${quoteIdentifier(fk._ref.column)})`;
 
         if (fk._onDelete) {
           constraint += ` ON DELETE ${fk._onDelete}`;
@@ -587,13 +600,13 @@ class Blueprint {
         constraints.push(constraint);
       } else if (command.type === 'unique') {
         if (driver === 'sqlite') {
-          constraints.push(`UNIQUE (${command.columns.map(c => `\`${c}\``).join(', ')})`);
+          constraints.push(`UNIQUE (${command.columns.map(c => quoteIdentifier(c)).join(', ')})`);
         } else {
-          constraints.push(`UNIQUE KEY \`${command.name}\` (${command.columns.map(c => `\`${c}\``).join(', ')})`);
+          constraints.push(`UNIQUE KEY ${quoteIdentifier(command.name)} (${command.columns.map(c => quoteIdentifier(c)).join(', ')})`);
         }
       } else if (command.type === 'index') {
         if (driver !== 'sqlite') {
-          constraints.push(`KEY \`${command.name}\` (${command.columns.map(c => `\`${c}\``).join(', ')})`);
+          constraints.push(`KEY ${quoteIdentifier(command.name)} (${command.columns.map(c => quoteIdentifier(c)).join(', ')})`);
         }
       }
     }
@@ -682,7 +695,7 @@ class ColumnDefinition {
    * Generate SQL for this column
    */
   toSql(driver = 'mysql') {
-    let sql = `\`${this.name}\` ${this.getTypeDefinition(driver)}`;
+    let sql = `${quoteIdentifier(this.name)} ${this.getTypeDefinition(driver)}`;
 
     if (this.isUnsigned && ['INT', 'BIGINT', 'TINYINT'].includes(this.type) && driver !== 'sqlite') {
       sql += ' UNSIGNED';
@@ -695,7 +708,7 @@ class ColumnDefinition {
     if (this.isAutoIncrement) {
       if (driver === 'sqlite') {
         // In SQLite, autoincrement must be declared as INTEGER PRIMARY KEY AUTOINCREMENT
-        sql = `\`${this.name}\` INTEGER PRIMARY KEY AUTOINCREMENT`;
+        sql = `${quoteIdentifier(this.name)} INTEGER PRIMARY KEY AUTOINCREMENT`;
       } else {
         sql += ' AUTO_INCREMENT';
       }

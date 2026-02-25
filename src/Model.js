@@ -963,6 +963,10 @@ class Model {
     const head = segments[0];
     const tail = segments.slice(1).join('.');
 
+    // Prevent prototype pollution and calling built-in methods
+    const builtIns = ['constructor', 'load', 'save', 'delete', 'update', 'query', 'with', 'withCount', 'hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'morphTo', 'morphOne', 'morphMany', 'hasOneThrough', 'hasManyThrough'];
+    if (builtIns.includes(head) || head.startsWith('__')) return;
+
     const relationFn = this[head];
     if (typeof relationFn !== 'function') return;
 

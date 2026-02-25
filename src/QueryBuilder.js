@@ -1,6 +1,8 @@
 /**
  * Query Builder for constructing and executing database queries
  */
+const RawExpression = require('./RawExpression');
+
 class QueryBuilder {
   constructor(model) {
     this.model = model;
@@ -99,6 +101,16 @@ class QueryBuilder {
    */
   select(...columns) {
     this.selectedColumns = columns;
+    return this;
+  }
+
+  /**
+   * Add a raw select expression
+   * @param {string} expression
+   * @returns {this}
+   */
+  selectRaw(expression) {
+    this.selectedColumns.push(new RawExpression(expression));
     return this;
   }
 
@@ -216,6 +228,28 @@ class QueryBuilder {
    */
   whereLike(column, value) {
     this.wheres.push({ column, value, type: 'like', boolean: 'and' });
+    return this;
+  }
+
+  /**
+   * Add a raw where clause
+   * @param {string} sql
+   * @param {Array} bindings
+   * @returns {this}
+   */
+  whereRaw(sql, bindings = []) {
+    this.wheres.push({ type: 'raw', sql, bindings, boolean: 'and' });
+    return this;
+  }
+
+  /**
+   * Add a raw or where clause
+   * @param {string} sql
+   * @param {Array} bindings
+   * @returns {this}
+   */
+  orWhereRaw(sql, bindings = []) {
+    this.wheres.push({ type: 'raw', sql, bindings, boolean: 'or' });
     return this;
   }
 
@@ -351,6 +385,16 @@ class QueryBuilder {
   }
 
   /**
+   * Add a raw order by clause
+   * @param {string} sql
+   * @returns {this}
+   */
+  orderByRaw(sql) {
+    this.orders.push({ type: 'raw', sql });
+    return this;
+  }
+
+  /**
    * Typo-friendly alias for orderBy
    * @param {string} column
    * @param {string} direction
@@ -471,7 +515,7 @@ class QueryBuilder {
         // hasOne/hasMany
         sub = `(SELECT COUNT(*) FROM \`${relatedTable}\` WHERE \`${relatedTable}\`.\`${relation.foreignKey}\` = \`${parentTable}\`.\`${relation.localKey}\`) AS \`${name}_count\``;
       }
-      this.selectedColumns.push(sub);
+      this.selectedColumns.push(new RawExpression(sub));
     }
     return this;
   }
@@ -732,6 +776,10 @@ class QueryBuilder {
     const segments = path.split('.');
     const head = segments[0];
     const tail = segments.slice(1).join('.');
+
+    // Prevent prototype pollution and calling built-in methods
+    const builtIns = ['constructor', 'load', 'save', 'delete', 'update', 'query', 'with', 'withCount', 'hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'morphTo', 'morphOne', 'morphMany', 'hasOneThrough', 'hasManyThrough'];
+    if (builtIns.includes(head) || head.startsWith('__')) return;
 
     // Load head relation eagerly
     const relationInstance = models[0][head];

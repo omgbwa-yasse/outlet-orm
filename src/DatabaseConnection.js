@@ -10,12 +10,17 @@ let sqlite3;
 let queryLog = [];
 let queryLoggingEnabled = false;
 
+const RawExpression = require('./RawExpression');
+
 /**
  * Sanitize SQL identifier (table/column name) to prevent SQL injection
- * @param {string} identifier
+ * @param {string|RawExpression} identifier
  * @returns {string}
  */
 function sanitizeIdentifier(identifier) {
+  if (identifier instanceof RawExpression) {
+    return identifier.value;
+  }
   if (!identifier || typeof identifier !== 'string') {
     throw new Error('Invalid SQL identifier');
   }
@@ -928,6 +933,9 @@ class DatabaseConnection {
     if (query.orders && query.orders.length > 0) {
       const orderClauses = query.orders.map(
         order => {
+          if (order.type === 'raw') {
+            return order.sql;
+          }
           const dir = order.direction.toUpperCase();
           if (dir !== 'ASC' && dir !== 'DESC') throw new Error(`Invalid direction: ${dir}`);
           return `${sanitizeIdentifier(order.column)} ${dir}`;
@@ -966,9 +974,17 @@ class DatabaseConnection {
 
     wheres.forEach((where, index) => {
       const boolean = index === 0 ? 'WHERE' : (where.boolean || 'AND').toUpperCase();
-      const col = sanitizeIdentifier(where.column);
+      const col = where.type !== 'raw' ? sanitizeIdentifier(where.column) : null;
 
       switch (where.type) {
+      case 'raw': {
+        clauses.push(`${boolean} ${where.sql}`);
+        if (where.bindings) {
+          params.push(...where.bindings);
+        }
+        break;
+      }
+
       case 'basic': {
         const op = where.operator.toUpperCase();
         if (!ALLOWED_OPERATORS.includes(op)) throw new Error(`Invalid operator: ${where.operator}`);
