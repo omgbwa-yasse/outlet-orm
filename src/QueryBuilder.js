@@ -3,6 +3,20 @@
  */
 const RawExpression = require('./RawExpression');
 
+/**
+ * Validate a SQL identifier used internally in subquery construction.
+ * Throws if the value is not a safe alphanumeric/underscore/dot string.
+ * @param {string} value
+ * @param {string} context - human-readable label for error messages
+ * @returns {string}
+ */
+function assertIdentifier(value, context = 'identifier') {
+  if (typeof value !== 'string' || !/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/.test(value)) {
+    throw new Error(`Invalid SQL ${context}: "${value}"`);
+  }
+  return value;
+}
+
 class QueryBuilder {
   constructor(model) {
     this.model = model;
@@ -272,23 +286,23 @@ class QueryBuilder {
       throw new Error(`Invalid relation '${relationName}' on ${this.model.name}`);
     }
 
-    const parentTable = this.model.table;
+    const parentTable = assertIdentifier(this.model.table, 'parent table');
     const relatedClass = relation.related;
-    const relatedTable = relatedClass.table;
+    const relatedTable = assertIdentifier(relatedClass.table, 'related table');
+    const foreignKey = assertIdentifier(relation.foreignKey, 'foreignKey');
+    const localKey = assertIdentifier(relation.localKey, 'localKey');
 
-    // Heuristic to detect relation direction
-    const relatedDerivedFK = `${relatedTable.replace(/s$/, '')}_id`;
-
-    // Build ON condition depending on relation type
+    // Determine relation direction using relation type (relation.child is set on BelongsTo)
     let onLeft, onRight;
-    if (relation.foreignKey === relatedDerivedFK) {
-      // belongsTo: parent has FK to related
-      onLeft = `${relatedTable}.${relation.localKey}`; // related.ownerKey
-      onRight = `${parentTable}.${relation.foreignKey}`; // parent.foreignKey
+    if (relation.child) {
+      // belongsTo: parent has FK pointing to related
+      const ownerKey = assertIdentifier(relation.ownerKey || relatedClass.primaryKey || 'id', 'ownerKey');
+      onLeft = `${relatedTable}.${ownerKey}`;
+      onRight = `${parentTable}.${foreignKey}`;
     } else {
-      // hasOne/hasMany: related has FK to parent
-      onLeft = `${relatedTable}.${relation.foreignKey}`; // related.foreignKey -> parent
-      onRight = `${parentTable}.${relation.localKey}`; // parent.localKey (usually PK)
+      // hasOne/hasMany: related has FK pointing to parent
+      onLeft = `${relatedTable}.${foreignKey}`;
+      onRight = `${parentTable}.${localKey}`;
     }
 
     // Ensure the join exists
@@ -352,23 +366,27 @@ class QueryBuilder {
     }
     const relation = fn.call(parent);
     const relatedClass = relation.related;
-    const relatedTable = relatedClass.table;
-    const parentTable = this.model.table;
+    const relatedTable = assertIdentifier(relatedClass.table, 'related table');
+    const parentTable = assertIdentifier(this.model.table, 'parent table');
+    const foreignKey = assertIdentifier(relation.foreignKey, 'foreignKey');
+    const localKey = assertIdentifier(relation.localKey, 'localKey');
 
-    // Heuristic to detect direction as above
-    const relatedDerivedFK = `${relatedTable.replace(/s$/, '')}_id`;
+    // Determine direction using relation type (same logic as whereHas)
     let onLeft, onRight;
-    if (relation.foreignKey === relatedDerivedFK) {
-      onLeft = `${relatedTable}.${relation.localKey}`;
-      onRight = `${parentTable}.${relation.foreignKey}`;
+    if (relation.child) {
+      // belongsTo: parent has FK pointing to related
+      const ownerKey = assertIdentifier(relation.ownerKey || relatedClass.primaryKey || 'id', 'ownerKey');
+      onLeft = `${relatedTable}.${ownerKey}`;
+      onRight = `${parentTable}.${foreignKey}`;
     } else {
-      onLeft = `${relatedTable}.${relation.foreignKey}`;
-      onRight = `${parentTable}.${relation.localKey}`;
+      // hasOne/hasMany: related has FK pointing to parent
+      onLeft = `${relatedTable}.${foreignKey}`;
+      onRight = `${parentTable}.${localKey}`;
     }
 
     // LEFT JOIN and ensure null on related PK
     this.leftJoin(relatedTable, onLeft, '=', onRight);
-    const relatedPk = relatedClass.primaryKey || 'id';
+    const relatedPk = assertIdentifier(relatedClass.primaryKey || 'id', 'relatedPrimaryKey');
     this.whereNull(`${relatedTable}.${relatedPk}`);
     return this;
   }
@@ -499,21 +517,27 @@ class QueryBuilder {
       const fn = parent[name];
       if (typeof fn !== 'function') continue;
       const relation = fn.call(parent);
-      const parentTable = this.model.table;
+      const parentTable = assertIdentifier(this.model.table, 'parent table');
       const relatedClass = relation.related;
-      const relatedTable = relatedClass.table;
+      const relatedTable = assertIdentifier(relatedClass.table, 'related table');
 
       let sub = '';
       if (relation instanceof require('./Relations/BelongsToManyRelation')) {
         // belongsToMany: count from pivot
-        sub = `(SELECT COUNT(*) FROM \`${relation.pivot}\` WHERE \`${relation.pivot}\`.\`${relation.foreignPivotKey}\` = \`${parentTable}\`.\`${relation.parentKey}\`) AS \`${name}_count\``;
+        const pivot = assertIdentifier(relation.pivot, 'pivot table');
+        const fpk = assertIdentifier(relation.foreignPivotKey, 'foreignPivotKey');
+        const pk = assertIdentifier(relation.parentKey, 'parentKey');
+        sub = `(SELECT COUNT(*) FROM \`${pivot}\` WHERE \`${pivot}\`.\`${fpk}\` = \`${parentTable}\`.\`${pk}\`) AS \`${name}_count\``;
       } else if (relation.child) {
         // belongsTo
-        const ownerKey = relation.ownerKey || relatedClass.primaryKey || 'id';
-        sub = `(SELECT COUNT(*) FROM \`${relatedTable}\` WHERE \`${relatedTable}\`.\`${ownerKey}\` = \`${parentTable}\`.\`${relation.foreignKey}\`) AS \`${name}_count\``;
+        const ownerKey = assertIdentifier(relation.ownerKey || relatedClass.primaryKey || 'id', 'ownerKey');
+        const fk = assertIdentifier(relation.foreignKey, 'foreignKey');
+        sub = `(SELECT COUNT(*) FROM \`${relatedTable}\` WHERE \`${relatedTable}\`.\`${ownerKey}\` = \`${parentTable}\`.\`${fk}\`) AS \`${name}_count\``;
       } else {
         // hasOne/hasMany
-        sub = `(SELECT COUNT(*) FROM \`${relatedTable}\` WHERE \`${relatedTable}\`.\`${relation.foreignKey}\` = \`${parentTable}\`.\`${relation.localKey}\`) AS \`${name}_count\``;
+        const fk = assertIdentifier(relation.foreignKey, 'foreignKey');
+        const lk = assertIdentifier(relation.localKey, 'localKey');
+        sub = `(SELECT COUNT(*) FROM \`${relatedTable}\` WHERE \`${relatedTable}\`.\`${fk}\` = \`${parentTable}\`.\`${lk}\`) AS \`${name}_count\``;
       }
       this.selectedColumns.push(new RawExpression(sub));
     }
@@ -669,13 +693,19 @@ class QueryBuilder {
    * @returns {Promise<any>}
    */
   async update(attributes) {
+    // Apply fillable guard: only allow fields listed in model.fillable (if defined)
+    const fillable = this.model.fillable || [];
+    const safeAttributes = fillable.length > 0
+      ? Object.fromEntries(Object.entries(attributes).filter(([k]) => fillable.includes(k)))
+      : { ...attributes };
+
     if (this.model.timestamps) {
-      attributes.updated_at = new Date();
+      safeAttributes.updated_at = new Date();
     }
 
     return this.model.connection.update(
       this.model.table,
-      attributes,
+      safeAttributes,
       this.buildQuery()
     );
   }

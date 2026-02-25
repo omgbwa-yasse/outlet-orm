@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [5.2.0] - 2026-02-26
+
+### 🔐 Security Hardening (Full Audit Remediation)
+
+#### CRIT-01 — `sanitizeIdentifier` strict allowlist
+- Removed the two-step blocklist fallback. Any identifier that does not match the strict regex `^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$` now **throws immediately** — no silent pass-through.
+
+#### HIGH-01 — `MigrationManager` SQL injection via `migrationsTable`
+- Added `migrationsTable` validation in the `MigrationManager` constructor. Invalid names throw an error at construction time.
+- The constructor now accepts a third parameter: `migrationsTable` (default: `'migrations'`).
+
+#### HIGH-02 — Mass-assignment bypass in `QueryBuilder.update()` / `Model.update()`
+- `QueryBuilder.update()` now applies `model.fillable` filtering before executing the UPDATE query.
+- Only fields listed in `fillable` (when non-empty) are sent to the database — all other keys are silently dropped.
+
+#### MED-01 — Unsanitized relation properties in `withCount`, `whereHas`, `whereDoesntHave`
+- Added `assertIdentifier()` helper in `QueryBuilder.js` to validate all interpolated table/column names (`Model.table`, `relation.pivot`, `foreignKey`, `localKey`, etc.) before building subqueries.
+
+#### MED-02 — ReDoS in `Model._validateRule` via `new RegExp(ruleParam)`
+- Wrapped the dynamic `new RegExp(ruleParam)` construction in a `try/catch`. Invalid or catastrophic regexes no longer crash the server — they return a validation error message instead.
+
+#### LOW-01 — Unbounded `queryLog` memory growth
+- Added `MAX_QUERY_LOG_SIZE = 1000` cap. When the log exceeds this limit, the oldest entry is evicted automatically.
+
+#### LOW-02 — Fragile FK heuristic in `whereHas` / `whereDoesntHave`
+- Replaced the `relatedTable.replace(/s$/, '')` heuristic with proper relation-type detection using `relation.child` (set on `BelongsToRelation`, absent on `HasOne`/`HasMany`). Eliminates incorrect JOINs for tables like `news`, `address`, `status`.
+
 ## [5.0.0] - 2026-02-01
 
 ### 🏗️ Major Refactoring - Project Structure

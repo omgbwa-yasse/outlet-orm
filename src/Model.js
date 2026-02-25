@@ -433,8 +433,13 @@ class Model {
       break;
 
     case 'regex':
-      if (value && !new RegExp(ruleParam).test(value)) {
-        return `${field} format is invalid`;
+      try {
+        const re = new RegExp(ruleParam);
+        if (value && !re.test(value)) {
+          return `${field} format is invalid`;
+        }
+      } catch {
+        return `${field} has an invalid regex rule`;
       }
       break;
     }

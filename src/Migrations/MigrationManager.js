@@ -7,10 +7,13 @@ const fs = require('fs').promises;
 const path = require('path');
 
 class MigrationManager {
-  constructor(connection, migrationsPath = './database/migrations') {
+  constructor(connection, migrationsPath = './database/migrations', migrationsTable = 'migrations') {
+    if (typeof migrationsTable !== 'string' || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(migrationsTable)) {
+      throw new Error(`Invalid migrations table name: "${migrationsTable}"`);
+    }
     this.connection = connection;
     this.migrationsPath = path.resolve(process.cwd(), migrationsPath);
-    this.migrationsTable = 'migrations';
+    this.migrationsTable = migrationsTable;
   }
 
   /**

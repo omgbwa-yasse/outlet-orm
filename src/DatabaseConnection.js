@@ -9,6 +9,8 @@ let sqlite3;
 // Query log storage
 let queryLog = [];
 let queryLoggingEnabled = false;
+// Maximum number of entries retained in the query log to prevent unbounded memory growth
+const MAX_QUERY_LOG_SIZE = 1000;
 
 const RawExpression = require('./RawExpression');
 
@@ -24,13 +26,10 @@ function sanitizeIdentifier(identifier) {
   if (!identifier || typeof identifier !== 'string') {
     throw new Error('Invalid SQL identifier');
   }
-  // Allow only alphanumeric, underscore, dot (for table.column)
+  // Strict allowlist: only alphanumeric, underscore, dot (for table.column)
+  // Any identifier not matching this pattern is rejected outright — no fallback.
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/.test(identifier)) {
-    // Check for common SQL injection patterns
-    // Note: Escape hyphen in character class to avoid range interpretation
-    if (/['";]|--|\/*|\*\/|xp_|sp_|0x/i.test(identifier)) {
-      throw new Error(`Potentially dangerous SQL identifier: ${identifier}`);
-    }
+    throw new Error(`Invalid SQL identifier: "${identifier}"`);
   }
   return identifier;
 }
@@ -49,6 +48,10 @@ function logQuery(sql, params, duration) {
       duration,
       timestamp: new Date()
     });
+    // Enforce size cap to prevent unbounded memory growth
+    if (queryLog.length > MAX_QUERY_LOG_SIZE) {
+      queryLog.shift();
+    }
   }
 }
 
