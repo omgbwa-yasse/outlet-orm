@@ -13,7 +13,7 @@ class BelongsToManyRelation extends Relation {
     this.parentKey = parentKey || parent.constructor.primaryKey;
     this.relatedKey = relatedKey || related.primaryKey;
     this.pivotColumns = [];
-    this.withTimestamps = false;
+    this._withTimestamps = false;
     this.pivotAlias = 'pivot';
     this.wherePivotConditions = [];
   }
@@ -27,7 +27,7 @@ class BelongsToManyRelation extends Relation {
 
     // Columns to select from pivot
     const pivotSelectColumns = [this.relatedPivotKey, ...this.pivotColumns];
-    if (this.withTimestamps) {
+    if (this._withTimestamps) {
       pivotSelectColumns.push('created_at', 'updated_at');
     }
 
@@ -88,7 +88,7 @@ class BelongsToManyRelation extends Relation {
       this.pivotColumns.forEach(col => {
         pivotData[col] = record[col];
       });
-      if (this.withTimestamps) {
+      if (this._withTimestamps) {
         pivotData.created_at = record.created_at;
         pivotData.updated_at = record.updated_at;
       }
@@ -116,7 +116,7 @@ class BelongsToManyRelation extends Relation {
 
     // Columns to select from pivot
     const pivotSelectColumns = [this.foreignPivotKey, this.relatedPivotKey, ...this.pivotColumns];
-    if (this.withTimestamps) {
+    if (this._withTimestamps) {
       pivotSelectColumns.push('created_at', 'updated_at');
     }
 
@@ -196,7 +196,7 @@ class BelongsToManyRelation extends Relation {
         this.pivotColumns.forEach(col => {
           pivotData[col] = pivotRecord[col];
         });
-        if (this.withTimestamps) {
+        if (this._withTimestamps) {
           pivotData.created_at = pivotRecord.created_at;
           pivotData.updated_at = pivotRecord.updated_at;
         }
@@ -226,7 +226,7 @@ class BelongsToManyRelation extends Relation {
         [this.foreignPivotKey]: parentKeyValue,
         [this.relatedPivotKey]: id
       };
-      if (this.withTimestamps) {
+      if (this._withTimestamps) {
         const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
         data.created_at = now;
         data.updated_at = now;
@@ -291,7 +291,7 @@ class BelongsToManyRelation extends Relation {
    * @returns {BelongsToManyRelation}
    */
   withTimestamps() {
-    this.withTimestamps = true;
+    this._withTimestamps = true;
     return this;
   }
 

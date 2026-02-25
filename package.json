@@ -1,6 +1,6 @@
 {
   "name": "outlet-orm",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "A Laravel Eloquent-inspired ORM for Node.js with support for MySQL, PostgreSQL, and SQLite",
   "main": "src/index.js",
   "types": "types/index.d.ts",
@@ -52,7 +52,8 @@
   },
   "homepage": "https://github.com/omgbwa-yasse/outlet-orm#readme",
   "dependencies": {
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "pluralize": "^8.0.0"
   },
   "peerDependencies": {
     "mysql2": "^3.15.2",
@@ -60,9 +61,15 @@
     "sqlite3": "^5.1.6"
   },
   "peerDependenciesMeta": {
-    "mysql2": { "optional": true },
-    "pg": { "optional": true },
-    "sqlite3": { "optional": true }
+    "mysql2": {
+      "optional": true
+    },
+    "pg": {
+      "optional": true
+    },
+    "sqlite3": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

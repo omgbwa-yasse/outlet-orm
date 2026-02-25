@@ -116,6 +116,7 @@ describe('Model', () => {
 
     test('should hide hidden attributes in toJSON', () => {
       class UserWithHidden extends Model {
+        static fillable = ['name', 'email', 'password', 'secret_token'];
         static hidden = ['password', 'secret_token'];
       }
       const user = new UserWithHidden({
@@ -133,6 +134,7 @@ describe('Model', () => {
 
     test('should show hidden attributes when _showHidden is true', () => {
       class UserWithHidden extends Model {
+        static fillable = ['name', 'email', 'password', 'secret_token'];
         static hidden = ['password', 'secret_token'];
       }
       const user = new UserWithHidden({

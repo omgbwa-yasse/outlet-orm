@@ -28,6 +28,7 @@ class QueryBuilder {
    */
   _applyGlobalScopes() {
     if (this._excludeAllScopes) return;
+    if (this._scopesApplied) return;
 
     const scopes = this.model.globalScopes || {};
     for (const [name, scopeFn] of Object.entries(scopes)) {
@@ -35,6 +36,7 @@ class QueryBuilder {
         scopeFn(this);
       }
     }
+    this._scopesApplied = true;
   }
 
   /**
@@ -43,12 +45,14 @@ class QueryBuilder {
    */
   _applySoftDeleteConstraints() {
     if (!this.model.softDeletes) return;
+    if (this._softDeleteApplied) return;
 
     if (this._onlyTrashed) {
       this.whereNotNull(this.model.DELETED_AT);
     } else if (!this._withTrashed) {
       this.whereNull(this.model.DELETED_AT);
     }
+    this._softDeleteApplied = true;
   }
 
   /**
@@ -458,14 +462,14 @@ class QueryBuilder {
       let sub = '';
       if (relation instanceof require('./Relations/BelongsToManyRelation')) {
         // belongsToMany: count from pivot
-        sub = `(SELECT COUNT(*) FROM ${relation.pivot} WHERE ${relation.pivot}.${relation.foreignPivotKey} = ${parentTable}.${relation.parentKey}) AS ${name}_count`;
+        sub = `(SELECT COUNT(*) FROM \`${relation.pivot}\` WHERE \`${relation.pivot}\`.\`${relation.foreignPivotKey}\` = \`${parentTable}\`.\`${relation.parentKey}\`) AS \`${name}_count\``;
       } else if (relation.child) {
         // belongsTo
         const ownerKey = relation.ownerKey || relatedClass.primaryKey || 'id';
-        sub = `(SELECT COUNT(*) FROM ${relatedTable} WHERE ${relatedTable}.${ownerKey} = ${parentTable}.${relation.foreignKey}) AS ${name}_count`;
+        sub = `(SELECT COUNT(*) FROM \`${relatedTable}\` WHERE \`${relatedTable}\`.\`${ownerKey}\` = \`${parentTable}\`.\`${relation.foreignKey}\`) AS \`${name}_count\``;
       } else {
         // hasOne/hasMany
-        sub = `(SELECT COUNT(*) FROM ${relatedTable} WHERE ${relatedTable}.${relation.foreignKey} = ${parentTable}.${relation.localKey}) AS ${name}_count`;
+        sub = `(SELECT COUNT(*) FROM \`${relatedTable}\` WHERE \`${relatedTable}\`.\`${relation.foreignKey}\` = \`${parentTable}\`.\`${relation.localKey}\`) AS \`${name}_count\``;
       }
       this.selectedColumns.push(sub);
     }
@@ -787,6 +791,15 @@ class QueryBuilder {
     cloned.distinctFlag = this.distinctFlag;
     cloned.groupBys = [...this.groupBys];
     cloned.havings = [...this.havings];
+
+    cloned._showHidden = this._showHidden;
+    cloned._withTrashed = this._withTrashed;
+    cloned._onlyTrashed = this._onlyTrashed;
+    cloned._excludedScopes = [...this._excludedScopes];
+    cloned._excludeAllScopes = this._excludeAllScopes;
+    cloned._scopesApplied = this._scopesApplied;
+    cloned._softDeleteApplied = this._softDeleteApplied;
+
     return cloned;
   }
 }

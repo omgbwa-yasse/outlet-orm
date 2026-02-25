@@ -95,6 +95,13 @@ class Model {
    * @param {Function} callback - Callback function
    */
   static on(event, callback) {
+    if (!Object.prototype.hasOwnProperty.call(this, 'eventListeners')) {
+      this.eventListeners = {
+        creating: [], created: [], updating: [], updated: [],
+        saving: [], saved: [], deleting: [], deleted: [],
+        restoring: [], restored: []
+      };
+    }
     if (!this.eventListeners[event]) {
       this.eventListeners[event] = [];
     }
@@ -108,6 +115,9 @@ class Model {
    * @returns {Promise<boolean>} - Returns false if event should be cancelled
    */
   static async fireEvent(event, model) {
+    if (!Object.prototype.hasOwnProperty.call(this, 'eventListeners')) {
+      return true;
+    }
     const listeners = this.eventListeners[event] || [];
     for (const listener of listeners) {
       const result = await listener(model);
@@ -556,7 +566,7 @@ class Model {
    * @returns {Promise<any>}
    */
   static async delete() {
-    return this.query().delete();
+    throw new Error('Cannot call static delete() without conditions. Use query().delete() instead.');
   }
 
   /**
@@ -679,8 +689,9 @@ class Model {
    * @returns {this}
    */
   fill(attributes) {
+    const fillable = this.constructor.fillable || [];
     for (const [key, value] of Object.entries(attributes)) {
-      if (this.constructor.fillable.length === 0 || this.constructor.fillable.includes(key)) {
+      if (fillable.includes(key)) {
         this.setAttribute(key, value);
       }
     }
@@ -984,7 +995,8 @@ class Model {
   hasOne(related, foreignKey, localKey) {
     const HasOneRelation = require('./Relations/HasOneRelation');
     localKey = localKey || this.constructor.primaryKey;
-    foreignKey = foreignKey || `${this.constructor.table.slice(0, -1)}_id`;
+    const pluralize = require('pluralize');
+    foreignKey = foreignKey || `${pluralize.singular(this.constructor.table)}_id`;
 
     return new HasOneRelation(this, related, foreignKey, localKey);
   }
@@ -999,7 +1011,8 @@ class Model {
   hasMany(related, foreignKey, localKey) {
     const HasManyRelation = require('./Relations/HasManyRelation');
     localKey = localKey || this.constructor.primaryKey;
-    foreignKey = foreignKey || `${this.constructor.table.slice(0, -1)}_id`;
+    const pluralize = require('pluralize');
+    foreignKey = foreignKey || `${pluralize.singular(this.constructor.table)}_id`;
 
     return new HasManyRelation(this, related, foreignKey, localKey);
   }
@@ -1014,7 +1027,8 @@ class Model {
   belongsTo(related, foreignKey, ownerKey) {
     const BelongsToRelation = require('./Relations/BelongsToRelation');
     ownerKey = ownerKey || related.primaryKey;
-    foreignKey = foreignKey || `${related.table.slice(0, -1)}_id`;
+    const pluralize = require('pluralize');
+    foreignKey = foreignKey || `${pluralize.singular(related.table)}_id`;
 
     return new BelongsToRelation(this, related, foreignKey, ownerKey);
   }

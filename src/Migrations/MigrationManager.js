@@ -54,7 +54,7 @@ class MigrationManager {
       await this.runMigration(migration, batch);
     }
 
-    console.log(`\n✓ All migrations completed successfully`);
+    console.log('\n✓ All migrations completed successfully');
   }
 
   /**
@@ -105,7 +105,7 @@ class MigrationManager {
       await this.rollbackMigration(migration);
     }
 
-    console.log(`\n✓ Rollback completed successfully`);
+    console.log('\n✓ Rollback completed successfully');
   }
 
   /**
@@ -155,7 +155,7 @@ class MigrationManager {
       await this.rollbackMigration(migration);
     }
 
-    console.log(`\n✓ Reset completed successfully`);
+    console.log('\n✓ Reset completed successfully');
   }
 
   /**
@@ -263,11 +263,11 @@ class MigrationManager {
     const sql = `
       SELECT * FROM ${this.migrationsTable}
       WHERE batch >= (
-        SELECT MAX(batch) - ${steps - 1} FROM ${this.migrationsTable}
+        SELECT MAX(batch) - ? FROM ${this.migrationsTable}
       )
       ORDER BY batch DESC, id DESC
     `;
-    return await this.connection.execute(sql);
+    return await this.connection.execute(sql, [steps - 1]);
   }
 
   /**
@@ -304,18 +304,18 @@ class MigrationManager {
     let sql;
 
     switch (driver) {
-      case 'mysql':
-        sql = `SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()`;
-        break;
-      case 'postgres':
-      case 'postgresql':
-        sql = `SELECT tablename FROM pg_tables WHERE schemaname = 'public'`;
-        break;
-      case 'sqlite':
-        sql = `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`;
-        break;
-      default:
-        throw new Error(`Unsupported driver: ${driver}`);
+    case 'mysql':
+      sql = 'SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()';
+      break;
+    case 'postgres':
+    case 'postgresql':
+      sql = 'SELECT tablename FROM pg_tables WHERE schemaname = \'public\'';
+      break;
+    case 'sqlite':
+      sql = 'SELECT name FROM sqlite_master WHERE type=\'table\' AND name NOT LIKE \'sqlite_%\'';
+      break;
+    default:
+      throw new Error(`Unsupported driver: ${driver}`);
     }
 
     const result = await this.connection.execute(sql);

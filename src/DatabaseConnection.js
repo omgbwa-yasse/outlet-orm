@@ -272,18 +272,24 @@ class DatabaseConnection {
     switch (this.driver) {
     case 'mysql':
       if (this._transactionConnection) {
-        await this._transactionConnection.commit();
-        this._transactionConnection.release();
-        this._transactionConnection = null;
+        try {
+          await this._transactionConnection.commit();
+        } finally {
+          this._transactionConnection.release();
+          this._transactionConnection = null;
+        }
       }
       break;
 
     case 'postgres':
     case 'postgresql':
       if (this._transactionConnection) {
-        await this._transactionConnection.query('COMMIT');
-        this._transactionConnection.release();
-        this._transactionConnection = null;
+        try {
+          await this._transactionConnection.query('COMMIT');
+        } finally {
+          this._transactionConnection.release();
+          this._transactionConnection = null;
+        }
       }
       break;
 
@@ -306,18 +312,24 @@ class DatabaseConnection {
     switch (this.driver) {
     case 'mysql':
       if (this._transactionConnection) {
-        await this._transactionConnection.rollback();
-        this._transactionConnection.release();
-        this._transactionConnection = null;
+        try {
+          await this._transactionConnection.rollback();
+        } finally {
+          this._transactionConnection.release();
+          this._transactionConnection = null;
+        }
       }
       break;
 
     case 'postgres':
     case 'postgresql':
       if (this._transactionConnection) {
-        await this._transactionConnection.query('ROLLBACK');
-        this._transactionConnection.release();
-        this._transactionConnection = null;
+        try {
+          await this._transactionConnection.query('ROLLBACK');
+        } finally {
+          this._transactionConnection.release();
+          this._transactionConnection = null;
+        }
       }
       break;
 
@@ -515,10 +527,7 @@ class DatabaseConnection {
     switch (this.driver) {
     case 'mysql': {
       const conn = this._getConnection();
-      const [res] = await conn.execute(
-        this.convertToDriverPlaceholder(sql),
-        params
-      );
+      const [res] = await conn.execute(sql, params);
       result = { affectedRows: res.affectedRows };
       break;
     }
@@ -566,10 +575,7 @@ class DatabaseConnection {
     switch (this.driver) {
     case 'mysql': {
       const conn = this._getConnection();
-      const [res] = await conn.execute(
-        this.convertToDriverPlaceholder(sql),
-        params
-      );
+      const [res] = await conn.execute(sql, params);
       result = { affectedRows: res.affectedRows };
       break;
     }
@@ -864,7 +870,7 @@ class DatabaseConnection {
     // SELECT clause
     let selectClause = '*';
     if (query.columns && query.columns.length > 0 && query.columns[0] !== '*') {
-      selectClause = query.columns.join(', ');
+      selectClause = query.columns.map(col => sanitizeIdentifier(col)).join(', ');
     }
 
     // DISTINCT
@@ -876,7 +882,12 @@ class DatabaseConnection {
     if (query.joins && query.joins.length > 0) {
       for (const join of query.joins) {
         const joinType = (join.type || 'inner').toUpperCase();
-        sql += ` ${joinType} JOIN ${join.table} ON ${join.first} ${join.operator} ${join.second}`;
+        const ALLOWED_OPERATORS = ['=', '!=', '<>', '<', '>', '<=', '>=', 'LIKE', 'NOT LIKE', 'IS', 'IS NOT'];
+        const op = join.operator.toUpperCase();
+        if (!ALLOWED_OPERATORS.includes(op)) {
+          throw new Error(`Invalid operator: ${join.operator}`);
+        }
+        sql += ` ${joinType} JOIN ${sanitizeIdentifier(join.table)} ON ${sanitizeIdentifier(join.first)} ${op} ${sanitizeIdentifier(join.second)}`;
       }
     }
 
@@ -887,19 +898,24 @@ class DatabaseConnection {
 
     // GROUP BY
     if (query.groupBys && query.groupBys.length > 0) {
-      sql += ` GROUP BY ${query.groupBys.join(', ')}`;
+      sql += ` GROUP BY ${query.groupBys.map(col => sanitizeIdentifier(col)).join(', ')}`;
     }
 
     // HAVING
     if (query.havings && query.havings.length > 0) {
       const havingClauses = [];
       for (const h of query.havings) {
+        const ALLOWED_OPERATORS = ['=', '!=', '<>', '<', '>', '<=', '>=', 'LIKE', 'NOT LIKE', 'IS', 'IS NOT'];
+        const op = h.operator.toUpperCase();
+        if (!ALLOWED_OPERATORS.includes(op)) {
+          throw new Error(`Invalid operator: ${h.operator}`);
+        }
         if (h.type === 'basic') {
-          havingClauses.push(`${h.column} ${h.operator} ?`);
+          havingClauses.push(`${sanitizeIdentifier(h.column)} ${op} ?`);
           params.push(h.value);
         } else if (h.type === 'count') {
-          const col = h.column && h.column !== '*' ? h.column : '*';
-          havingClauses.push(`COUNT(${col}) ${h.operator} ?`);
+          const col = h.column && h.column !== '*' ? sanitizeIdentifier(h.column) : '*';
+          havingClauses.push(`COUNT(${col}) ${op} ?`);
           params.push(h.value);
         }
       }
@@ -911,19 +927,25 @@ class DatabaseConnection {
     // ORDER BY
     if (query.orders && query.orders.length > 0) {
       const orderClauses = query.orders.map(
-        order => `${order.column} ${order.direction.toUpperCase()}`
+        order => {
+          const dir = order.direction.toUpperCase();
+          if (dir !== 'ASC' && dir !== 'DESC') throw new Error(`Invalid direction: ${dir}`);
+          return `${sanitizeIdentifier(order.column)} ${dir}`;
+        }
       );
       sql += ` ORDER BY ${orderClauses.join(', ')}`;
     }
 
     // LIMIT
     if (query.limit !== null && query.limit !== undefined) {
-      sql += ` LIMIT ${query.limit}`;
+      sql += ' LIMIT ?';
+      params.push(query.limit);
     }
 
     // OFFSET
     if (query.offset !== null && query.offset !== undefined) {
-      sql += ` OFFSET ${query.offset}`;
+      sql += ' OFFSET ?';
+      params.push(query.offset);
     }
 
     return { sql, params };
@@ -940,45 +962,50 @@ class DatabaseConnection {
 
     const clauses = [];
     const params = [];
+    const ALLOWED_OPERATORS = ['=', '!=', '<>', '<', '>', '<=', '>=', 'LIKE', 'NOT LIKE', 'IS', 'IS NOT'];
 
     wheres.forEach((where, index) => {
       const boolean = index === 0 ? 'WHERE' : (where.boolean || 'AND').toUpperCase();
+      const col = sanitizeIdentifier(where.column);
 
       switch (where.type) {
-      case 'basic':
-        clauses.push(`${boolean} ${where.column} ${where.operator} ?`);
+      case 'basic': {
+        const op = where.operator.toUpperCase();
+        if (!ALLOWED_OPERATORS.includes(op)) throw new Error(`Invalid operator: ${where.operator}`);
+        clauses.push(`${boolean} ${col} ${op} ?`);
         params.push(where.value);
         break;
+      }
 
       case 'in': {
         const inPlaceholders = where.values.map(() => '?').join(', ');
-        clauses.push(`${boolean} ${where.column} IN (${inPlaceholders})`);
+        clauses.push(`${boolean} ${col} IN (${inPlaceholders})`);
         params.push(...where.values);
         break;
       }
 
       case 'notIn': {
         const notInPlaceholders = where.values.map(() => '?').join(', ');
-        clauses.push(`${boolean} ${where.column} NOT IN (${notInPlaceholders})`);
+        clauses.push(`${boolean} ${col} NOT IN (${notInPlaceholders})`);
         params.push(...where.values);
         break;
       }
 
       case 'null':
-        clauses.push(`${boolean} ${where.column} IS NULL`);
+        clauses.push(`${boolean} ${col} IS NULL`);
         break;
 
       case 'notNull':
-        clauses.push(`${boolean} ${where.column} IS NOT NULL`);
+        clauses.push(`${boolean} ${col} IS NOT NULL`);
         break;
 
       case 'between':
-        clauses.push(`${boolean} ${where.column} BETWEEN ? AND ?`);
+        clauses.push(`${boolean} ${col} BETWEEN ? AND ?`);
         params.push(...where.values);
         break;
 
       case 'like':
-        clauses.push(`${boolean} ${where.column} LIKE ?`);
+        clauses.push(`${boolean} ${col} LIKE ?`);
         params.push(where.value);
         break;
       }

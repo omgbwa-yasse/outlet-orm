@@ -22,12 +22,13 @@ describe('DatabaseConnection', () => {
       };
 
       const { sql, params } = connection.buildSelectQuery('users', query);
-      
+
       expect(sql).toContain('SELECT id, name FROM users');
       expect(sql).toContain('WHERE age > ?');
       expect(sql).toContain('ORDER BY name ASC');
-      expect(sql).toContain('LIMIT 10');
-      expect(params).toEqual([18]);
+      expect(sql).toContain('LIMIT ?');
+      expect(sql).toContain('OFFSET ?');
+      expect(params).toEqual([18, 10, 0]);
     });
 
     test('should build WHERE IN clause', () => {
@@ -36,7 +37,7 @@ describe('DatabaseConnection', () => {
       ];
 
       const { whereClause, params } = connection.buildWhereClause(wheres);
-      
+
       expect(whereClause).toContain('WHERE id IN (?, ?, ?)');
       expect(params).toEqual([1, 2, 3]);
     });
@@ -47,7 +48,7 @@ describe('DatabaseConnection', () => {
       ];
 
       const { whereClause } = connection.buildWhereClause(wheres);
-      
+
       expect(whereClause).toContain('WHERE deleted_at IS NULL');
     });
 
@@ -58,7 +59,7 @@ describe('DatabaseConnection', () => {
       ];
 
       const { whereClause, params } = connection.buildWhereClause(wheres);
-      
+
       expect(whereClause).toContain('WHERE age > ?');
       expect(whereClause).toContain('AND status = ?');
       expect(params).toEqual([18, 'active']);
@@ -70,7 +71,7 @@ describe('DatabaseConnection', () => {
       const connection = new DatabaseConnection({ driver: 'postgres' });
       const sql = 'SELECT * FROM users WHERE age > ? AND status = ?';
       const converted = connection.convertToDriverPlaceholder(sql, 'postgres');
-      
+
       expect(converted).toBe('SELECT * FROM users WHERE age > $1 AND status = $2');
     });
 
@@ -78,7 +79,7 @@ describe('DatabaseConnection', () => {
       const connection = new DatabaseConnection({ driver: 'mysql' });
       const sql = 'SELECT * FROM users WHERE age > ? AND status = ?';
       const converted = connection.convertToDriverPlaceholder(sql);
-      
+
       expect(converted).toBe(sql);
     });
   });
@@ -87,7 +88,7 @@ describe('DatabaseConnection', () => {
     test('should generate correct number of placeholders', () => {
       const connection = new DatabaseConnection({ driver: 'mysql' });
       const placeholders = connection.getPlaceholders(3);
-      
+
       expect(placeholders).toBe('?, ?, ?');
     });
   });
