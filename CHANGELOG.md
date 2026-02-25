@@ -2,6 +2,94 @@
 
 All notable changes to this project will be documented in this file.
 
+## [5.4.0] - 2026-02-25
+
+### ✨ New Feature — Database Reverse Engineering (`bin/reverse.js`)
+
+#### Overview
+Added `bin/reverse.js` — a complete reverse-engineering tool that introspects an
+existing database (or SQL dump file) and automatically generates:
+
+- **Migration files** with fluent `up()` / `down()` code using the Schema Blueprint API
+- **Seeder files** containing the actual row data extracted from each table
+
+#### CLI usage
+```bash
+node bin/reverse.js        # interactive menu
+# or after npm install -g outlet-orm:
+outlet-reverse
+```
+
+Menu options:
+1. **Reverse from SQL file** — parses all `CREATE TABLE` statements and emits one migration per table
+2. **Reverse from live database** — connects (MySQL / PostgreSQL / SQLite), fetches schema + optionally fetches rows, writes migrations and seeders
+
+#### Exported utilities (testable API)
+```js
+const {
+  parseCreateTable,    // CREATE TABLE SQL → { tableName, columns, foreignKeys }
+  columnToBlueprint,   // column object → { method, args, modifiers }
+  generateMigration,   // tableInfo → { filename, className, code }
+  generateSeeder,      // (tableName, rows) → { filename, className, code }
+  reverseFromSql,      // SQL dump string → migration array
+} = require('./bin/reverse');
+```
+
+#### `parseCreateTable`
+- Handles MySQL, PostgreSQL, and SQLite `CREATE TABLE` dialects
+- Detects column types, `NOT NULL`, `DEFAULT`, `UNIQUE`, `AUTO_INCREMENT` / `AUTOINCREMENT`, `PRIMARY KEY`
+- Extracts explicit `FOREIGN KEY … REFERENCES` constraints (including `CONSTRAINT name FOREIGN KEY` syntax)
+- Strips SQL comments; respects nested parentheses (ENUM, CHECK, etc.)
+
+#### `columnToBlueprint` — type mapping matrix
+| SQL type | Blueprint method |
+|---|---|
+| `INT` / `INTEGER` autoincrement | `increments()` |
+| `BIGINT` autoincrement | `bigIncrements()` |
+| `TINYINT(1)` | `boolean()` |
+| `TINYINT` | `tinyInteger()` |
+| `SMALLINT` | `smallInteger()` |
+| `INT` / `INTEGER` | `integer()` |
+| `BIGINT` | `bigInteger()` |
+| `FLOAT` / `DOUBLE` / `REAL` | `float()` |
+| `DECIMAL(p,s)` / `NUMERIC(p,s)` | `decimal(p, s)` |
+| `VARCHAR(n)` | `string(n)` |
+| `CHAR(n)` | `char(n)` |
+| `TEXT` / `LONGTEXT` / `MEDIUMTEXT` | `text()` |
+| `BLOB` / `BINARY` / `BYTEA` | `binary()` |
+| `DATE` | `date()` |
+| `DATETIME` | `dateTime()` |
+| `TIMESTAMP` | `timestamp()` |
+| `TIME` | `time()` |
+| `JSON` / `JSONB` | `json()` |
+| `UUID` | `uuid()` |
+| `BOOLEAN` / `BOOL` | `boolean()` |
+| `ENUM(…)` | `string()` (fallback) |
+
+Modifiers applied inline: `.nullable()`, `.unique()`, `.default(value)`
+
+#### `generateMigration`
+- Timestamp-prefixed filename: `YYYYMMDD_HHmmss_create_<table>_table.js`
+- PascalCase class name: `blog_posts` → `CreateBlogPostsTable`
+- Detects `created_at` + `updated_at` pair → emits `table.timestamps()` shorthand
+- Emits `table.foreign(col).references(refCol).on(refTable)` for each FK
+- `down()` calls `schema.dropIfExists(tableName)`
+
+#### `generateSeeder`
+- Serialises an array of row objects via `JSON.stringify`
+- Generated `run(db)` iterates rows and calls `db.table(name).insert(row)`
+
+### 🧪 Tests
+Added `tests/Reverse.test.js` with **61 tests** covering:
+- `parseCreateTable`: MySQL dialect, SQLite dialect, explicit CONSTRAINT FK, DEFAULT values, null/invalid input
+- `columnToBlueprint`: full type matrix (17 type tests) + nullable/unique/default modifiers + PK guard
+- `generateMigration`: filename format, PascalCase, up/down content, timestamps shorthand, inline modifiers, FK constraint line, outlet-orm import, valid JS output
+- `generateSeeder`: filename, class name, row data, empty array, valid JS output
+- `reverseFromSql`: multi-table batch, empty/null input
+- **Integration** (SQLite in-memory): create real tables, reverse-engineer them, verify generated code parses as valid JavaScript
+
+**Total test count: 119 (58 previous + 61 new), all passing.**
+
 ## [5.3.0] - 2026-02-25
 
 ### 🔐 Security Hardening — Audit v5.2.0 Remediation
