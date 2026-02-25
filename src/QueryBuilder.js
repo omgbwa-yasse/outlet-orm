@@ -12,7 +12,7 @@ const RawExpression = require('./RawExpression');
  */
 function assertIdentifier(value, context = 'identifier') {
   if (typeof value !== 'string' || !/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/.test(value)) {
-    throw new Error(`Invalid SQL ${context}: "${value}"`);
+    throw new Error(`Invalid SQL ${context}`);
   }
   return value;
 }
@@ -681,10 +681,18 @@ class QueryBuilder {
    * @returns {Promise<any>}
    */
   async insert(data) {
-    if (Array.isArray(data)) {
-      return this.model.connection.insertMany(this.model.table, data);
+    // Apply fillable guard: only allow fields listed in model.fillable (if defined)
+    const fillable = this.model.fillable || [];
+    const applyFillable = (obj) => fillable.length > 0
+      ? Object.fromEntries(Object.entries(obj).filter(([k]) => fillable.includes(k)))
+      : { ...obj };
+
+    const safeData = Array.isArray(data) ? data.map(applyFillable) : applyFillable(data);
+
+    if (Array.isArray(safeData)) {
+      return this.model.connection.insertMany(this.model.table, safeData);
     }
-    return this.model.connection.insert(this.model.table, data);
+    return this.model.connection.insert(this.model.table, safeData);
   }
 
   /**

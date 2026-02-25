@@ -29,7 +29,7 @@ function sanitizeIdentifier(identifier) {
   // Strict allowlist: only alphanumeric, underscore, dot (for table.column)
   // Any identifier not matching this pattern is rejected outright — no fallback.
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/.test(identifier)) {
-    throw new Error(`Invalid SQL identifier: "${identifier}"`);
+    throw new Error('Invalid SQL identifier');
   }
   return identifier;
 }
@@ -751,7 +751,10 @@ class DatabaseConnection {
   }
 
   /**
-   * Execute a raw query and return normalized results
+   * Execute a raw query and return normalized results.
+   * ⚠️  SECURITY WARNING: The `sql` parameter is passed to the database driver without
+   * any sanitization. NEVER pass user-controlled data in `sql`. User-controlled values
+   * must be supplied exclusively via the `params` array (parameterized queries).
    * @param {string} sql
    * @param {Array} params
    * @returns {Promise<Array>}
@@ -790,7 +793,10 @@ class DatabaseConnection {
   }
 
   /**
-   * Execute raw SQL (driver-native results - for migrations)
+   * Execute raw SQL — driver-native results (intended for migrations).
+   * ⚠️  SECURITY WARNING: The `sql` parameter is passed to the database driver without
+   * any sanitization. NEVER pass user-controlled data in `sql`. User-controlled values
+   * must be supplied exclusively via the `params` array (parameterized queries).
    * @param {string} sql
    * @param {Array} params
    * @returns {Promise<any>}

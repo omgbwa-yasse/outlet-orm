@@ -7,11 +7,9 @@ function quoteIdentifier(identifier) {
   if (!identifier || typeof identifier !== 'string') {
     throw new Error('Invalid SQL identifier');
   }
-  // Allow only alphanumeric, underscore
+  // Strict allowlist: only alphanumeric and underscore — no fallback, no blocklist.
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(identifier)) {
-    if (/['";]|--|\/\*|\*\/|xp_|sp_|0x/i.test(identifier)) {
-      throw new Error(`Potentially dangerous SQL identifier: ${identifier}`);
-    }
+    throw new Error('Invalid SQL identifier');
   }
   return `\`${identifier}\``;
 }
@@ -801,12 +799,22 @@ class ForeignKeyDefinition {
   }
 
   onDelete(action) {
-    this._onDelete = action.toUpperCase();
+    const ALLOWED_FK_ACTIONS = ['CASCADE', 'RESTRICT', 'SET NULL', 'NO ACTION', 'SET DEFAULT'];
+    const normalized = action.toUpperCase();
+    if (!ALLOWED_FK_ACTIONS.includes(normalized)) {
+      throw new Error(`Invalid foreign key action: "${normalized}". Allowed: ${ALLOWED_FK_ACTIONS.join(', ')}`);
+    }
+    this._onDelete = normalized;
     return this;
   }
 
   onUpdate(action) {
-    this._onUpdate = action.toUpperCase();
+    const ALLOWED_FK_ACTIONS = ['CASCADE', 'RESTRICT', 'SET NULL', 'NO ACTION', 'SET DEFAULT'];
+    const normalized = action.toUpperCase();
+    if (!ALLOWED_FK_ACTIONS.includes(normalized)) {
+      throw new Error(`Invalid foreign key action: "${normalized}". Allowed: ${ALLOWED_FK_ACTIONS.join(', ')}`);
+    }
+    this._onUpdate = normalized;
     return this;
   }
 

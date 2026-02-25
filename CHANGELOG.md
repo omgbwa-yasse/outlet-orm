@@ -2,7 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
-## [5.2.0] - 2026-02-26
+## [5.3.0] - 2026-02-25
+
+### 🔐 Security Hardening — Audit v5.2.0 Remediation
+
+#### S-01 — `quoteIdentifier` strict allowlist (Schema.js)
+- Removed the two-step blocklist fallback from `quoteIdentifier` in `Schema/Schema.js`. Any table or column name failing the strict regex `^[a-zA-Z_][a-zA-Z0-9_]*$` now throws immediately with no silent pass-through. Aligns with the CRIT-01 fix applied to `sanitizeIdentifier` in v5.2.0.
+
+#### S-02 — DDL injection via `onDelete`/`onUpdate` in `ForeignKeyDefinition`
+- Added allowlist validation in `ForeignKeyDefinition.onDelete()` and `onUpdate()`. Only the five standard referential actions are accepted: `CASCADE`, `RESTRICT`, `SET NULL`, `NO ACTION`, `SET DEFAULT`. Any other value throws immediately.
+
+#### S-03 — Mass-assignment bypass in `QueryBuilder.insert()`
+- Added the same `fillable` guard to `insert()` that was added to `update()` in v5.2.0. When `model.fillable` is non-empty, only listed fields are sent to `INSERT`. Applies to both single-object and batch-array inserts.
+
+#### S-04 — Information disclosure in error messages
+- `sanitizeIdentifier` and `assertIdentifier` no longer echo the raw identifier value in thrown error messages. Error messages are now generic (`'Invalid SQL identifier'`) to avoid confirming attacker-supplied values in API responses.
+
+#### S-05 — Missing security warnings on raw execution methods
+- Added prominent `⚠️ SECURITY WARNING` JSDoc comment to `executeRawQuery()` and `execute()` in `DatabaseConnection.js` making it explicit that `sql` must never contain user-controlled data.
 
 ### 🔐 Security Hardening (Full Audit Remediation)
 
