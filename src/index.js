@@ -18,6 +18,8 @@ const MorphToRelation = require('./Relations/MorphToRelation');
 const { Schema, Blueprint, ColumnDefinition, ForeignKeyDefinition } = require('./Schema/Schema');
 const Migration = require('./Migrations/Migration');
 const MigrationManager = require('./Migrations/MigrationManager');
+const Seeder = require('./Seeders/Seeder');
+const SeederManager = require('./Seeders/SeederManager');
 
 module.exports = {
   // Core
@@ -45,5 +47,9 @@ module.exports = {
 
   // Migrations (v5.0.0)
   Migration,
-  MigrationManager
+  MigrationManager,
+
+  // Seeders
+  Seeder,
+  SeederManager
 };

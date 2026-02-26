@@ -31,8 +31,14 @@ async function main() {
     return;
   }
 
+  if (command === 'make:seed' || command === 'seed:make') {
+    await makeSeeder();
+    rl.close();
+    return;
+  }
+
   // Support non-interactive commands for automation and CI
-  const nonInteractive = new Set(['migrate', 'up', 'rollback', 'reset', 'refresh', 'fresh', 'status']);
+  const nonInteractive = new Set(['migrate', 'up', 'rollback', 'reset', 'refresh', 'fresh', 'status', 'seed', 'db:seed']);
   if (nonInteractive.has(command)) {
     const flags = parseFlags(process.argv.slice(3));
     await runNonInteractive(command, flags);
@@ -91,6 +97,40 @@ async function makeMigration() {
   await fs.writeFile(filePath, template);
 
   console.log(`✓ Migration created: ${fileName}`);
+  console.log(`  Location: ${filePath}`);
+}
+
+/**
+ * Create a new seeder file
+ */
+async function makeSeeder() {
+  const seederName = process.argv[3];
+
+  if (!seederName) {
+    console.error('✗ Error: Seeder name is required');
+    console.log('Usage: outlet-migrate make:seed <seeder_name>');
+    console.log('Example: outlet-migrate make:seed UserSeeder');
+    return;
+  }
+
+  const seedsDir = path.join(process.cwd(), 'database', 'seeds');
+
+  try {
+    await fs.mkdir(seedsDir, { recursive: true });
+  } catch (error) {
+    if (error.code !== 'EEXIST') {
+      throw error;
+    }
+  }
+
+  const className = toSeederClassName(seederName);
+  const fileName = `${className}.js`;
+  const filePath = path.join(seedsDir, fileName);
+
+  const template = getSeederTemplate(className);
+  await fs.writeFile(filePath, template);
+
+  console.log(`✓ Seeder created: ${fileName}`);
   console.log(`  Location: ${filePath}`);
 }
 
@@ -204,6 +244,47 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+function toSeederClassName(name) {
+  const cleaned = String(name)
+    .replace(/\.js$/i, '')
+    .replace(/[^a-zA-Z0-9]+/g, ' ')
+    .trim();
+
+  const pascal = cleaned
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join('');
+
+  if (!pascal) {
+    throw new Error('Invalid seeder name');
+  }
+
+  return pascal.endsWith('Seeder') ? pascal : `${pascal}Seeder`;
+}
+
+function getSeederTemplate(className) {
+  return `/**
+ * Seeder: ${className}
+ */
+
+const { Seeder } = require('outlet-orm');
+
+class ${className} extends Seeder {
+  /**
+   * Run the seeder
+   */
+  async run() {
+    await this.insert('table_name', [
+      // { name: 'Example' }
+    ]);
+  }
+}
+
+module.exports = ${className};
+`;
+}
+
 /**
  * Simple flag parser for CLI args
  * Supports formats:
@@ -219,6 +300,10 @@ function parseFlags(argv) {
   const stepsRe = /(?:--steps(?:=|\s+)|-s\s+)(\S+)/;
   const stepsMatch = stepsRe.exec(text);
   if (stepsMatch) flags.steps = coerce(stepsMatch[1]);
+  // Seeder target: --class Name, --class=Name, -c Name
+  const classRe = /(?:--class(?:=|\s+)|-c\s+)(\S+)/;
+  const classMatch = classRe.exec(text);
+  if (classMatch) flags.class = classMatch[1];
   return flags;
 }
 
@@ -261,7 +346,7 @@ async function runNonInteractive(cmd, flags) {
     }
   }
 
-  const { DatabaseConnection, MigrationManager } = require('../src');
+  const { DatabaseConnection, MigrationManager, SeederManager } = require('../src');
 
   const connection = new DatabaseConnection(dbConfig);
   await connection.connect();
@@ -312,6 +397,13 @@ async function runNonInteractive(cmd, flags) {
       await manager.status();
       break;
 
+    case 'seed':
+    case 'db:seed': {
+      const seederManager = new SeederManager(connection);
+      await seederManager.run(flags.class || null);
+      break;
+    }
+
     default:
       console.error(`✗ Unknown command: ${cmd}`);
     }
@@ -334,6 +426,8 @@ async function runMigrationCommands() {
   console.log('4. refresh         - Reset and re-run all migrations');
   console.log('5. fresh           - Drop all tables and re-run migrations');
   console.log('6. status          - Show migration status');
+  console.log('7. seed            - Run seeders from database/seeds');
+  console.log('8. make:seed       - Create a new seeder file');
   console.log('0. Exit\n');
 
   const choice = await question('Enter your choice: ');
@@ -369,7 +463,7 @@ async function runMigrationCommands() {
     }
   }
 
-  const { DatabaseConnection, MigrationManager } = require('../src');
+  const { DatabaseConnection, MigrationManager, SeederManager } = require('../src');
 
   const connection = new DatabaseConnection(dbConfig);
   await connection.connect();
@@ -420,6 +514,16 @@ async function runMigrationCommands() {
 
     case '6':
       await manager.status();
+      break;
+
+    case '7': {
+      const seederManager = new SeederManager(connection);
+      await seederManager.run();
+      break;
+    }
+
+    case '8':
+      await makeSeeder();
       break;
 
     default:

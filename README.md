@@ -97,7 +97,7 @@ mon-projet/
 ├── database/
 │   ├── config.js                 # Config migrations (outlet-init)
 │   ├── migrations/               # Fichiers de migration
-│   └── seeders/                  # Données de test/démo
+│   └── seeds/                    # Données de test/démo
 │       └── UserSeeder.js
 │
 ├── public/                       # ✅ Fichiers statiques publics
@@ -239,6 +239,19 @@ outlet-migrate make create_users_table
 
 # Exécuter les migrations
 outlet-migrate migrate
+```
+
+### 🌱 Seeding rapide
+
+```bash
+# Créer un seeder
+outlet-migrate make:seed UserSeeder
+
+# Exécuter les seeds (DatabaseSeeder prioritaire)
+outlet-migrate seed
+
+# Exécuter un seeder spécifique
+outlet-migrate seed --class UserSeeder
 ```
 
 ## 📖 Utilisation

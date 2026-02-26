@@ -1,38 +1,38 @@
-# Guide de Démarrage Rapide
+# Quick Start Guide
 
-Ce guide vous aidera à démarrer rapidement avec Eloquent JS ORM.
+This guide will help you get started quickly with Eloquent JS ORM.
 
 ## Installation
 
 ```bash
 npm install outlet-orm mysql2
-# ou pour PostgreSQL
+# or for PostgreSQL
 npm install outlet-orm pg
-# ou pour SQLite
+# or for SQLite
 npm install outlet-orm sqlite3
 ```
 
-## Structure de Projet Recommandée (Architecture en Couches)
+## Recommended Project Structure (Layered Architecture)
 
-> 🔐 **Sécurité** : Voir le [Guide de Sécurité](SECURITY.md) pour les bonnes pratiques.
+> 🔐 **Security**: See [Security Guide](SECURITY.md) for best practices.
 
-L'architecture en couches sépare clairement les responsabilités :
+The layered architecture clearly separates responsibilities:
 
 ```
 mon-projet/
-├── .env                           # ⚠️ JAMAIS commité
+├── .env                           # ⚠️ NEVER commit
 ├── .env.example                   # Template sans secrets
 ├── .gitignore
 ├── package.json
 ├── src/
 │   ├── index.js                   # Point d'entrée
-│   ├── controllers/               # 🎮 Couche Présentation
+│   ├── controllers/               # 🎮 Presentation Layer
 │   │   └── UserController.js
-│   ├── services/                  # ⚙️ Couche Métier (Business Logic)
+│   ├── services/                  # ⚙️ Business Layer
 │   │   └── UserService.js
-│   ├── repositories/              # 📦 Couche Accès Données
+│   ├── repositories/              # 📦 Data Access Layer
 │   │   └── UserRepository.js
-│   ├── models/                    # 📊 Couche Modèles (outlet-orm)
+│   ├── models/                    # 📊 Models Layer (outlet-orm)
 │   │   └── User.js
 │   ├── middlewares/               # 🔒 Auth, validation, rate limit
 │   │   ├── auth.js
@@ -49,13 +49,13 @@ mon-projet/
 │   ├── config.js                  # Config migrations CLI
 │   └── migrations/
 ├── public/                        # ✅ Fichiers statiques publics
-├── logs/                          # 📋 Journaux
+├── logs/                          # 📋 Logs
 └── tests/
     ├── unit/
     └── integration/
 ```
 
-### Flux de l'Architecture
+### Architecture Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -63,7 +63,7 @@ mon-projet/
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  🛤️ ROUTES          Routage vers le bon controller          │
+│  🛤️ ROUTES          Routing to the correct controller          │
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -71,7 +71,7 @@ mon-projet/
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  🎮 CONTROLLERS      Gestion HTTP (req/res) uniquement      │
+│  🎮 CONTROLLERS      HTTP handling only (req/res)      │
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -91,22 +91,22 @@ mon-projet/
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Responsabilités par Couche
+### Responsibilities by Layer
 
-| Couche | Fichiers | Responsabilité | Sécurité |
+| Layer | Files | Responsibility | Security |
 |--------|----------|----------------|----------|
-| **Controllers** | `src/controllers/` | HTTP uniquement (req/res) | Validation entrée |
-| **Services** | `src/services/` | Logique métier, règles | Autorisation |
-| **Repositories** | `src/repositories/` | Abstraction BDD, requêtes | Sanitization |
-| **Models** | `src/models/` | Structure données, relations | Fillable/Hidden |
-| **Middlewares** | `src/middlewares/` | Auth, validation, erreurs | 🔒 **Critique** |
-| **Config** | `src/config/` | Variables d'environnement | 🔒 Lit .env |
-| **Utils** | `src/utils/` | Hash, tokens, helpers | 🔒 Ne pas exposer |
+| **Controllers** |`src/controllers/`| HTTP only (req/res) | Entry validation |
+| **Services** |`src/services/`| Business logic, rules | Authorisation |
+| **Repositories** |`src/repositories/`| Database abstraction, queries | Sanitisation |
+| **Models** |`src/models/`| Data structure, relationships | Fillable/Hidden |
+| **Middlewares** |`src/middlewares/`| Auth, validation, errors | 🔒 **Critical** |
+| **Config** |`src/config/`| Environment Variables | 🔒 Reads .env |
+| **Utils** |`src/utils/`| Hash, tokens, helpers | 🔒 Do not expose |
 
-### Exemple d'Implémentation
+### Implementation Example
 
 ```javascript
-// src/models/User.js - Couche Modèle
+// src/models/User.js - Model Layer
 const { Model } = require('outlet-orm');
 
 class User extends Model {
@@ -116,7 +116,7 @@ class User extends Model {
 }
 module.exports = User;
 
-// src/repositories/UserRepository.js - Couche Repository
+// src/repositories/UserRepository.js - Repository layer
 const User = require('../models/User');
 
 class UserRepository {
@@ -132,13 +132,13 @@ class UserRepository {
 }
 module.exports = new UserRepository();
 
-// src/services/UserService.js - Couche Service
+// src/services/UserService.js - Service Layer
 const userRepository = require('../repositories/UserRepository');
 const bcrypt = require('bcrypt');
 
 class UserService {
   async register(data) {
-    // Logique métier : validation, hash password
+    // Business logic: validation, hash password
     const existing = await userRepository.findByEmail(data.email);
     if (existing) throw new Error('Email déjà utilisé');
     
@@ -148,7 +148,7 @@ class UserService {
 }
 module.exports = new UserService();
 
-// src/controllers/UserController.js - Couche Controller
+// src/controllers/UserController.js - Controller layer
 const userService = require('../services/UserService');
 
 class UserController {
@@ -164,9 +164,9 @@ class UserController {
 module.exports = new UserController();
 ```
 
-## Configuration Initiale
+## Initial Configuration
 
-### 1. Créer le fichier `.env`
+### 1. Create the file`.env`
 
 ```env
 DB_DRIVER=mysql
@@ -177,7 +177,7 @@ DB_PASSWORD=secret
 DB_PORT=3306
 ```
 
-### 2. Créer votre premier modèle
+### 2. Create your first template
 
 ```javascript
 const { Model } = require('outlet-orm');
@@ -193,90 +193,90 @@ class User extends Model {
 }
 ```
 
-> 💡 **Connexion automatique** : Pas besoin d'importer `DatabaseConnection` ! Le Model se connecte automatiquement via `.env`.
+> 💡 **Automatic connection**: No need to import`DatabaseConnection`! The Model automatically connects via`.env`.
 ```
 
-### 3. Utiliser le modèle
+### 3. Use the template
 
 ```javascript
-// Créer un utilisateur
+// Create a user
 const user = await User.create({
-  name: 'John Doe',
-  email: 'john@example.com',
-  password: 'secret123'
+name: 'John Doe',
+email: 'john@example.com',
+password: 'secret123'
 });
 
-// Rechercher des utilisateurs
+// Search for users
 const users = await User.where('email', 'john@example.com').get();
 
-// Mettre à jour
+// To update
 user.setAttribute('name', 'Jane Doe');
 await user.save();
 
-// Supprimer
+// DELETE
 await user.destroy();
 ```
 
-## Opérations CRUD de Base
+## Basic CRUD Operations
 
-### Create (Créer)
+### Create
 
 ```javascript
-// Méthode 1: Avec create()
+// Method 1: With create()
 const user = await User.create({
-  name: 'Alice',
-  email: 'alice@example.com'
+name: 'Alice',
+email: 'alice@example.com'
 });
 
-// Méthode 2: Avec new + save()
+// Method 2: With new + save()
 const user = new User();
 user.setAttribute('name', 'Bob');
 user.setAttribute('email', 'bob@example.com');
 await user.save();
 
-// Méthode 3: Insertion multiple
+// Method 3: Multiple Insert
 await User.insert([
-  { name: 'User 1', email: 'user1@example.com' },
-  { name: 'User 2', email: 'user2@example.com' }
+{ name: 'User 1', email: 'user1@example.com' },
+{ name: 'User 2', email: 'user2@example.com' }
 ]);
 ```
 
 ### Read (Lire)
 
 ```javascript
-// Tous les enregistrements
+// All records
 const allUsers = await User.all();
 
-// Par ID
+//Part ID
 const user = await User.find(1);
 
-// Premier résultat
+// First result
 const firstUser = await User.first();
 
-// Avec condition
+// With condition
 const activeUsers = await User.where('status', 'active').get();
 
-// Plusieurs conditions
+// Several conditions
 const users = await User
-  .where('age', '>', 18)
-  .where('status', 'active')
-  .orderBy('name')
-  .limit(10)
-  .get();
+.where('age', '>', 18)
+.where('status', 'active')
+.orderBy('name')
+.limit(10)
+.get();
 ```
 
-### Update (Mettre à jour)
+### Update
 
 ```javascript
-// Mise à jour d'instance
+// Instance update
 const user = await User.find(1);
 user.setAttribute('name', 'Updated Name');
 await user.save();
 
-// Mise à jour en masse
+// Mass update
 await User
-  .where('status', 'pending')
-  .update({ status: 'active' });
+.where('status', 'pending')
+.update({ status: 'active' });
 ```
 
 ### Delete (Supprimer)
@@ -286,7 +286,7 @@ await User
 const user = await User.find(1);
 await user.destroy();
 
-// Suppression en masse
+// Mass deletion
 await User.where('status', 'banned').delete();
 ```
 
@@ -295,7 +295,7 @@ await User.where('status', 'banned').delete();
 ### Clauses WHERE
 
 ```javascript
-// Basique
+// Basic
 User.where('name', 'John')
 User.where('age', '>', 18)
 User.where('email', 'LIKE', '%@example.com')
@@ -312,15 +312,15 @@ User.whereNotNull('email_verified_at')
 // OR WHERE
 User.where('role', 'admin').orWhere('role', 'moderator')
 
-// Chaînage
+// Chaining
 User
-  .where('age', '>', 18)
-  .where('status', 'active')
-  .whereNotNull('email_verified_at')
-  .get()
+.where('age', '>', 18)
+.where('status', 'active')
+.whereNotNull('email_verified_at')
+.get()
 ```
 
-### Tri et Limitation
+### Sorting and Limitation
 
 ```javascript
 // ORDER BY
@@ -331,12 +331,12 @@ User.orderBy('created_at', 'desc')
 User.limit(10).offset(20)
 User.take(10).skip(20) // Alias
 
-// Combinaison
+// Combination
 User
-  .where('status', 'active')
-  .orderBy('created_at', 'desc')
-  .limit(20)
-  .get()
+.where('status', 'active')
+.orderBy('created_at', 'desc')
+.limit(20)
+.get()
 ```
 
 ### Pagination
@@ -355,73 +355,73 @@ console.log(result);
 // }
 ```
 
-## Relations
+## Relationships
 
-### Définir les relations
+### Define relationships
 
 ```javascript
 class User extends Model {
-  // One to One
-  profile() {
-    return this.hasOne(Profile, 'user_id');
-  }
+// One to One
+profile() {
+return this.hasOne(Profile, 'user_id');
+}
 
-  // One to Many
-  posts() {
-    return this.hasMany(Post, 'user_id');
-  }
+// One to Many
+posts() {
+return this.hasMany(Post, 'user_id');
+}
 
-  // Many to Many
-  roles() {
-    return this.belongsToMany(
-      Role,
-      'user_roles',
-      'user_id',
-      'role_id'
-    );
-  }
+// Many to Many
+roles() {
+return this.belongsToMany(
+Role,
+'user_roles',
+'user_id',
+'role_id'
+);
+}
 }
 
 class Post extends Model {
-  // Belongs To (inverse)
-  author() {
-    return this.belongsTo(User, 'user_id');
-  }
+// Belongs To (inverse)
+author() {
+return this.belongsTo(User, 'user_id');
+}
 }
 ```
 
-### Utiliser les relations
+### Use relationships
 
 ```javascript
-// Chargement lazy
+// Lazy loading
 const user = await User.find(1);
 const posts = await user.posts().get();
 const profile = await user.profile().get();
 
-// Eager Loading (recommandé)
+// Eager Loading (recommended)
 const users = await User.with('posts', 'profile').get();
 
 users.forEach(user => {
-  console.log(user.relations.posts);
-  console.log(user.relations.profile);
+console.log(user.relations.posts);
+console.log(user.relations.profile);
 });
 ```
 
-### Relations Many-to-Many
+### Many-to-Many Relationships
 
 ```javascript
 const user = await User.find(1);
 
-// Récupérer les rôles
+// Get the roles
 const roles = await user.roles().get();
 
-// Attacher des rôles
+// Attach roles
 await user.roles().attach([1, 2, 3]);
 
-// Détacher des rôles
+// Detach roles
 await user.roles().detach([2]);
 
-// Synchroniser (remplace tous)
+// Synchronize (replace all)
 await user.roles().sync([1, 3, 4]);
 ```
 
@@ -429,15 +429,15 @@ await user.roles().sync([1, 3, 4]);
 
 ```javascript
 class User extends Model {
-  static casts = {
-    id: 'int',
-    age: 'integer',
-    balance: 'float',
-    is_active: 'boolean',
-    metadata: 'json',
-    settings: 'array',
-    birthday: 'date'
-  };
+static casts = {
+id: 'int',
+age: 'integer',
+balance: 'float',
+is_active: 'boolean',
+metadata: 'json',
+settings: 'array',
+birthday: 'date'
+};
 }
 
 const user = await User.find(1);
@@ -446,11 +446,11 @@ console.log(typeof user.getAttribute('is_active')); // boolean
 console.log(user.getAttribute('metadata')); // Object
 ```
 
-## Attributs Cachés
+## Hidden Attributes
 
 ```javascript
 class User extends Model {
-  static hidden = ['password', 'secret_token'];
+static hidden = ['password', 'secret_token'];
 }
 
 const user = await User.find(1);
@@ -461,72 +461,72 @@ const json = user.toJSON(); // password et secret_token exclus
 
 ```javascript
 class User extends Model {
-  // Seuls ces attributs peuvent être assignés en masse
-  static fillable = ['name', 'email', 'age'];
+// Only these attributes can be assigned in bulk
+static fillable = ['name', 'email', 'age'];
 }
 
 // OK
 const user = new User({
-  name: 'John',
-  email: 'john@example.com',
-  age: 30
+name: 'John',
+email: 'john@example.com',
+age: 30
 });
 
-// L'attribut 'role' sera ignoré
+// The 'role' attribute will be ignored
 const user2 = new User({
-  name: 'Jane',
-  role: 'admin' // Ignoré car non dans fillable
+name: 'Jane',
+role: 'admin' // Ignored because not in fillable
 });
 ```
 
-## Timestamps Automatiques
+## Automatic Timestamps
 
 ```javascript
 class User extends Model {
-  static timestamps = true; // Par défaut
+static timestamps = true; // Default
 }
 
-// created_at et updated_at sont gérés automatiquement
+// created_at and updated_at are managed automatically
 const user = await User.create({ name: 'John' });
 console.log(user.getAttribute('created_at')); // Date actuelle
 
 user.setAttribute('name', 'Jane');
 await user.save();
-console.log(user.getAttribute('updated_at')); // Mise à jour automatique
+console.log(user.getAttribute('updated_at')); // Automatic update
 ```
 
-## Connexions Multiples
+## Multiple Connections
 
 ```javascript
 const mysqlDb = new DatabaseConnection({
-  driver: 'mysql',
-  host: 'localhost',
-  database: 'app_db'
+driver: 'mysql',
+host: 'localhost',
+database: 'app_db'
 });
 
 const postgresDb = new DatabaseConnection({
-  driver: 'postgres',
-  host: 'localhost',
-  database: 'analytics_db'
+driver: 'postgres',
+host: 'localhost',
+database: 'analytics_db'
 });
 
 class User extends Model {
-  static connection = mysqlDb;
+static connection = mysqlDb;
 }
 
 class Analytics extends Model {
-  static connection = postgresDb;
+static connection = postgresDb;
 }
 ```
 
-## Bonnes Pratiques
+## Good Practices
 
-1. **Utilisez Eager Loading** pour éviter le problème N+1
+1. **Use Eager Loading** to avoid the N+1 problem
 ```javascript
-// ❌ Mauvais (N+1 queries)
+// ❌ Bad (N+1 queries)
 const users = await User.all();
 for (const user of users) {
-  const posts = await user.posts().get();
+const posts = await user.posts().get();
 }
 
 // ✅ Bon (2 queries)
@@ -536,36 +536,36 @@ const users = await User.with('posts').get();
 2. **Définissez fillable** pour la sécurité
 ```javascript
 class User extends Model {
-  static fillable = ['name', 'email']; // Uniquement ces champs
+static fillable = ['name', 'email']; // Only these fields
 }
 ```
 
-3. **Cachez les données sensibles**
+3. **Hide sensitive data**
 ```javascript
 class User extends Model {
-  static hidden = ['password', 'api_token'];
+static hidden = ['password', 'api_token'];
 }
 ```
 
-4. **Utilisez les casts** pour la cohérence des types
+4. **Use casts** for type consistency
 ```javascript
 class User extends Model {
-  static casts = {
-    id: 'int',
-    is_active: 'boolean',
-    settings: 'json'
-  };
+static casts = {
+id: 'int',
+is_active: 'boolean',
+settings: 'json'
+};
 }
 ```
 
-5. **Fermez les connexions** proprement
+5. **Close connections** cleanly
 ```javascript
 const db = new DatabaseConnection(config);
 // ... utilisation ...
 await db.close();
 ```
 
-## Prochaines Étapes
+## Next Steps
 
 - Consultez le [README.md](README.md) pour la documentation complète
 - Explorez les [exemples](examples/) pour plus de cas d'usage

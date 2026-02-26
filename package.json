@@ -1,14 +1,14 @@
 {
   "name": "outlet-orm",
-  "version": "5.4.0",
+  "version": "5.5.1",
   "description": "A Laravel Eloquent-inspired ORM for Node.js with support for MySQL, PostgreSQL, and SQLite",
   "main": "src/index.js",
   "types": "types/index.d.ts",
   "bin": {
-    "outlet-init": "./bin/init.js",
-    "outlet-convert": "./bin/convert.js",
-    "outlet-migrate": "./bin/migrate.js",
-    "outlet-reverse": "./bin/reverse.js"
+    "outlet-init": "bin/init.js",
+    "outlet-convert": "bin/convert.js",
+    "outlet-migrate": "bin/migrate.js",
+    "outlet-reverse": "bin/reverse.js"
   },
   "files": [
     "src/**",
@@ -29,7 +29,9 @@
     "migrate:status": "node bin/migrate.js status",
     "migrate:reset": "node bin/migrate.js reset --yes",
     "migrate:refresh": "node bin/migrate.js refresh --yes",
-    "migrate:fresh": "node bin/migrate.js fresh --yes"
+    "migrate:fresh": "node bin/migrate.js fresh --yes",
+    "seed": "node bin/migrate.js seed",
+    "seed:make": "node bin/migrate.js make:seed"
   },
   "keywords": [
     "orm",
@@ -46,7 +48,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/omgbwa-yasse/outlet-orm.git"
+    "url": "git+https://github.com/omgbwa-yasse/outlet-orm.git"
   },
   "bugs": {
     "url": "https://github.com/omgbwa-yasse/outlet-orm/issues"

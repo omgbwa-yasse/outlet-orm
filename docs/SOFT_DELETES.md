@@ -1,18 +1,18 @@
 # 🗑️ Soft Deletes
 
-Le soft delete (suppression douce) permet de marquer les enregistrements comme "supprimés" sans les supprimer réellement de la base de données.
+Soft delete allows records to be marked as "deleted" without actually deleting them from the database.
 
-> 📁 **Configuration** : Dans `models/` + migration dans `database/migrations/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Configuration**: In`models/`+ migration in`database/migrations/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
 
-## Principe
+## Principle
 
-Au lieu de supprimer une ligne, on met à jour une colonne `deleted_at` avec la date de suppression. Les requêtes normales excluent automatiquement ces enregistrements.
+Instead of deleting a row, update a column`deleted_at`with the deletion date. Normal queries automatically exclude these records.
 
 ## Configuration
 
-### 1. Migration de la table
+### 1. Table migration
 
-Ajoutez une colonne `deleted_at` nullable :
+Add a column`deleted_at`nullable :
 
 ```javascript
 // Migration
@@ -24,19 +24,19 @@ module.exports = {
       table.text('content');
       table.integer('user_id');
       table.timestamps();
-      table.timestamp('deleted_at').nullable(); // Pour soft deletes
+      table.timestamp('deleted_at').nullable(); // For soft deletes
     });
   }
 };
 ```
 
-Ou ajoutez-la à une table existante :
+Or add it to an existing table:
 
 ```sql
 ALTER TABLE posts ADD COLUMN deleted_at TIMESTAMP NULL;
 ```
 
-### 2. Activer dans le modèle
+### 2. Activate in template
 
 ```javascript
 const { Model } = require('outlet-orm');
@@ -47,7 +47,7 @@ class Post extends Model {
 }
 ```
 
-## Utilisation
+## Usage
 
 ### Supprimer (soft delete)
 
@@ -55,82 +55,82 @@ class Post extends Model {
 const post = await Post.find(1);
 await post.destroy();
 
-// La ligne n'est PAS supprimée
-// deleted_at est mis à la date/heure actuelle
+// The row is NOT deleted
+// deleted_at is set to the current date/time
 ```
 
-### Requêtes automatiques
+### Automatic queries
 
-Par défaut, les enregistrements supprimés sont **exclus** :
+By default, deleted records are **excluded**:
 
 ```javascript
-// N'inclut PAS les posts supprimés
+// Does NOT include deleted posts
 const posts = await Post.all();
 const posts = await Post.where('user_id', 1).get();
-const post = await Post.find(1); // null si supprimé
+const post = await Post.find(1); // null if deleted
 ```
 
-### Inclure les supprimés
+### Include deleted
 
 ```javascript
-// Inclure les supprimés avec les autres
+// Include the deleted ones with the others
 const allPosts = await Post.withTrashed().get();
 
-// Inclure pour une recherche spécifique
+// Include for a specific search
 const post = await Post.withTrashed().find(1);
 ```
 
-### Seulement les supprimés
+### Only deleted ones
 
 ```javascript
-// Obtenir uniquement les enregistrements supprimés
+// Get only deleted records
 const deletedPosts = await Post.onlyTrashed().get();
 
-// Avec conditions
+// With conditions
 const myDeletedPosts = await Post
   .onlyTrashed()
   .where('user_id', 1)
   .get();
 ```
 
-### Restaurer un enregistrement
+### Restore a recording
 
 ```javascript
-// Restaurer un enregistrement supprimé
+// Restore a deleted recording
 const post = await Post.withTrashed().find(1);
 await post.restore();
 
 // deleted_at redevient NULL
 ```
 
-### Suppression définitive
+### Permanent deletion
 
 ```javascript
-// Supprimer définitivement (même avec soft deletes activé)
+// Delete permanently (even with soft deletes enabled)
 const post = await Post.withTrashed().find(1);
 await post.forceDelete();
 
-// La ligne est vraiment supprimée de la base
+// The line is really deleted from the base
 ```
 
-## Vérifier l'état
+## Check status
 
 ```javascript
 const post = await Post.withTrashed().find(1);
 
-// Vérifier si supprimé
+// Check if deleted
 if (post.getAttribute('deleted_at')) {
   console.log('Ce post est supprimé');
 }
 ```
 
-## Exemples pratiques
+## Practical examples
 
-### Corbeille
+### Trash
 
 ```javascript
 class TrashController {
-  // Liste des éléments supprimés
+  // List of deleted items
   async index() {
     const trashedPosts = await Post.onlyTrashed()
       .orderBy('deleted_at', 'desc')
@@ -138,7 +138,7 @@ class TrashController {
     return trashedPosts;
   }
 
-  // Restaurer un élément
+  // Restore an item
   async restore(id) {
     const post = await Post.withTrashed().find(id);
     if (!post) throw new Error('Post not found');
@@ -146,7 +146,7 @@ class TrashController {
     return post;
   }
 
-  // Vider la corbeille
+  // Empty the trash
   async empty() {
     const trashed = await Post.onlyTrashed().get();
     for (const post of trashed) {
@@ -154,7 +154,7 @@ class TrashController {
     }
   }
 
-  // Supprimer définitivement un élément
+  // Permanently delete an item
   async destroy(id) {
     const post = await Post.withTrashed().find(id);
     if (!post) throw new Error('Post not found');
@@ -163,12 +163,12 @@ class TrashController {
 }
 ```
 
-### Suppression en cascade
+### Cascade deletion
 
 ```javascript
 const { Model } = require('outlet-orm');
 
-// Définition des modèles
+// Definition of models
 class Post extends Model {
   static table = 'posts';
   static softDeletes = true;
@@ -183,20 +183,20 @@ class User extends Model {
   }
 }
 
-// Supprimer un utilisateur et ses posts
+// Delete a user and their posts
 async function softDeleteUserWithPosts(userId) {
   const user = await User.find(userId);
   
-  // Soft delete des posts
+  // Soft delete posts
   await Post.where('user_id', userId).update({
     deleted_at: new Date().toISOString()
   });
   
-  // Soft delete de l'utilisateur
+  // Soft delete user
   await user.destroy();
 }
 
-// Restaurer un utilisateur et ses posts
+// Restore a user and their posts
 async function restoreUserWithPosts(userId) {
   const user = await User.withTrashed().find(userId);
   await user.restore();
@@ -207,10 +207,10 @@ async function restoreUserWithPosts(userId) {
 }
 ```
 
-### Nettoyage automatique
+### Automatic cleaning
 
 ```javascript
-// Supprimer définitivement les éléments de plus de 30 jours
+// Permanently delete items older than 30 days
 async function cleanupOldTrashed() {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -228,30 +228,30 @@ async function cleanupOldTrashed() {
 }
 ```
 
-## Avec les relations
+## With relationships
 
 ### Eager loading et soft deletes
 
 ```javascript
-// Les relations respectent aussi le soft delete
+// Relations also respect soft delete
 const user = await User.with('posts').find(1);
-// user.posts n'inclut PAS les posts supprimés
+// user.posts does NOT include deleted posts
 
-// Pour inclure les posts supprimés
+// To include deleted posts
 const user = await User.find(1);
 const allPosts = await Post.withTrashed().where('user_id', user.getAttribute('id')).get();
 ```
 
-## Events avec Soft Deletes
+## Events with Soft Deletes
 
-Les events sont déclenchés normalement :
+The events are triggered normally:
 
 ```javascript
 class Post extends Model {
   static softDeletes = true;
 
   static boot() {
-    // Déclenché lors du soft delete
+    // Triggered during soft delete
     this.deleting((post) => {
       console.log('Post being soft deleted:', post.getAttribute('id'));
     });
@@ -260,7 +260,7 @@ class Post extends Model {
       console.log('Post soft deleted:', post.getAttribute('id'));
     });
 
-    // Déclenché lors de la restauration
+    // Triggered during restore
     this.restoring((post) => {
       console.log('Post being restored:', post.getAttribute('id'));
     });
@@ -272,55 +272,55 @@ class Post extends Model {
 }
 ```
 
-## Bonnes pratiques
+## Best practices
 
-### 1. Indexez la colonne deleted_at
+### 1. Index the deleted_at column
 
 ```sql
 CREATE INDEX idx_posts_deleted_at ON posts(deleted_at);
 ```
 
-### 2. Utilisez pour les données importantes
+### 2. Use for important data
 
 ```javascript
-// ✅ Bon usage - Données importantes
+// ✅ Good use - Important data
 class Invoice extends Model {
   static softDeletes = true;
 }
 
-// ❌ Pas nécessaire - Données temporaires
+// ❌ Not necessary - Temporary data
 class Session extends Model {
   static softDeletes = false;
 }
 ```
 
-### 3. Nettoyez régulièrement
+### 3. Clean regularly
 
 ```javascript
 // Cron job ou scheduled task
 await cleanupOldTrashed();
 ```
 
-### 4. Considérez les foreign keys
+### 4. Consider foreign keys
 
 ```javascript
-// Supprimez les enfants avant le parent
+// Remove children before parent
 await Comment.where('post_id', postId).delete();
 await post.destroy();
 ```
 
-## API Complète
+## Full API
 
-| Méthode | Description |
+| Method | Description |
 |---------|-------------|
-| `destroy()` | Soft delete (met deleted_at) |
-| `restore()` | Restaure (remet deleted_at à null) |
-| `forceDelete()` | Suppression définitive |
-| `withTrashed()` | Inclut les supprimés dans la requête |
-| `onlyTrashed()` | Retourne uniquement les supprimés |
+|`destroy()`| Soft delete (met deleted_at) |
+|`restore()`| Restore (reset deleted_at to null) |
+|`forceDelete()`| Permanent deletion |
+|`withTrashed()`| Include deleted in query |
+|`onlyTrashed()`| Return only deleted |
 
-## Prochaines étapes
+## Next steps
 
-- [Scopes](SCOPES.md) - Requêtes réutilisables
-- [Events](EVENTS.md) - Hooks sur le cycle de vie
-- [Transactions](TRANSACTIONS.md) - Opérations atomiques
+- [Scopes](SCOPES.md) - Reusable queries
+- [Events](EVENTS.md) - Hooks on the life cycle
+- [Transactions](TRANSACTIONS.md) - Atomic operations

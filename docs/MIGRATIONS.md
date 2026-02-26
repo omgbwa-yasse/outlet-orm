@@ -1,16 +1,16 @@
-# Guide des Migrations - Outlet ORM
+# Migration Guide - Outlet ORM
 
-## 📚 Vue d'ensemble
+## 📚 Overview
 
-Le système de migrations d'Outlet ORM est inspiré de Laravel et permet de gérer l'évolution de votre schéma de base de données de manière versionnée et collaborative.
+The Outlet ORM migration system is inspired by Laravel and allows you to manage the evolution of your database schema in a versioned and collaborative manner.
 
-> 📁 **Emplacement** : `database/migrations/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Location** :`database/migrations/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
 >
-> 📘 **TypeScript** : Utilisez `MigrationInterface`, `SchemaBuilder`, `TableBuilder` pour des migrations typées. Voir [TYPESCRIPT.md](TYPESCRIPT.md#migrations-typées-v400)
+> 📘 **TypeScript**: Use`MigrationInterface`,`SchemaBuilder`,`TableBuilder`for typical migrations. See [TYPESCRIPT.md](TYPESCRIPT.md#migrations-typées-v400)
 
-## 🚀 Commandes CLI
+## 🚀 CLI Commands
 
-### Créer une migration
+### Create a migration
 
 ```bash
 outlet-migrate make create_users_table
@@ -18,28 +18,28 @@ outlet-migrate make add_email_to_users_table
 outlet-migrate make alter_posts_table
 ```
 
-### Exécuter les migrations
+### Run migrations
 
 ```bash
-# Exécuter toutes les migrations en attente
+# Run all pending migrations
 outlet-migrate
-# Puis choisir l'option 1
+# Then choose option 1
 
-# Ou directement :
+# Or directly:
 node bin/migrate.js
 ```
 
-### Annuler des migrations
+### Cancel migrations
 
 ```bash
-# Rollback du dernier batch
+# Rollback of the last batch
 outlet-migrate
 # Option 2: rollback
 
-# Rollback de plusieurs batches
-# Option 2, puis entrer le nombre de batches
+# Rollback of several batches
+# Option 2, then enter the number of batches
 
-# Reset (annuler toutes les migrations)
+# Reset (cancel all migrations)
 # Option 3: reset
 
 # Refresh (reset + migrate)
@@ -49,16 +49,16 @@ outlet-migrate
 # Option 5: fresh
 ```
 
-### Voir le statut
+### View status
 
 ```bash
 outlet-migrate
 # Option 6: status
 ```
 
-## 📝 Créer une Migration
+## 📝 Create a Migration
 
-### Migration de création de table
+### Table creation migration
 
 ```javascript
 /**
@@ -90,7 +90,7 @@ class CreateUsersTable extends Migration {
 module.exports = CreateUsersTable;
 ```
 
-### Migration de modification de table
+### Table modification migration
 
 ```javascript
 const Migration = require('../../lib/Migrations/Migration');
@@ -117,9 +117,9 @@ class AddPhoneToUsersTable extends Migration {
 module.exports = AddPhoneToUsersTable;
 ```
 
-## 🔧 Types de Colonnes
+## 🔧 Column Types
 
-### Types de base
+### Basic types
 
 ```javascript
 table.id();                          // BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY
@@ -138,17 +138,17 @@ table.enum('status', ['active', 'inactive', 'pending']);  // ENUM
 table.uuid('identifier');            // CHAR(36)
 ```
 
-### Types spéciaux
+### Special types
 
 ```javascript
-table.foreignId('user_id');          // BIGINT UNSIGNED (pour clés étrangères)
+table.foreignId('user_id');          // BIGINT UNSIGNED (for foreign keys)
 table.timestamps();                  // created_at, updated_at
 table.softDeletes();                 // deleted_at (TIMESTAMP NULL)
 ```
 
-## 🎨 Modificateurs de Colonnes
+## 🎨 Column Modifiers
 
-### Modificateurs de base
+### Basic modifiers
 
 ```javascript
 table.string('email').nullable();                    // NULL
@@ -158,11 +158,11 @@ table.string('name').comment('User full name');      // COMMENT
 table.integer('order').unsigned();                   // UNSIGNED
 ```
 
-### Positionnement
+### Positioning
 
 ```javascript
-table.string('middle_name').after('first_name');     // Position après
-table.string('id').first();                          // Position en premier
+table.string('middle_name').after('first_name');     // Position after
+table.string('id').first();                          // Position first
 ```
 
 ### Timestamps
@@ -172,9 +172,9 @@ table.timestamp('created_at').useCurrent();                    // DEFAULT CURREN
 table.timestamp('updated_at').useCurrent().useCurrentOnUpdate(); // ON UPDATE CURRENT_TIMESTAMP
 ```
 
-## 🔗 Clés Étrangères
+## 🔗 Foreign Keys
 
-### Syntaxe de base
+### Basic syntax
 
 ```javascript
 await schema.create('posts', (table) => {
@@ -184,7 +184,7 @@ await schema.create('posts', (table) => {
   table.text('content');
   table.timestamps();
 
-  // Clé étrangère explicite
+  // Explicit foreign key
   table.foreign('user_id')
     .references('id')
     .on('users')
@@ -193,24 +193,24 @@ await schema.create('posts', (table) => {
 });
 ```
 
-### Syntaxe simplifiée
+### Simplified syntax
 
 ```javascript
 await schema.create('posts', (table) => {
   table.id();
-  table.foreignId('user_id').constrained();  // Infère "users" depuis "user_id"
+  table.foreignId('user_id').constrained();  // Infer "users" from "user_id"
   table.string('title');
   table.timestamps();
 });
 
-// Ou avec table explicite
+// Or with explicit table
 table.foreignId('author_id').constrained('users');
 ```
 
-### Actions sur CASCADE
+### Actions on CASCADE
 
 ```javascript
-// CASCADE sur DELETE et UPDATE
+// CASCADE on DELETE and UPDATE
 table.foreign('user_id')
   .references('id')
   .on('users')
@@ -225,17 +225,17 @@ table.foreign('category_id')
   .onUpdate('CASCADE');
 ```
 
-### Supprimer une clé étrangère
+### Delete a foreign key
 
 ```javascript
 await schema.table('posts', (table) => {
-  table.dropForeign(['user_id']);  // Supprime la FK sur user_id
+  table.dropForeign(['user_id']);  // Remove FK on user_id
 });
 ```
 
 ## 📇 Index
 
-### Créer des index
+### Create indexes
 
 ```javascript
 await schema.create('users', (table) => {
@@ -254,12 +254,12 @@ await schema.create('users', (table) => {
   // Index unique
   table.unique('email');
 
-  // Index fulltext
+  // Index full text
   table.fullText('bio');
 });
 ```
 
-### Supprimer des index
+### Delete indexes
 
 ```javascript
 await schema.table('users', (table) => {
@@ -268,9 +268,9 @@ await schema.table('users', (table) => {
 });
 ```
 
-## 🛠️ Manipulation des Tables
+## 🛠️ Table Handling
 
-### Créer une table
+### Create a table
 
 ```javascript
 await schema.create('users', (table) => {
@@ -280,7 +280,7 @@ await schema.create('users', (table) => {
 });
 ```
 
-### Modifier une table existante
+### Edit an existing table
 
 ```javascript
 await schema.table('users', (table) => {
@@ -289,20 +289,20 @@ await schema.table('users', (table) => {
 });
 ```
 
-### Renommer une table
+### Rename a table
 
 ```javascript
 await schema.rename('old_users', 'users');
 ```
 
-### Supprimer une table
+### Delete a table
 
 ```javascript
 await schema.drop('users');
-await schema.dropIfExists('users');  // Ne plante pas si inexistante
+await schema.dropIfExists('users');  // Don't crash if non-existent
 ```
 
-### Vérifier l'existence
+### Check for existence
 
 ```javascript
 const exists = await schema.hasTable('users');
@@ -316,9 +316,9 @@ if (!exists) {
 }
 ```
 
-## ✏️ Modification de Colonnes
+## ✏️ Editing Columns
 
-### Renommer une colonne
+### Rename a column
 
 ```javascript
 await schema.table('users', (table) => {
@@ -326,13 +326,13 @@ await schema.table('users', (table) => {
 });
 ```
 
-### Supprimer des colonnes
+### Delete columns
 
 ```javascript
 await schema.table('users', (table) => {
   table.dropColumn('phone');
   
-  // Supprimer plusieurs colonnes
+  // Delete multiple columns
   table.dropColumn(['bio', 'avatar']);
 });
 ```
@@ -345,9 +345,9 @@ await schema.table('users', (table) => {
 });
 ```
 
-## 📋 Exemples Complets
+## 📋 Full Examples
 
-### Migration complète avec relations
+### Full migration with relationships
 
 ```javascript
 const Migration = require('../../lib/Migrations/Migration');
@@ -442,7 +442,7 @@ class CreateBlogTables extends Migration {
   async down() {
     const schema = this.getSchema();
     
-    // Supprimer dans l'ordre inverse (à cause des FK)
+    // Delete in reverse order (because of FK)
     await schema.dropIfExists('post_tag');
     await schema.dropIfExists('tags');
     await schema.dropIfExists('comments');
@@ -455,14 +455,14 @@ class CreateBlogTables extends Migration {
 module.exports = CreateBlogTables;
 ```
 
-### Migration avec SQL personnalisé
+### Migration with custom SQL
 
 ```javascript
 const Migration = require('../../lib/Migrations/Migration');
 
 class AddFulltextSearch extends Migration {
   async up() {
-    // Utiliser du SQL brut pour des fonctionnalités avancées
+    // Use raw SQL for advanced functionality
     await this.execute(`
       ALTER TABLE posts 
       ADD FULLTEXT INDEX posts_search_idx (title, content)
@@ -485,9 +485,9 @@ class AddFulltextSearch extends Migration {
 module.exports = AddFulltextSearch;
 ```
 
-## 🎯 Bonnes Pratiques
+## 🎯 Good Practices
 
-### 1. Nommage des migrations
+### 1. Naming migrations
 
 ```
 ✅ Bon:
@@ -501,36 +501,36 @@ users.js
 my_migration.js
 ```
 
-### 2. Toujours implémenter `down()`
+### 2. Always implement`down()`
 
 ```javascript
-// ✅ Bon - Migration réversible
+// ✅ Good - Reversible migration
 async down() {
   const schema = this.getSchema();
   await schema.dropIfExists('users');
 }
 
-// ❌ Mauvais - Migration non réversible
+// ❌ Bad - Non-reversible migration
 async down() {
   // Vide ou throw Error
 }
 ```
 
-### 3. Ordre des suppressions (FK)
+### 3. Order of deletions (FK)
 
 ```javascript
 async down() {
   const schema = this.getSchema();
   
-  // Supprimer d'abord les tables avec FK
+  // Delete tables first with FK
   await schema.dropIfExists('posts');        // A une FK vers users
-  await schema.dropIfExists('users');        // Table parente
+  await schema.dropIfExists('users');        // Table parent
 }
 ```
 
-### 4. Utiliser des transactions
+### 4. Use transactions
 
-Les migrations s'exécutent déjà dans des transactions automatiquement (selon le driver), mais pour du SQL complexe :
+Migrations already run in transactions automatically (depending on the driver), but for complex SQL:
 
 ```javascript
 async up() {
@@ -547,51 +547,51 @@ async up() {
 }
 ```
 
-### 5. Migrations atomiques
+### 5. Atomic migrations
 
-Une migration = une tâche. Si vous devez créer plusieurs tables, réfléchissez si elles doivent être dans la même migration ou séparées.
+One migration = one task. If you need to create multiple tables, consider whether they should be in the same migration or separate.
 
 ```javascript
-// ✅ Bon - Tables liées ensemble
+// ✅ Good - Tables linked together
 create_blog_tables.js  // users, posts, comments
 
-// ✅ Bon - Fonctionnalité indépendante
+// ✅ Good – Independent functionality
 create_analytics_tables.js  // analytics, events
 ```
 
-## 📊 Workflow de Développement
+## 📊 Development Workflow
 
-### Développement local
+### Local development
 
 ```bash
-# 1. Créer une migration
+# 1. Create a migration
 outlet-migrate make create_products_table
 
-# 2. Éditer le fichier généré
+# 2. Edit the generated file
 # database/migrations/20231011_120000_create_products_table.js
 
-# 3. Exécuter la migration
+# 3. Run the migration
 outlet-migrate
 # Option 1: migrate
 
-# 4. Vérifier le statut
+# 4. Check Status
 outlet-migrate
 # Option 6: status
 
-# 5. Si erreur, rollback et corriger
+# 5. If error, rollback and correct
 outlet-migrate
 # Option 2: rollback
 ```
 
-### Collaboration en équipe
+### Team collaboration
 
 ```bash
-# Développeur A crée une migration
+# Developer A creates a migration
 git add database/migrations/20231011_120000_create_users_table.js
 git commit -m "Add users migration"
 git push
 
-# Développeur B récupère les changements
+# Developer B retrieves changes
 git pull
 outlet-migrate  # Exécute les nouvelles migrations
 ```
@@ -599,64 +599,64 @@ outlet-migrate  # Exécute les nouvelles migrations
 ### Production
 
 ```bash
-# Sauvegarder la base avant migration
+# Back up the database before migration
 mysqldump -u root -p mydb > backup.sql
 
-# Exécuter les migrations
+# Run migrations
 outlet-migrate
 # Option 1: migrate
 
-# Vérifier le statut
+# Check status
 outlet-migrate
 # Option 6: status
 
-# En cas de problème, rollback
+# In case of problem, rollback
 outlet-migrate
 # Option 2: rollback
 ```
 
-## 🚨 Résolution de Problèmes
+## 🚨 Problem Solving
 
-### Migration échoue
+### Migration fails
 
 ```bash
-# Voir l'erreur détaillée
+# See detailed error
 outlet-migrate
-# L'erreur s'affiche avec la stack trace
+# The error is displayed with the stack trace
 
-# Rollback de la migration problématique
+# Rollback of problematic migration
 outlet-migrate
 # Option 2: rollback
 
-# Corriger le fichier de migration
-# Relancer
+# Fix the migration file
+# Relaunch
 outlet-migrate
 # Option 1: migrate
 ```
 
-### Reset complet en développement
+### Complete reset in development
 
 ```bash
 outlet-migrate
 # Option 5: fresh
-# ⚠️ ATTENTION: Supprime TOUTES les données !
+# ⚠️ WARNING: Deletes ALL data!
 ```
 
-### Migration table désynchronisée
+### Table migration out of sync
 
 ```javascript
-// Si la table migrations est corrompue
+// If the migrations table is corrupt
 const { Model } = require('outlet-orm');
 const db = Model.getConnection();
 
-// Supprimer et recréer
+// Delete and recreate
 await db.execute('DROP TABLE migrations');
 
-// Relancer
+// Relaunch
 outlet-migrate
 ```
 
-## 📦 Intégration CI/CD
+## 📦 CI/CD integration
 
 ### Script NPM
 
@@ -696,15 +696,15 @@ jobs:
 
 ## 🎓 Résumé
 
-Le système de migrations Outlet ORM offre :
+The Outlet ORM migration system offers:
 
-- ✅ **Versioning** du schéma de base de données
-- ✅ **Migrations réversibles** avec `up()` et `down()`
-- ✅ **API fluide** inspirée de Laravel
+- ✅ **Versioning** of the database schema
+- ✅ **Reversible migrations** with`up()`et`down()`
+- ✅ **Fluid API** inspired by Laravel
 - ✅ **Support multi-base** (MySQL, PostgreSQL, SQLite)
-- ✅ **Gestion des relations** (clés étrangères, CASCADE)
-- ✅ **Batch tracking** pour rollback précis
-- ✅ **CLI interactif** pour toutes les opérations
-- ✅ **SQL personnalisé** quand nécessaire
+- ✅ **Relationship management** (foreign keys, CASCADE)
+- ✅ **Batch tracking** for precise rollback
+- ✅ **Interactive CLI** for all operations
+- ✅ **Custom SQL** when needed
 
-Utilisez les migrations pour toute modification de votre base de données en production ! 🚀
+Use migrations for any changes to your production database! 🚀

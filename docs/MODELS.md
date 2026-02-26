@@ -1,17 +1,17 @@
-# 📋 Modèles et CRUD
+# 📋 Models and CRUD
 
-Les modèles dans Outlet ORM suivent le pattern Active Record, inspiré de Laravel Eloquent.
+The models in Outlet ORM follow the Active Record pattern, inspired by Laravel Eloquent.
 
-> 📁 **Emplacement recommandé** : `models/` (définitions) et utilisé dans `controllers/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Recommended location**:`models/`(definitions) and used in`controllers/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
 >
-> 📘 **TypeScript** : Utilisez `Model<TAttributes>` pour des attributs typés. Voir [TYPESCRIPT.md](TYPESCRIPT.md#generic-model-v400)
+> 📘 **TypeScript**: Use`Model<TAttributes>`for typed attributes. See [TYPESCRIPT.md](TYPESCRIPT.md#generic-model-v400)
 
-## Définir un modèle
+## Define a template
 
 ```javascript
 const { Model } = require('outlet-orm');
 
-// Définition des modèles liés (voir Relations pour plus de détails)
+// Defining linked models (see Relationships for details)
 class Post extends Model {
   static table = 'posts';
 }
@@ -21,31 +21,31 @@ class Profile extends Model {
 }
 
 class User extends Model {
-  // Nom de la table (obligatoire)
+  // Table name (required)
   static table = 'users';
   
-  // Clé primaire (défaut: 'id')
+  // Primary key (default: 'id')
   static primaryKey = 'id';
   
-  // Timestamps automatiques (défaut: true)
+  // Automatic timestamps (default: true)
   static timestamps = true;
   
-  // Attributs modifiables en masse
+  // Mass editable attributes
   static fillable = ['name', 'email', 'password'];
   
-  // Attributs cachés dans toJSON()
+  // Hidden attributes in toJSON()
   static hidden = ['password', 'remember_token'];
   
-  // Soft deletes (défaut: false)
+  // Soft deletes (default: false)
   static softDeletes = false;
   
-  // Règles de validation
+  // Validation rules
   static rules = {
     name: 'required|string|min:2',
     email: 'required|email'
   };
   
-  // Casts automatiques
+  // Automatic casts
   static casts = {
     id: 'int',
     email_verified: 'boolean',
@@ -53,7 +53,7 @@ class User extends Model {
     birthday: 'date'
   };
 
-  // Relations
+  // Relationships
   posts() {
     return this.hasMany(Post, 'user_id');
   }
@@ -66,31 +66,31 @@ class User extends Model {
 module.exports = User;
 ```
 
-## Types de casts disponibles
+## Types of casts available
 
 | Cast | Description |
 |------|-------------|
-| `int` / `integer` | Convertit en entier |
-| `float` / `double` | Convertit en décimal |
-| `string` | Convertit en chaîne |
-| `bool` / `boolean` | Convertit en booléen |
-| `json` / `array` | Parse JSON |
-| `date` | Convertit en objet Date |
+|`int`/`integer`| Convert to integer |
+|`float`/`double`| Convert to decimal |
+|`string`| Convert to string |
+|`bool`/`boolean`| Convert to Boolean |
+|`json`/`array`| Parse JSON |
+|`date`| Convert to Date object |
 
-## Opérations CRUD
+## CRUD operations
 
-### Create (Créer)
+### Create
 
 ```javascript
-// Méthode 1: create() - crée et sauvegarde
+// Method 1: create() - creates and saves
 const user = await User.create({
   name: 'John Doe',
   email: 'john@example.com',
   password: 'hashed_password'
 });
-console.log(user.getAttribute('id')); // ID auto-généré
+console.log(user.getAttribute('id')); // Self-generated ID
 
-// Méthode 2: new + save() - plus de contrôle
+// Method 2: new + save() - more control
 const user = new User({
   name: 'Jane Doe',
   email: 'jane@example.com'
@@ -98,7 +98,7 @@ const user = new User({
 user.setAttribute('password', 'hashed_password');
 await user.save();
 
-// Méthode 3: insert() - insertion brute sans instance
+// Method 3: insert() - raw insert without instance
 await User.insert({ name: 'Bob', email: 'bob@example.com' });
 
 // Insertion multiple
@@ -111,104 +111,104 @@ await User.insert([
 ### Read (Lire)
 
 ```javascript
-// Tous les enregistrements
+// All records
 const users = await User.all();
 
 // Par ID
 const user = await User.find(1);
 
-// Par ID ou erreur
-const user = await User.findOrFail(1); // Lance Error si non trouvé
+// By ID or error
+const user = await User.findOrFail(1); // Throws Error if not found
 
-// Premier résultat
+// First result
 const user = await User.first();
 const user = await User.where('email', 'john@example.com').first();
 
-// Avec conditions
+// With conditions
 const activeUsers = await User
   .where('status', 'active')
   .where('role', 'admin')
   .get();
 
-// Avec relations (eager loading)
+// With relationships (eager loading)
 const usersWithPosts = await User
   .with('posts', 'profile')
   .get();
 
-// Ordonner
+// Order
 const recentUsers = await User
   .orderBy('created_at', 'desc')
   .limit(10)
   .get();
 
-// Compter
+// Count
 const count = await User.where('status', 'active').count();
 
-// Vérifier existence
+// Check existence
 const exists = await User.where('email', 'test@example.com').exists();
 ```
 
-### Update (Mettre à jour)
+### Update
 
 ```javascript
-// Méthode 1: Modifier une instance
+// Method 1: Edit an instance
 const user = await User.find(1);
 user.setAttribute('name', 'John Updated');
 user.setAttribute('email', 'john.updated@example.com');
 await user.save();
 
-// Méthode 2: fill() + save()
+// Method 2: fill() + save()
 const user = await User.find(1);
 user.fill({ name: 'New Name', email: 'new@email.com' });
 await user.save();
 
-// Méthode 3: Update en masse
+// Method 3: Bulk Update
 await User.where('status', 'pending').update({ status: 'active' });
 
-// Méthode 4: Update par ID
+// Method 4: Update by ID
 await User.updateById(1, { name: 'Updated Name' });
 
-// Méthode 5: Update et récupérer avec relations
+// Method 5: Update and Recover with Relations
 const user = await User.updateAndFetchById(1, { name: 'New' }, ['posts']);
 ```
 
 ### Delete (Supprimer)
 
 ```javascript
-// Supprimer une instance
+// Delete an instance
 const user = await User.find(1);
 await user.destroy();
 
-// Suppression en masse
+// Mass deletion
 await User.where('status', 'inactive').delete();
 
-// Avec soft deletes activé
+// With soft deletes enabled
 class Post extends Model {
   static softDeletes = true;
 }
 
 const post = await Post.find(1);
 await post.destroy();        // Soft delete (met deleted_at)
-await post.forceDelete();    // Suppression définitive
-await post.restore();        // Restaurer
+await post.forceDelete();    // Permanent deletion
+await post.restore();        // Restore
 ```
 
-## Attributs
+## Attributes
 
-### Accéder aux attributs
+### Access attributes
 
 ```javascript
 const user = await User.find(1);
 
-// Méthode getAttribute
+// getAttribute method
 const name = user.getAttribute('name');
 const email = user.getAttribute('email');
 
-// Les attributs sont aussi dans user.attributes
+// Attributes are also in user.attributes
 console.log(user.attributes);
 ```
 
-### Modifier les attributs
+### Edit attributes
 
 ```javascript
 const user = await User.find(1);
@@ -216,14 +216,14 @@ const user = await User.find(1);
 // setAttribute
 user.setAttribute('name', 'New Name');
 
-// fill (modifie plusieurs attributs)
+// fill (modifies several attributes)
 user.fill({ name: 'New', email: 'new@email.com' });
 
-// Sauvegarder les changements
+// Save changes
 await user.save();
 ```
 
-### Attributs modifiés (dirty)
+### Modified attributes (dirty)
 
 ```javascript
 const user = await User.find(1);
@@ -239,7 +239,7 @@ await user.save();
 console.log(user.isDirty()); // false
 ```
 
-## Attributs cachés
+## Hidden attributes
 
 ```javascript
 class User extends Model {
@@ -248,62 +248,62 @@ class User extends Model {
 
 const user = await User.find(1);
 
-// toJSON() exclut les attributs cachés
+// toJSON() excludes hidden attributes
 console.log(user.toJSON()); // { id: 1, name: 'John', email: '...' }
 
-// Inclure les attributs cachés
+// Include hidden attributes
 const userWithPassword = await User.withHidden().find(1);
-console.log(userWithPassword.toJSON()); // Inclut password
+console.log(userWithPassword.toJSON()); // Include password
 ```
 
 ## Timestamps
 
 ```javascript
-// Activés par défaut
+// Enabled by default
 class User extends Model {
   static timestamps = true; // created_at, updated_at automatiques
 }
 
-// Désactiver
+// Disable
 class Log extends Model {
   static timestamps = false;
 }
 ```
 
-Quand `timestamps = true` :
-- `created_at` est défini automatiquement à la création
-- `updated_at` est mis à jour automatiquement à chaque modification
+When`timestamps = true`:
+-`created_at`is automatically defined upon creation
+-`updated_at`is automatically updated with each change
 
-## Conversion en JSON
+## Convert to JSON
 
 ```javascript
 const user = await User.with('posts').find(1);
 
-// Convertir en objet
+// Convert to object
 const json = user.toJSON();
 // {
 //   id: 1,
 //   name: 'John',
 //   email: 'john@example.com',
-//   posts: [...]  // Relations chargées incluses
+//   posts: [...] // Loaded relationships included
 // }
 
-// Pour API
+// For API
 res.json(user.toJSON());
 ```
 
-## Charger des relations après coup
+## Load relationships after the fact
 
 ```javascript
 const user = await User.find(1);
 
-// Charger une relation
+// Load a relationship
 await user.load('posts');
 
-// Charger plusieurs relations
+// Load multiple relationships
 await user.load('posts', 'profile');
 
-// Charger des relations imbriquées
+// Load nested relationships
 await user.load('posts.comments');
 ```
 
@@ -312,33 +312,33 @@ await user.load('posts.comments');
 ```javascript
 const result = await User.paginate(1, 15);
 
-// Résultat
+// Result
 {
-  data: [...],           // Modèles de la page
-  total: 100,            // Nombre total d'enregistrements
-  per_page: 15,          // Éléments par page
-  current_page: 1,       // Page actuelle
-  last_page: 7,          // Dernière page
-  from: 1,               // Index du premier élément
-  to: 15                 // Index du dernier élément
+  data: [...],           // Page Templates
+  total: 100,            // Total number of records
+  per_page: 15,          // Elements per page
+  current_page: 1,       // Current page
+  last_page: 7,          // Last page
+  from: 1,               // Index of first element
+  to: 15                 // Index of last element
 }
 ```
 
-## Incrément / Décrément atomique
+## Atomic Increment / Decrement
 
 ```javascript
-// Incrémenter
+// Increment
 await User.where('id', 1).increment('login_count');
 await User.where('id', 1).increment('points', 10);
 
-// Décrémenter
+// Decrement
 await User.where('id', 1).decrement('credits');
 await User.where('id', 1).decrement('credits', 5);
 ```
 
-## Prochaines étapes
+## Next steps
 
-- [Query Builder](QUERY_BUILDER.md) - Requêtes avancées
-- [Relations](RELATIONS.md) - Associations entre modèles
-- [Validation](VALIDATION.md) - Valider les données
-- [Events](EVENTS.md) - Hooks sur le cycle de vie
+- [Query Builder](QUERY_BUILDER.md) - Advanced queries
+- [Relationships](RELATIONS.md) - Model associations
+- [Validation](VALIDATION.md) - Validate data
+- [Events](EVENTS.md) - Hooks on the life cycle

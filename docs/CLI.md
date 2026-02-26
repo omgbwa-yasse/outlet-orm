@@ -1,18 +1,18 @@
 # 🛠️ CLI (Command Line Interface)
 
-Outlet ORM inclut des outils CLI pour la gestion des migrations et l'initialisation de projets.
+Outlet ORM includes CLI tools for managing migrations and initializing projects.
 
-> 📁 **Génère** : `database/config.js` et `database/migrations/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Generates**:`database/config.js`et`database/migrations/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
 
 ## Installation
 
-Les commandes CLI sont disponibles via `npx` :
+CLI commands are available through`npx`:
 
 ```bash
 npx outlet-orm <command>
 ```
 
-Ou ajoutez des scripts dans votre `package.json` :
+Or add scripts in your`package.json`:
 
 ```json
 {
@@ -24,56 +24,56 @@ Ou ajoutez des scripts dans votre `package.json` :
 }
 ```
 
-## Commandes disponibles
+## Commands available
 
 ### init
 
-Initialise la structure de base d'un projet Outlet ORM.
+Initializes the basic structure of an Outlet ORM project.
 
 ```bash
 node node_modules/outlet-orm/bin/init.js
 ```
 
-Crée :
-- `config/` - Configuration centralisée (app, database, security)
-- `database/config.js` - Configuration des migrations
-- `database/migrations/` - Dossier des migrations
-- `models/` - Dossier des modèles
-- `controllers/` - Dossier des contrôleurs
-- `routes/` - Dossier des routes
-- `middlewares/` - Dossier des middlewares (auth, validation, errorHandler)
-- `services/` - Dossier des services
-- `utils/` - Utilitaires (hash, token)
-- `validators/` - Schémas de validation
-- `public/` - Fichiers statiques publics (images, css, js)
-- `logs/` - Journaux d'application
-- `.env.example` - Template de configuration
-- `.gitignore` - Fichiers à ignorer
+Creates:
+-`config/`- Centralised configuration (app, database, security)
+-`database/config.js`- Configuration of migrations
+-`database/migrations/`- Migration file
+-`models/`- Models folder
+-`controllers/`- Controllers file
+-`routes/`- Routes folder
+-`middlewares/`- Middlewares folder (auth, validation, errorHandler)
+-`services/`- Services file
+-`utils/`- Utilities (hash, token)
+-`validators/`- Validation schemes
+-`public/`- Public static files (images, css, js)
+-`logs/`- Application logs
+-`.env.example`- Template configuration
+-`.gitignore`- Files to ignore
 
 ### migrate
 
-Gère les migrations de base de données.
+Manages database migrations.
 
 ```bash
-# Lancer toutes les migrations pending
+# Launch all pending migrations
 node node_modules/outlet-orm/bin/migrate.js
 
-# Créer une nouvelle migration
+# Create a new migration
 node node_modules/outlet-orm/bin/migrate.js make create_users_table
 
-# Rollback de la dernière migration
+# Rollback of the last migration
 node node_modules/outlet-orm/bin/migrate.js rollback
 
-# Reset toutes les migrations
+# Reset all migrations
 node node_modules/outlet-orm/bin/migrate.js reset
 
-# Status des migrations
+# Migration status
 node node_modules/outlet-orm/bin/migrate.js status
 ```
 
 ### convert
 
-Convertit un fichier SQL en migration JavaScript.
+Converts a SQL file to JavaScript migration.
 
 ```bash
 node node_modules/outlet-orm/bin/convert.js schema.sql
@@ -81,13 +81,13 @@ node node_modules/outlet-orm/bin/convert.js schema.sql
 
 ## Migrations
 
-### Créer une migration
+### Create a migration
 
 ```bash
 node bin/migrate.js make create_posts_table
 ```
 
-Génère un fichier comme `20240115_143022_create_posts_table.js` :
+Generates a file like`20240115_143022_create_posts_table.js`:
 
 ```javascript
 module.exports = {
@@ -107,15 +107,15 @@ module.exports = {
 };
 ```
 
-### Structure d'une migration
+### Structure of a migration
 
 ```javascript
 module.exports = {
-  // Exécuté lors de migrate up
+  // Executed during migrate up
   up: async (schema) => {
-    // Créer table
+    // Create table
     await schema.createTable('table_name', (table) => {
-      // Définitions de colonnes
+      // Column definitions
     });
     
     // Modifier table
@@ -123,11 +123,11 @@ module.exports = {
       table.addColumn('new_column', 'VARCHAR(255)');
     });
     
-    // Exécuter SQL brut
+    // Execute raw SQL
     await schema.raw('CREATE INDEX idx_name ON table_name(column)');
   },
 
-  // Exécuté lors de rollback
+  // Executed during rollback
   down: async (schema) => {
     await schema.dropTable('table_name');
     
@@ -138,28 +138,28 @@ module.exports = {
 };
 ```
 
-### Types de colonnes
+### Column types
 
 ```javascript
 await schema.createTable('users', (table) => {
-  // ID auto-incrémenté
+  // Auto-incremented ID
   table.id();                            // BIGINT PRIMARY KEY AUTO_INCREMENT
-  table.id('custom_id');                 // Avec nom personnalisé
+  table.id('custom_id');                 // With personalized name
   
-  // Chaînes
+  // Chains
   table.string('name');                  // VARCHAR(255)
   table.string('code', 50);              // VARCHAR(50)
   table.text('description');             // TEXT
   table.longText('content');             // LONGTEXT
   
-  // Nombres
+  // Names
   table.integer('age');                  // INT
   table.bigInteger('views');             // BIGINT
   table.tinyInteger('status');           // TINYINT
   table.decimal('price', 8, 2);          // DECIMAL(8,2)
   table.float('rating');                 // FLOAT
   
-  // Booléen
+  // Boolean
   table.boolean('is_active');            // TINYINT(1)
   
   // Date/Time
@@ -168,7 +168,7 @@ await schema.createTable('users', (table) => {
   table.timestamp('verified_at');        // TIMESTAMP
   table.time('start_time');              // TIME
   
-  // Binaire
+  // Binary
   table.binary('data');                  // BLOB
   
   // JSON
@@ -180,7 +180,7 @@ await schema.createTable('users', (table) => {
   // UUID
   table.uuid('uuid');                    // CHAR(36)
   
-  // Timestamps automatiques
+  // Automatic timestamps
   table.timestamps();                    // created_at, updated_at
   
   // Soft deletes
@@ -188,21 +188,21 @@ await schema.createTable('users', (table) => {
 });
 ```
 
-### Modificateurs de colonnes
+### Column modifiers
 
 ```javascript
 table.string('email')
-  .nullable()                  // Peut être NULL
-  .default('default@email.com') // Valeur par défaut
-  .unique()                    // Contrainte unique
+  .nullable()                  // May be NULL
+  .default('default@email.com') // Default value
+  .unique()                    // Single constraint
   .index();                    // Index simple
 
 table.integer('user_id')
-  .unsigned()                  // Non signé
-  .references('id').on('users'); // Clé étrangère
+  .unsigned()                  // Unsigned
+  .references('id').on('users'); // Foreign key
 ```
 
-### Index et contraintes
+### Indexes and constraints
 
 ```javascript
 await schema.createTable('posts', (table) => {
@@ -214,35 +214,35 @@ await schema.createTable('posts', (table) => {
   // Index simple
   table.index('title');
   
-  // Index composé
+  // Compound index
   table.index(['user_id', 'category_id']);
   
   // Index unique
   table.unique('slug');
   
-  // Clé étrangère
+  // Foreign key
   table.foreign('user_id').references('id').on('users').onDelete('CASCADE');
   table.foreign('category_id').references('id').on('categories').onDelete('SET NULL');
 });
 ```
 
-### Modifier une table existante
+### Edit an existing table
 
 ```javascript
 module.exports = {
   up: async (schema) => {
     await schema.alterTable('users', (table) => {
-      // Ajouter colonnes
+      // Add columns
       table.addColumn('phone', 'VARCHAR(20)');
       table.addColumn('avatar', 'VARCHAR(255)').nullable();
       
       // Modifier colonne (MySQL)
       table.modifyColumn('name', 'VARCHAR(500)');
       
-      // Ajouter index
+      // Add index
       table.addIndex('phone');
       
-      // Ajouter clé étrangère
+      // Add foreign key
       table.addForeign('department_id', 'departments', 'id');
     });
   },
@@ -258,7 +258,7 @@ module.exports = {
 };
 ```
 
-## Configuration de la base
+## Basic configuration
 
 ### database/config.js
 
@@ -290,7 +290,7 @@ module.exports = {
 };
 ```
 
-### Utiliser une config spécifique
+### Use a specific config
 
 ```bash
 NODE_ENV=production node bin/migrate.js
@@ -298,13 +298,13 @@ NODE_ENV=production node bin/migrate.js
 
 ## Conversion SQL
 
-### Convertir un fichier SQL
+### Convert SQL file
 
 ```bash
 node bin/convert.js schema.sql
 ```
 
-Convertit :
+Converted:
 
 ```sql
 CREATE TABLE users (
@@ -315,7 +315,7 @@ CREATE TABLE users (
 );
 ```
 
-En :
+In :
 
 ```javascript
 module.exports = {
@@ -334,9 +334,9 @@ module.exports = {
 };
 ```
 
-## Exemples complets
+## Complete examples
 
-### Migration de blog
+### Blog migration
 
 ```javascript
 // 20240115_100000_create_blog_tables.js
@@ -425,8 +425,8 @@ module.exports = {
 };
 ```
 
-## Prochaines étapes
+## Next steps
 
-- [Installation](INSTALLATION.md) - Configuration initiale
-- [Migrations](MIGRATIONS.md) - Guide détaillé des migrations
-- [Models](MODELS.md) - Créer vos modèles
+- [Installation](INSTALLATION.md) - Initial configuration
+- [Migrations](MIGRATIONS.md) - Detailed migration guide
+- [Models](MODELS.md) - Create your models

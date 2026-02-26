@@ -3,17 +3,17 @@ name: outlet-orm-best-practices
 description: Outlet ORM is a Laravel Eloquent-inspired ORM for Node.js with MySQL, PostgreSQL, and SQLite support. Use this skill when working with Outlet ORM models, queries, relationships, migrations, and database operations. v4.1.0 adds full TypeScript support with generic models and Copilot Skills integration.
 license: MIT
 metadata:
-  author: omgbwa-yasse
-  version: "5.0.0"
-  source: https://github.com/omgbwa-yasse/outlet-orm
-  npm: https://www.npmjs.com/package/outlet-orm
+author: omgbwa-yasse
+version: "5.0.0"
+source: https://github.com/omgbwa-yasse/outlet-orm
+npm: https://www.npmjs.com/package/outlet-orm
 ---
 
 # Outlet ORM Best Practices
 
 Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for Node.js/TypeScript with support for MySQL, PostgreSQL, and SQLite.
 
-> 🆕 **v5.0.0** : Support TypeScript complet avec Generic Model, Schema Builder typé, MigrationInterface et intégration Copilot Skills. Architecture en couches recommandée (Controllers → Services → Repositories → Models).
+> 🆕 **v5.0.0**: Full TypeScript support with Generic Model, typed Schema Builder, MigrationInterface and Copilot Skills integration. Recommended layered architecture (Controllers → Services → Repositories → Models).
 
 ## Documentation Index
 
@@ -25,7 +25,7 @@ Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for N
 | **[MIGRATIONS.md](MIGRATIONS.md)** | Schema Builder, CLI tools, column types, foreign keys |
 | **[ADVANCED.md](ADVANCED.md)** | Transactions, Soft Deletes, Events, Validation, Best Practices |
 | **[TYPESCRIPT.md](TYPESCRIPT.md)** | TypeScript types, generics, typed models, migrations |
-| **[SECURITY.md](SECURITY.md)** | 🔐 Security best practices, authentication, authorization |
+| **[SECURITY.md](SECURITY.md)** | 🔐 Security best practices, authentication, authorisation |
 | **[API.md](API.md)** | Complete API Reference |
 
 ---
@@ -48,9 +48,9 @@ Reference these guidelines when:
 
 - **Node.js**: >= 18 (required)
 - **Database Drivers** (install only needed):
-  - MySQL/MariaDB: `npm install mysql2`
-  - PostgreSQL: `npm install pg`
-  - SQLite: `npm install sqlite3`
+- MySQL/MariaDB:`npm install mysql2`
+- PostgreSQL:`npm install pg`
+- SQLite:`npm install sqlite3`
 
 ```bash
 npm install outlet-orm
@@ -60,7 +60,7 @@ npm install outlet-orm
 
 ## Recommended Project Structure (Layered Architecture)
 
-When using Outlet ORM, organize your project following the **Layered Architecture** pattern:
+When using Outlet ORM, organise your project following the **Layered Architecture** pattern:
 
 > 🔐 **Security**: See the [Security Guide](../../../docs/SECURITY.md) for best practices.
 
@@ -141,18 +141,18 @@ my-project/
 
 | Layer | Files | Responsibility | Security |
 |-------|-------|----------------|----------|
-| **Controllers** | `src/controllers/` | HTTP only (req/res) | Input validation |
-| **Services** | `src/services/` | Business logic, rules | Authorization |
-| **Repositories** | `src/repositories/` | DB abstraction, queries | Sanitization |
-| **Models** | `src/models/` | Data structure, relations | Fillable/Hidden |
-| **Middlewares** | `src/middlewares/` | Auth, validation, errors | 🔒 **Critical** |
-| **Config** | `src/config/` | Environment variables | 🔒 Reads .env |
-| **Utils** | `src/utils/` | Hash, tokens, helpers | 🔒 Never expose |
+| **Controllers** |`src/controllers/`| HTTP only (req/res) | Input validation |
+| **Services** |`src/services/`| Business logic, rules | Authorisation |
+| **Repositories** |`src/repositories/`| DB abstraction, queries | Sanitisation |
+| **Models** |`src/models/`| Data structure, relationships | Fillable/Hidden |
+| **Middlewares** |`src/middlewares/`| Auth, validation, errors | 🔒 **Critical** |
+| **Config** |`src/config/`| Environment variables | 🔒 Reads .env |
+| **Utils** |`src/utils/`| Hash, tokens, helpers | 🔒 Never expose |
 
 ### Quick Setup Commands
 
 ```bash
-# Initialize project structure
+# Initialise project structure
 outlet-init
 
 # Create a migration
@@ -181,6 +181,6 @@ outlet-migrate migrate
 
 ## References
 
-- https://github.com/omgbwa-yasse/outlet-orm
-- https://www.npmjs.com/package/outlet-orm
-- https://github.com/omgbwa-yasse/outlet-orm/blob/main/docs/INDEX.md
+- <https://github.com/omgbwa-yasse/outlet-orm>
+- <https://www.npmjs.com/package/outlet-orm>
+- <https://github.com/omgbwa-yasse/outlet-orm/blob/main/docs/INDEX.md>

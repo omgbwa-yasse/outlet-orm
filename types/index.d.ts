@@ -657,4 +657,18 @@ declare module 'outlet-orm' {
     static hasTable(name: string): Promise<boolean>;
     static hasColumn(table: string, column: string): Promise<boolean>;
   }
+
+  export class Seeder {
+    constructor(connection: DatabaseConnection, manager?: SeederManager | null);
+    run(): Promise<void>;
+    call(seeder: string): Promise<void>;
+    insert(table: string, rows: Record<string, any> | Record<string, any>[]): Promise<any>;
+    truncate(table: string): Promise<void>;
+  }
+
+  export class SeederManager {
+    constructor(connection: DatabaseConnection, seedsPath?: string);
+    run(target?: string | null): Promise<void>;
+    runSeeder(seederRef: string): Promise<void>;
+  }
 }

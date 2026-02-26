@@ -1,27 +1,27 @@
 # 🎯 Events (Hooks)
 
-Les events permettent d'exécuter du code à différentes étapes du cycle de vie d'un modèle.
+Events allow you to execute code at different stages of a model's lifecycle.
 
-> 📁 **Emplacement** : Définissez vos events dans `models/` ou `services/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Location**: Define your events in`models/`or`services/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
 >
-> 📘 **TypeScript** : Utilisez le type `ModelEventName` pour les noms d'événements. Voir [TYPESCRIPT.md](TYPESCRIPT.md)
+> 📘 **TypeScript**: Use the type`ModelEventName`for event names. See [TYPESCRIPT.md](TYPESCRIPT.md)
 
-## Events disponibles
+## Events available
 
-| Event | Moment | Peut annuler | Type TypeScript |
+| Event | Moment | Can cancel | TypeScript |
 |-------|--------|--------------|------------------|
-| `creating` | Avant INSERT | ✅ Oui | `'creating'` |
-| `created` | Après INSERT | ❌ Non | `'created'` |
-| `updating` | Avant UPDATE | ✅ Oui | `'updating'` |
-| `updated` | Après UPDATE | ❌ Non | `'updated'` |
-| `saving` | Avant INSERT ou UPDATE | ✅ Oui | `'saving'` |
-| `saved` | Après INSERT ou UPDATE | ❌ Non | `'saved'` |
-| `deleting` | Avant DELETE | ✅ Oui | `'deleting'` |
-| `deleted` | Après DELETE | ❌ Non | `'deleted'` |
-| `restoring` | Avant restauration (soft delete) | ✅ Oui | `'restoring'` |
-| `restored` | Après restauration | ❌ Non | `'restored'` |
+|`creating`| Before INSERT | ✅ Yes |`'creating'`|
+|`created`| After INSERT | ❌ No |`'created'`|
+|`updating`| Before UPDATE | ✅ Yes |`'updating'`|
+|`updated`| After UPDATE | ❌ No |`'updated'`|
+|`saving`| Before INSERT or UPDATE | ✅ Yes |`'saving'`|
+|`saved`| After INSERT or UPDATE | ❌ No |`'saved'`|
+|`deleting`| Before DELETE | ✅ Yes |`'deleting'`|
+|`deleted`| After DELETE | ❌ No |`'deleted'`|
+|`restoring`| Before restoration (soft delete) | ✅ Yes |`'restoring'`|
+|`restored`| After restoration | ❌ No |`'restored'`|
 
-## Enregistrer des events
+## Record events
 
 ### Via boot()
 
@@ -32,25 +32,25 @@ class User extends Model {
   static table = 'users';
 
   static boot() {
-    // Avant création
+    // Before creation
     this.creating((user) => {
       console.log('Creating user:', user.getAttribute('name'));
-      // Modifier les attributs
+      // Edit attributes
       user.setAttribute('slug', slugify(user.getAttribute('name')));
     });
 
-    // Après création
+    // After creation
     this.created((user) => {
       console.log('User created with ID:', user.getAttribute('id'));
-      // Envoyer email de bienvenue, etc.
+      // Send welcome email, etc.
     });
 
-    // Avant mise à jour
+    // Before update
     this.updating((user) => {
       console.log('Updating user:', user.getAttribute('id'));
     });
 
-    // Après mise à jour
+    // After update
     this.updated((user) => {
       console.log('User updated:', user.getAttribute('id'));
     });
@@ -60,7 +60,7 @@ class User extends Model {
       console.log('Saving user...');
     });
 
-    // Après save
+    // After save
     this.saved((user) => {
       console.log('User saved!');
     });
@@ -70,7 +70,7 @@ class User extends Model {
       console.log('Deleting user:', user.getAttribute('id'));
     });
 
-    // Après suppression
+    // After deletion
     this.deleted((user) => {
       console.log('User deleted');
     });
@@ -78,10 +78,10 @@ class User extends Model {
 }
 ```
 
-### Via addEventListener (dynamique)
+### Via addEventListener (dynamic)
 
 ```javascript
-// Ajouter des listeners dynamiquement
+// Add listeners dynamically
 User.addEventListener('creating', (user) => {
   user.setAttribute('api_token', generateToken());
 });
@@ -91,9 +91,9 @@ User.addEventListener('deleting', (user) => {
 });
 ```
 
-## Annuler une opération
+## Cancel an operation
 
-Retournez `false` dans un event "before" pour annuler l'opération :
+Return`false`in a "before" event to cancel the operation:
 
 ```javascript
 class Post extends Model {
@@ -101,23 +101,23 @@ class Post extends Model {
 
   static boot() {
     this.creating((post) => {
-      // Vérifier si l'utilisateur peut créer
+      // Check if user can create
       if (post.getAttribute('user_id') === null) {
         console.log('Cannot create post without user');
-        return false; // Annule la création
+        return false; // Cancel creation
       }
     });
 
     this.deleting((post) => {
-      // Empêcher la suppression des posts épinglés
+      // Prevent pinned posts from being deleted
       if (post.getAttribute('is_pinned')) {
         console.log('Cannot delete pinned post');
-        return false; // Annule la suppression
+        return false; // Undo deletion
       }
     });
 
     this.updating((post) => {
-      // Empêcher la modification des posts archivés
+      // Prevent editing of archived posts
       if (post.getAttribute('status') === 'archived') {
         return false;
       }
@@ -126,9 +126,9 @@ class Post extends Model {
 }
 ```
 
-## Cas d'utilisation
+## Use cases
 
-### Auto-génération de données
+### Auto-generation of data
 
 ```javascript
 class Article extends Model {
@@ -136,16 +136,16 @@ class Article extends Model {
 
   static boot() {
     this.creating((article) => {
-      // Générer un slug
+      // Generate a slug
       const title = article.getAttribute('title');
       article.setAttribute('slug', title.toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, ''));
 
-      // Générer un UUID
+      // Generate a UUID
       article.setAttribute('uuid', crypto.randomUUID());
 
-      // Définir l'auteur courant
+      // Set current author
       if (!article.getAttribute('author_id')) {
         article.setAttribute('author_id', getCurrentUserId());
       }
@@ -154,7 +154,7 @@ class Article extends Model {
 }
 ```
 
-### Validation personnalisée
+### Custom validation
 
 ```javascript
 class User extends Model {
@@ -164,12 +164,12 @@ class User extends Model {
     this.saving((user) => {
       const email = user.getAttribute('email');
       
-      // Valider le format de l'email
+      // Validate the email format
       if (!email || !email.includes('@')) {
         throw new Error('Invalid email format');
       }
 
-      // Normaliser l'email
+      // Normalize email
       user.setAttribute('email', email.toLowerCase().trim());
     });
   }
@@ -218,7 +218,7 @@ class Order extends Model {
 }
 ```
 
-### Suppression en cascade
+### Cascade deletion
 
 ```javascript
 class User extends Model {
@@ -228,7 +228,7 @@ class User extends Model {
     this.deleting(async (user) => {
       const userId = user.getAttribute('id');
       
-      // Supprimer les relations avant l'utilisateur
+      // Remove relationships before user
       await Comment.where('user_id', userId).delete();
       await Post.where('user_id', userId).delete();
       await Profile.where('user_id', userId).delete();
@@ -237,7 +237,7 @@ class User extends Model {
 }
 ```
 
-### Nettoyage de cache
+### Cache cleaning
 
 ```javascript
 class Product extends Model {
@@ -265,7 +265,7 @@ class Order extends Model {
 
   static boot() {
     this.created(async (order) => {
-      // Notifier le client
+      // Notify customer
       const user = await User.find(order.getAttribute('user_id'));
       await sendEmail(user.getAttribute('email'), 'order_confirmation', {
         order_id: order.getAttribute('id'),
@@ -308,97 +308,97 @@ class Post extends Model {
 
     this.restored((post) => {
       console.log('Post restored:', post.getAttribute('id'));
-      // Réindexer pour la recherche
+      // Reindex for search
       searchIndex.add(post);
     });
   }
 }
 ```
 
-## Ordre d'exécution
+## Execution order
 
-### Création (save sur nouveau modèle)
+### Creation (save on new model)
 
-1. `saving` - Avant toute sauvegarde
-2. `creating` - Avant INSERT
-3. **INSERT en base**
-4. `created` - Après INSERT
-5. `saved` - Après toute sauvegarde
+1.`saving`- Before any backup
+2.`creating`- Before INSERT
+3. **INSERT A BASE**
+4.`created`- After INSERT
+5.`saved`- After any backup
 
-### Mise à jour (save sur modèle existant)
+### Update (save on existing model)
 
-1. `saving` - Avant toute sauvegarde
-2. `updating` - Avant UPDATE
-3. **UPDATE en base**
-4. `updated` - Après UPDATE
-5. `saved` - Après toute sauvegarde
+1.`saving`- Before any backup
+2.`updating`- Avant UPDATE
+3. **UPDATE on base**
+4.`updated`- After UPDATE
+5.`saved`- After any backup
 
 ### Suppression
 
-1. `deleting` - Avant DELETE
-2. **DELETE en base** (ou UPDATE deleted_at pour soft delete)
-3. `deleted` - Après DELETE
+1.`deleting`- Before DELETE
+2. **DELETE in base** (or UPDATE deleted_at for soft delete)
+3.`deleted`- After DELETE
 
 ### Restauration (soft delete)
 
-1. `restoring` - Avant restauration
+1.`restoring`- Before restoration
 2. **UPDATE deleted_at = NULL**
-3. `restored` - Après restauration
+3.`restored`- After restoration
 
-## Bonnes pratiques
+## Best practices
 
-### 1. Gardez les events légers
+### 1. Keep events light
 
 ```javascript
-// ✅ Bon - Opération rapide
+// ✅ Good – Quick operation
 this.creating((user) => {
   user.setAttribute('slug', slugify(user.getAttribute('name')));
 });
 
-// ❌ Mauvais - Opération lourde synchrone
+// ❌ Bad - Synchronous heavy operation
 this.creating(async (user) => {
   await heavyComputation();
   await externalApiCall();
 });
 ```
 
-### 2. Utilisez async avec précaution
+### 2. Use async with caution
 
 ```javascript
-// Pour les opérations async, envisagez des queues
+// For async operations, consider queues
 this.created((user) => {
-  // Ajouter à une queue plutôt qu'attendre
+  // Add to a queue rather than wait
   queue.add('send-welcome-email', { userId: user.getAttribute('id') });
 });
 ```
 
-### 3. Évitez les boucles infinies
+### 3. Avoid infinite loops
 
 ```javascript
-// ❌ Danger - Boucle infinie!
+// ❌ Danger – Infinite loop!
 this.updated((user) => {
   user.setAttribute('updated_count', user.getAttribute('updated_count') + 1);
-  user.save(); // Déclenche encore 'updated'!
+  user.save(); // Triggers 'updated' again!
 });
 
-// ✅ Solution - Utiliser update direct
+// ✅ Solution – Use update direct
 this.updated((user) => {
   User.where('id', user.getAttribute('id'))
-      .increment('updated_count'); // Pas d'event
+      .increment('updated_count'); // No events
 });
 ```
 
-### 4. Documentez vos events
+### 4. Document your events
 
 ```javascript
 class User extends Model {
   static boot() {
-    // Event: Génère automatiquement un slug à partir du name
+    // Event: Automatically generate a slug from the name
     this.creating((user) => {
       user.setAttribute('slug', slugify(user.getAttribute('name')));
     });
 
-    // Event: Envoie un email de bienvenue après inscription
+    // Event: Sends a welcome email after registration
     this.created((user) => {
       emailQueue.add('welcome', { userId: user.getAttribute('id') });
     });
@@ -406,8 +406,8 @@ class User extends Model {
 }
 ```
 
-## Prochaines étapes
+## Next steps
 
-- [Validation](VALIDATION.md) - Valider les données
-- [Soft Deletes](SOFT_DELETES.md) - Suppression douce
-- [Transactions](TRANSACTIONS.md) - Opérations atomiques
+- [Validation](VALIDATION.md) - Validate data
+- [Soft Deletes](SOFT_DELETES.md) - Soft deletion
+- [Transactions](TRANSACTIONS.md) - Atomic operations

@@ -1,9 +1,9 @@
-# 📦 Installation et Configuration
+# 📦 Installation and Configuration
 
-## Prérequis
+## Prerequisites
 
-- **Node.js** >= 18 (recommandé)
-- Un serveur de base de données (MySQL, PostgreSQL ou SQLite)
+- **Node.js** >= 18 (recommended)
+- A database server (MySQL, PostgreSQL or SQLite)
 
 ## Installation
 
@@ -11,9 +11,9 @@
 npm install outlet-orm
 ```
 
-### Installer le driver de base de données
+### Install the database driver
 
-Outlet ORM utilise des dépendances optionnelles. Installez uniquement le driver dont vous avez besoin :
+Outlet ORM uses optional dependencies. Install only the driver you need:
 
 ```bash
 # MySQL / MariaDB
@@ -26,17 +26,17 @@ npm install pg
 npm install sqlite3
 ```
 
-> 💡 Si aucun driver n'est installé, un message d'erreur explicite vous indiquera lequel installer.
+> 💡 If no driver is installed, an explicit error message will tell you which one to install.
 
-## Structure de Projet Recommandée
+## Recommended Project Structure
 
-Après installation, organisez votre projet comme suit :
+After installation, organise your project as follows:
 
-> 🔐 **Sécurité** : Voir le [Guide de Sécurité](SECURITY.md) pour les bonnes pratiques.
+> 🔐 **Security**: See [Security Guide](SECURITY.md) for best practices.
 
 ```
 mon-projet/
-├── .env                        # ⚠️ JAMAIS commité (dans .gitignore)
+├── .env                        # ⚠️ NEVER commit (in .gitignore)
 ├── .env.example                # Template sans secrets
 ├── .gitignore                  # Exclure .env, node_modules, logs
 ├── package.json
@@ -72,27 +72,27 @@ mon-projet/
 │   ├── css/
 │   └── js/
 ├── uploads/                    # ⚠️ Fichiers uploadés
-├── logs/                       # 📋 Journaux (non versionnés)
+├── logs/                       # 📋 Logs (non versionnés)
 ├── src/
 │   └── index.js
 └── tests/
 ```
 
-| Dossier | Rôle | Sécurité |
+| File | Role | Security |
 |---------|------|----------|
-| `config/` | Configuration centralisée | 🔒 Lit .env |
-| `database/` | Migrations | `outlet-init` |
-| `models/` | Classes Model | 🔒 `hidden`, `fillable` |
-| `middlewares/` | Auth, validation, rate limit | 🔒 **Critique** |
-| `utils/` | Hash, tokens | 🔒 Ne pas exposer |
-| `public/` | Fichiers statiques | ✅ Seul dossier public |
-| `logs/` | Journaux | 📋 `.gitignore` |
+|`config/`| Centralised configuration | 🔒 Reads .env |
+|`database/`| Migrations |`outlet-init`|
+|`models/`| Model classes | 🔒`hidden`,`fillable`|
+|`middlewares/`| Auth, validation, rate limit | 🔒 **Critique** |
+|`utils/`| Hash, tokens | 🔒 Do not expose |
+|`public/`| Static files | ✅ Only public file |
+|`logs/`| Logs | 📋`.gitignore`|
 
 ## Configuration
 
-### Option 1 : Via fichier `.env` (recommandé) - Connexion automatique
+### Option 1: Via file`.env`(recommended) - Automatic connection
 
-Créez un fichier `.env` à la racine de votre projet :
+Create a file`.env`at the root of your project:
 
 ```env
 # Driver: mysql, postgres, sqlite
@@ -105,27 +105,27 @@ DB_DATABASE=myapp
 DB_USER=root
 DB_PASSWORD=secret
 
-# Pool de connexions (optionnel)
+# Connection pool (optional)
 DB_POOL_MAX=10
 ```
 
 ```javascript
-// C'est tout ! Importez seulement Model
+// That's all! Import only Model
 const { Model } = require('outlet-orm');
 
 class User extends Model {
   static table = 'users';
 }
 
-// La connexion est initialisée automatiquement à la première utilisation
+// The connection is initialized automatically on first use
 const users = await User.all();
 ```
 
-> 💡 **Pas besoin d'importer `DatabaseConnection`** - Le Model se connecte automatiquement depuis `.env` lors de la première requête.
+> 💡 **No need to import`DatabaseConnection`** - The Model connects automatically from`.env`during the first request.
 
-### Option 2 : Configuration manuelle (avancé)
+### Option 2: Manual configuration (advanced)
 
-Si vous avez besoin de contrôler la connexion manuellement :
+If you need to control the connection manually:
 
 ```javascript
 const { DatabaseConnection, Model } = require('outlet-orm');
@@ -137,64 +137,64 @@ const db = new DatabaseConnection({
   database: 'myapp',
   user: 'root',
   password: 'secret',
-  connectionLimit: 10     // Pool de connexions
+  connectionLimit: 10     // Connection pool
 });
 
-Model.setConnection(db);  // Optionnel si .env est configuré
+Model.setConnection(db);  // Optional if .env is configured
 ```
 
-> Cette méthode est utile pour les tests ou les configurations dynamiques.
+> This method is useful for testing or dynamic configurations.
 
 ### Option 3 : SQLite
 
 ```javascript
-// SQLite en mémoire
+// SQLite in memory
 const db = new DatabaseConnection({
   driver: 'sqlite',
   database: ':memory:'
 });
 
-// SQLite fichier
+// SQLite file
 const db = new DatabaseConnection({
   driver: 'sqlite',
   database: './database.sqlite'
 });
 ```
 
-Ou via `.env` :
+Or via`.env`:
 
 ```env
 DB_DRIVER=sqlite
 DB_FILE=./database.sqlite
 ```
 
-## Variables d'environnement
+## Environment variables
 
-| Variable | Description | Défaut |
+| Varies | Description | Default |
 |----------|-------------|--------|
-| `DB_DRIVER` | `mysql`, `postgres`, `sqlite` | `mysql` |
-| `DB_HOST` | Hôte du serveur | `localhost` |
-| `DB_PORT` | Port de connexion | Selon driver |
-| `DB_USER` / `DB_USERNAME` | Nom d'utilisateur | - |
-| `DB_PASSWORD` | Mot de passe | - |
-| `DB_DATABASE` / `DB_NAME` | Nom de la base | - |
-| `DB_FILE` / `SQLITE_DB` | Chemin fichier SQLite | `:memory:` |
-| `DB_POOL_MAX` | Taille max du pool | `10` |
+|`DB_DRIVER`|`mysql`,`postgres`,`sqlite`|`mysql`|
+|`DB_HOST`| Server Host |`localhost`|
+|`DB_PORT`| Connection port | According to driver |
+|`DB_USER`/`DB_USERNAME`| Username | - |
+|`DB_PASSWORD`| Password | - |
+|`DB_DATABASE`/`DB_NAME`| Database name | - |
+|`DB_FILE`/`SQLITE_DB`| SQLite file path |`:memory:`|
+|`DB_POOL_MAX`| Max pool size |`10`|
 
-## Initialisation rapide avec CLI
+## Fast initialisation with CLI
 
 ```bash
-# Créer la configuration initiale
+# Create the initial configuration
 npx outlet-init
 
-# Créer une migration
+# Create a migration
 npx outlet-migrate make create_users_table
 
-# Exécuter les migrations
+# Run migrations
 npx outlet-migrate migrate
 ```
 
-## Vérifier la connexion
+## Check connection
 
 ```javascript
 const { DatabaseConnection } = require('outlet-orm');
@@ -211,7 +211,7 @@ async function testConnection() {
     console.log('Résultat:', result);
     
   } catch (error) {
-    console.error('❌ Erreur de connexion:', error.message);
+    console.error('❌ Connection error:', error.message);
   } finally {
     await db.close();
   }
@@ -220,16 +220,16 @@ async function testConnection() {
 testConnection();
 ```
 
-## Référence rapide de la structure
+## Quick structure reference
 
-> Voir la section **Structure de Projet Recommandée (Architecture en Couches)** ci-dessus pour la structure complète.
+> See the **Recommended Project Structure (Layered Architecture)** section above for the complete structure.
 
-### Exemple de `src/models/index.js`
+### Example of`src/models/index.js`
 
 ```javascript
 const { Model } = require('outlet-orm');
 
-// Exporter les modèles (connexion automatique via .env)
+// Export models (automatic connection via .env)
 module.exports = {
   User: require('./User'),
   Post: require('./Post'),
@@ -237,10 +237,10 @@ module.exports = {
 };
 ```
 
-> 💡 Plus besoin d'initialiser `DatabaseConnection` - tout est automatique !
+> 💡 No need to initialise anymore`DatabaseConnection`- everything is automatic!
 
-## Prochaines étapes
+## Next steps
 
-- [Guide des Modèles](MODELS.md)
+- [Model Guide](MODELS.md)
 - [Query Builder](QUERY_BUILDER.md)
-- [Relations](RELATIONS.md)
+- [Relationships](RELATIONS.md)

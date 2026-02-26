@@ -502,7 +502,7 @@ async function reverseFromDatabase() {
   console.log('');
 
   const migDir = (await question('Migration output dir (default: ./database/migrations): ')) || './database/migrations';
-  const seedDir = (await question('Seeder output dir (default: ./database/seeders): '))      || './database/seeders';
+  const seedDir = (await question('Seeder output dir (default: ./database/seeds): '))      || './database/seeds';
   const seedRows = (await question('Generate seeders with actual row data? (y/N): ')).trim().toLowerCase() === 'y';
 
   fs.mkdirSync(migDir,  { recursive: true });

@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [5.5.0] - 2026-02-26
+
+### 🌱 Migrations & Seeds Enhancement
+
+- Added first-class seeding support in the migration CLI:
+  - `outlet-migrate make:seed <SeederName>`
+  - `outlet-migrate seed`
+  - `outlet-migrate db:seed` (alias)
+  - `outlet-migrate seed --class <SeederName>` / `-c`
+- Added new runtime classes:
+  - `Seeder`
+  - `SeederManager`
+- Exported `Seeder` and `SeederManager` from package public API.
+- Added TypeScript declarations for seeding API.
+- `outlet-init` now scaffolds `database/seeds/` and a default `DatabaseSeeder.js`.
+- Aligned default seeder directory naming to Laravel-style `database/seeds`.
+
+### 📚 Documentation & Skills
+
+- Expanded migrations documentation with migration+seed workflow, options, idempotence notes, and troubleshooting.
+- Added dedicated seeding guides:
+  - `docs/SEEDS.md`
+  - `docs/skills/outlet-orm/SEEDS.md`
+- Updated docs/skills indexes and cross-links for migrations and seeds.
+
 ## [5.4.0] - 2026-02-25
 
 ### ✨ New Feature — Database Reverse Engineering (`bin/reverse.js`)

@@ -1,14 +1,14 @@
 # ✅ Validation
 
-Outlet ORM v4.0.0 inclut un système de validation intégré pour valider les données avant sauvegarde.
+Outlet ORM v4.0.0 includes a built-in validation system to validate data before saving.
 
-> 📘 **TypeScript** : Le type `ValidationRule` inclut toutes les règles disponibles. Voir [TYPESCRIPT.md](TYPESCRIPT.md).
+> 📘 **TypeScript**: The type`ValidationRule`includes all available rules. See [TYPESCRIPT.md](TYPESCRIPT.md).
 
-> 📁 **Emplacement** : Définissez vos règles dans `models/` et validez dans `controllers/` ou `middlewares/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Location**: Define your rules in`models/`and validate in`controllers/`or`middlewares/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
 
 ## Configuration
 
-### Définir les règles
+### Set rules
 
 ```javascript
 const { Model } = require('outlet-orm');
@@ -16,7 +16,7 @@ const { Model } = require('outlet-orm');
 class User extends Model {
   static table = 'users';
   
-  // Règles de validation
+  // Validation rules
   static rules = {
     name: 'required|string|min:2|max:100',
     email: 'required|email',
@@ -28,63 +28,63 @@ class User extends Model {
 }
 ```
 
-## Règles disponibles
+## Rules available
 
-| Règle | Description | Exemple |
+| Rule | Description | Example |
 |-------|-------------|---------|
-| `required` | Champ obligatoire | `'required'` |
-| `string` | Doit être une chaîne | `'string'` |
-| `integer` | Doit être un entier | `'integer'` |
-| `numeric` | Doit être numérique | `'numeric'` |
-| `number` | Alias de numeric | `'number'` |
-| `email` | Format email valide | `'email'` |
-| `url` | Format URL valide | `'url'` |
-| `date` | Format date valide | `'date'` |
-| `array` | Doit être un tableau | `'array'` |
-| `alpha` | Lettres uniquement | `'alpha'` |
-| `alphanumeric` | Lettres et chiffres | `'alphanumeric'` |
-| `min:n` | Longueur/valeur minimum | `'min:3'` |
-| `max:n` | Longueur/valeur maximum | `'max:255'` |
-| `in:a,b,c` | Doit être parmi les valeurs | `'in:active,inactive'` |
-| `boolean` | Doit être un booléen | `'boolean'` |
-| `regex:pattern` | Correspond au pattern | `'regex:^[A-Z]+'` |
-| `confirmed` | Doit avoir un champ _confirmation | `'confirmed'` |
+|`required`| Mandatory field |`'required'`|
+|`string`| Must be a string |`'string'`|
+|`integer`| Must be an integer |`'integer'`|
+|`numeric`| Must be digital |`'numeric'`|
+|`number`| Numeric alias |`'number'`|
+|`email`| Valid email format |`'email'`|
+|`url`| Valid URL format |`'url'`|
+|`date`| Valid date format |`'date'`|
+|`array`| Must be an array |`'array'`|
+|`alpha`| Letters only |`'alpha'`|
+|`alphanumeric`| Letters and numbers |`'alphanumeric'`|
+|`min:n`| Minimum length/value |`'min:3'`|
+|`max:n`| Maximum length/value |`'max:255'`|
+|`in:a,b,c`| Must be among the values ​​|`'in:active,inactive'`|
+|`boolean`| Must be a boolean |`'boolean'`|
+|`regex:pattern`| Matches pattern |`'regex:^[A-Z]+'`|
+|`confirmed`| Must have a _confirmation |`'confirmed'`|
 
-## Utilisation
+## Usage
 
-### Valider manuellement
+### Validate manually
 
 ```javascript
 const user = new User({
-  name: 'J',  // Trop court
+  name: 'J',  // Too short
   email: 'invalid-email',  // Format invalide
-  password: '123'  // Trop court
+  password: '123'  // Too short
 });
 
 const result = user.validate();
 
 if (!result.valid) {
-  console.log('Erreurs de validation:', result.errors);
+  console.log('Validation errors:', result.errors);
   // {
-  //   name: ['Le champ name doit avoir au moins 2 caractères'],
-  //   email: ['Le champ email doit être une adresse email valide'],
-  //   password: ['Le champ password doit avoir au moins 8 caractères']
+  //   name: ['The name field must have at least 2 characters'],
+  //   email: ['The email field must be a valid email address'],
+  //   password: ['The password field must have at least 8 characters']
   // }
 }
 ```
 
-### Structure du résultat
+### Structure of the result
 
 ```javascript
 const result = user.validate();
 
-// Si valide
+// And valid
 {
   valid: true,
   errors: {}
 }
 
-// Si invalide
+// You are disabled
 {
   valid: false,
   errors: {
@@ -94,7 +94,7 @@ const result = user.validate();
 }
 ```
 
-### Valider avant save
+### Validate before saving
 
 ```javascript
 const user = new User({
@@ -113,7 +113,7 @@ if (validation.valid) {
 }
 ```
 
-### Validation automatique avec events
+### Automatic validation with events
 
 ```javascript
 class User extends Model {
@@ -135,7 +135,7 @@ class User extends Model {
   }
 }
 
-// Utilisation - lance une erreur si invalide
+// Usage - throws error if invalid
 try {
   await User.create({ name: 'J', email: 'bad' });
 } catch (error) {
@@ -144,9 +144,9 @@ try {
 }
 ```
 
-## Exemples de règles
+## Example rules
 
-### Champ obligatoire
+### Mandatory field
 
 ```javascript
 static rules = {
@@ -154,7 +154,7 @@ static rules = {
 };
 ```
 
-### Chaîne avec longueur
+### Chain with length
 
 ```javascript
 static rules = {
@@ -170,7 +170,7 @@ static rules = {
 };
 ```
 
-### Nombre avec limites
+### Number with limits
 
 ```javascript
 static rules = {
@@ -179,7 +179,7 @@ static rules = {
 };
 ```
 
-### Valeurs énumérées
+### Enumerated values
 
 ```javascript
 static rules = {
@@ -197,7 +197,7 @@ static rules = {
 };
 ```
 
-### Booléen
+### Boolean
 
 ```javascript
 static rules = {
@@ -206,9 +206,9 @@ static rules = {
 };
 ```
 
-## Exemples complets
+## Complete examples
 
-### Modèle Article
+### Item Model
 
 ```javascript
 class Article extends Model {
@@ -225,7 +225,7 @@ class Article extends Model {
 }
 ```
 
-### Modèle Product
+### Model Product
 
 ```javascript
 class Product extends Model {
@@ -242,7 +242,7 @@ class Product extends Model {
 }
 ```
 
-### Modèle Registration
+### Model Registration
 
 ```javascript
 class Registration extends Model {
@@ -259,7 +259,7 @@ class Registration extends Model {
 }
 ```
 
-## Validation dans les contrôleurs
+## Validation in controllers
 
 ### Express.js
 
@@ -284,7 +284,7 @@ app.post('/users', async (req, res) => {
 });
 ```
 
-### Middleware de validation
+### Validation middleware
 
 ```javascript
 function validateModel(ModelClass) {
@@ -304,16 +304,16 @@ function validateModel(ModelClass) {
   };
 }
 
-// Utilisation
+// Usage
 app.post('/users', validateModel(User), async (req, res) => {
   await req.validatedModel.save();
   res.json(req.validatedModel.toJSON());
 });
 ```
 
-## Limitations actuelles
+## Current limitations
 
-La validation v3.0.0 est basique. Pour des validations plus complexes, utilisez des librairies spécialisées :
+Validation v3.0.0 is basic. For more complex validations, use specialized libraries:
 
 ```javascript
 const Joi = require('joi');
@@ -344,9 +344,9 @@ class User extends Model {
 }
 ```
 
-## Messages d'erreur personnalisés
+## Custom error messages
 
-Les messages sont en anglais par défaut. Pour les personnaliser :
+Messages are in English by default. To personalize them:
 
 ```javascript
 class User extends Model {
@@ -358,10 +358,10 @@ class User extends Model {
   validate() {
     const result = super.validate();
     
-    // Personnaliser les messages
+    // Personalize messages
     const customMessages = {
       name: {
-        required: 'Le nom est obligatoire',
+        required: 'Name is required',
         min: 'Le nom doit contenir au moins 2 caractères'
       },
       email: {
@@ -370,7 +370,7 @@ class User extends Model {
       }
     };
     
-    // Remplacer les messages
+    // Replace messages
     for (const field in result.errors) {
       if (customMessages[field]) {
         result.errors[field] = result.errors[field].map(msg => {
@@ -389,8 +389,8 @@ class User extends Model {
 }
 ```
 
-## Prochaines étapes
+## Next steps
 
-- [Events](EVENTS.md) - Hooks sur le cycle de vie
-- [Models](MODELS.md) - Guide complet des modèles
-- [Transactions](TRANSACTIONS.md) - Opérations atomiques
+- [Events](EVENTS.md) - Hooks on the life cycle
+- [Models](MODELS.md) - Complete Model Guide
+- [Transactions](TRANSACTIONS.md) - Atomic operations

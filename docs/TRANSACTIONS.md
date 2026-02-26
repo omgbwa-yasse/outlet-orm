@@ -1,30 +1,30 @@
 # 💾 Transactions
 
-Les transactions garantissent l'intégrité des données en regroupant plusieurs opérations en une unité atomique.
+Transactions ensure data integrity by grouping multiple operations into an atomic unit.
 
-> 📁 **Utilisation** : Dans vos fichiers `controllers/`, `services/` ou `src/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Use**: In your files`controllers/`,`services/`or`src/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
 
-## Principe
+## Principle
 
-Une transaction suit le modèle ACID :
-- **Atomicité** : Toutes les opérations réussissent ou aucune
-- **Cohérence** : La base reste dans un état valide
-- **Isolation** : Les transactions sont indépendantes
-- **Durabilité** : Les changements sont permanents après commit
+A transaction follows the ACID model:
+- **Atomicity**: All operations succeed or none
+- **Consistency**: The database remains in a valid state
+- **Isolation**: Transactions are independent
+- **Durability**: Changes are permanent after commit
 
-## Utilisation basique
+## Basic use
 
-### Méthode transaction() (recommandée)
+### transaction() method (recommended)
 
 ```javascript
 const { Model } = require('outlet-orm');
 
-// Obtenir la connexion via Model (connexion automatique depuis .env)
+// Get connection via Model (automatic connection from .env)
 const db = Model.getConnection();
 
 try {
   await db.transaction(async (trx) => {
-    // Toutes les opérations utilisent la même transaction
+    // All operations use the same transaction
     const user = await User.useTransaction(trx).create({
       name: 'John Doe',
       email: 'john@example.com'
@@ -40,17 +40,17 @@ try {
       balance: 0
     });
 
-    // Commit automatique si tout réussit
+    // Automatic commit if everything succeeds
   });
 
   console.log('Transaction réussie!');
 } catch (error) {
-  // Rollback automatique en cas d'erreur
+  // Automatic rollback in case of error
   console.error('Transaction échouée:', error.message);
 }
 ```
 
-### Gestion manuelle
+### Manual management
 
 ```javascript
 const db = Model.getConnection();
@@ -68,16 +68,16 @@ try {
 }
 ```
 
-## Cas d'utilisation
+## Use cases
 
-### Transfert d'argent
+### Money transfer
 
 ```javascript
 async function transfer(fromAccountId, toAccountId, amount) {
   const db = Model.getConnection();
 
   await db.transaction(async (trx) => {
-    // Débiter le compte source
+    // Debit the source account
     const source = await Account.useTransaction(trx).find(fromAccountId);
     if (source.getAttribute('balance') < amount) {
       throw new Error('Solde insuffisant');
@@ -87,12 +87,12 @@ async function transfer(fromAccountId, toAccountId, amount) {
       .where('id', fromAccountId)
       .decrement('balance', amount);
 
-    // Créditer le compte destination
+    // Credit the destination account
     await Account.useTransaction(trx)
       .where('id', toAccountId)
       .increment('balance', amount);
 
-    // Enregistrer la transaction
+    // Save transaction
     await TransactionLog.useTransaction(trx).create({
       from_account: fromAccountId,
       to_account: toAccountId,
@@ -105,7 +105,7 @@ async function transfer(fromAccountId, toAccountId, amount) {
 }
 ```
 
-### Création d'utilisateur avec relations
+### User creation with relationships
 
 ```javascript
 async function createUserWithProfile(userData, profileData) {
@@ -113,7 +113,7 @@ async function createUserWithProfile(userData, profileData) {
   let createdUser;
 
   await db.transaction(async (trx) => {
-    // Créer l'utilisateur
+    // Create user
     createdUser = await User.useTransaction(trx).create({
       name: userData.name,
       email: userData.email,
@@ -122,20 +122,20 @@ async function createUserWithProfile(userData, profileData) {
 
     const userId = createdUser.getAttribute('id');
 
-    // Créer le profil
+    // Create profile
     await Profile.useTransaction(trx).create({
       user_id: userId,
       bio: profileData.bio,
       avatar: profileData.avatar
     });
 
-    // Assigner le rôle par défaut
+    // Assign the default role
     await UserRole.useTransaction(trx).create({
       user_id: userId,
-      role_id: 1 // Rôle "user" par défaut
+      role_id: 1 // Default “user” role
     });
 
-    // Créer les paramètres par défaut
+    // Create default settings
     await UserSettings.useTransaction(trx).create({
       user_id: userId,
       notifications: true,
@@ -147,31 +147,31 @@ async function createUserWithProfile(userData, profileData) {
 }
 ```
 
-### Suppression en cascade
+### Cascade deletion
 
 ```javascript
 async function deleteUserCompletely(userId) {
   const db = Model.getConnection();
 
   await db.transaction(async (trx) => {
-    // Supprimer dans l'ordre des dépendances
+    // Delete in order of dependencies
     await Comment.useTransaction(trx).where('user_id', userId).delete();
     await Post.useTransaction(trx).where('user_id', userId).delete();
     await Profile.useTransaction(trx).where('user_id', userId).delete();
     await UserRole.useTransaction(trx).where('user_id', userId).delete();
     await UserSettings.useTransaction(trx).where('user_id', userId).delete();
     
-    // Enfin, supprimer l'utilisateur
+    // Finally, delete the user
     await User.useTransaction(trx).where('id', userId).delete();
   });
 }
 ```
 
-## API de transaction
+## Transaction API
 
 ### beginTransaction()
 
-Démarre une nouvelle transaction.
+Starts a new transaction.
 
 ```javascript
 const trx = await db.beginTransaction();
@@ -179,7 +179,7 @@ const trx = await db.beginTransaction();
 
 ### commit(trx)
 
-Valide une transaction.
+Validates a transaction.
 
 ```javascript
 await db.commit(trx);
@@ -187,7 +187,7 @@ await db.commit(trx);
 
 ### rollback(trx)
 
-Annule une transaction.
+Cancels a transaction.
 
 ```javascript
 await db.rollback(trx);
@@ -195,19 +195,19 @@ await db.rollback(trx);
 
 ### transaction(callback)
 
-Exécute un callback dans une transaction avec commit/rollback automatique.
+Executes a callback in a transaction with automatic commit/rollback.
 
 ```javascript
 await db.transaction(async (trx) => {
-  // Opérations...
+  // Operations...
 });
 ```
 
-## Utiliser avec les modèles
+## Use with templates
 
 ### useTransaction(trx)
 
-Associe une transaction à une requête de modèle.
+Associates a transaction with a model query.
 
 ```javascript
 // Create
@@ -237,61 +237,61 @@ const users = await User.useTransaction(trx)
 | PostgreSQL (pg) | ✅ Complet |
 | SQLite (sqlite3) | ✅ Complet |
 
-## Bonnes pratiques
+## Best practices
 
-### 1. Gardez les transactions courtes
+### 1. Keep trades short
 
 ```javascript
-// ✅ Bon - Transaction courte et ciblée
+// ✅ Good - Short and focused transaction
 await db.transaction(async (trx) => {
   await Account.useTransaction(trx).where('id', 1).decrement('balance', 100);
   await Account.useTransaction(trx).where('id', 2).increment('balance', 100);
 });
 
-// ❌ Mauvais - Opérations non-DB dans la transaction
+// ❌ Bad - Non-DB operations in transaction
 await db.transaction(async (trx) => {
   await Account.useTransaction(trx).where('id', 1).decrement('balance', 100);
-  await sendEmail(user.email); // Ne pas faire ça!
+  await sendEmail(user.email); // Don't do this!
   await Account.useTransaction(trx).where('id', 2).increment('balance', 100);
 });
 ```
 
-### 2. Gérez les erreurs proprement
+### 2. Handle errors properly
 
 ```javascript
-// ✅ Avec transaction() - gestion automatique
+// ✅ With transaction() - automatic management
 try {
   await db.transaction(async (trx) => {
     // ...
   });
 } catch (error) {
-  // Rollback déjà effectué
+  // Rollback already done
   logger.error('Transaction failed:', error);
   throw error;
 }
 ```
 
-### 3. Évitez les transactions imbriquées
+### 3. Avoid nested transactions
 
 ```javascript
-// ❌ Éviter
+// ❌ Avoid
 await db.transaction(async (trx1) => {
-  await db.transaction(async (trx2) => {  // Problématique!
+  await db.transaction(async (trx2) => {  // Problematic!
     // ...
   });
 });
 
-// ✅ Utiliser une seule transaction
+// ✅ Use a single transaction
 await db.transaction(async (trx) => {
   await operation1(trx);
   await operation2(trx);
 });
 ```
 
-### 4. Passez la transaction aux fonctions
+### 4. Pass transaction to functions
 
 ```javascript
-// ✅ Bonne pratique
+// ✅ Good practice
 async function createOrder(orderData, trx) {
   return await Order.useTransaction(trx).create(orderData);
 }
@@ -305,7 +305,7 @@ async function createOrderItems(items, orderId, trx) {
   }
 }
 
-// Utilisation
+// Usage
 await db.transaction(async (trx) => {
   const order = await createOrder({ user_id: 1 }, trx);
   await createOrderItems(items, order.getAttribute('id'), trx);
@@ -314,7 +314,7 @@ await db.transaction(async (trx) => {
 
 ## Debugging
 
-### Activer les logs de requêtes
+### Enable query logs
 
 ```javascript
 const db = Model.getConnection();
@@ -328,8 +328,8 @@ console.log(db.getQueryLog());
 // Affiche: BEGIN, INSERT, COMMIT (ou ROLLBACK)
 ```
 
-## Prochaines étapes
+## Next steps
 
-- [Soft Deletes](SOFT_DELETES.md) - Suppression douce
-- [Events](EVENTS.md) - Hooks sur le cycle de vie
-- [Query Logging](QUERY_LOGGING.md) - Debug des requêtes
+- [Soft Deletes](SOFT_DELETES.md) - Soft deletion
+- [Events](EVENTS.md) - Hooks on the life cycle
+- [Query Logging](QUERY_LOGGING.md) - Debug requests

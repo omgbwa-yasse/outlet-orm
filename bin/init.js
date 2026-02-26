@@ -98,6 +98,7 @@ module.exports = db;
       'config',
       'database',
       'database/migrations',
+      'database/seeds',
       'models',
       'controllers',
       'routes',
@@ -124,6 +125,23 @@ module.exports = db;
       } else {
         console.log(`  ⏭️  ${dir}/ (existe déjà)`);
       }
+    }
+
+    const databaseSeederPath = path.join(process.cwd(), 'database', 'seeds', 'DatabaseSeeder.js');
+    if (!fs.existsSync(databaseSeederPath)) {
+      const databaseSeederContent = `const { Seeder } = require('outlet-orm');
+
+class DatabaseSeeder extends Seeder {
+  async run() {
+    // Example:
+    // await this.call('UserSeeder');
+  }
+}
+
+module.exports = DatabaseSeeder;
+`;
+      fs.writeFileSync(databaseSeederPath, databaseSeederContent);
+      console.log('✅ database/seeds/DatabaseSeeder.js créé');
     }
 
     // Generate .gitignore

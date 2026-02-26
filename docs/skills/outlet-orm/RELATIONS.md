@@ -2,30 +2,32 @@
 
 [← Back to Index](SKILL.md) | [Previous: Queries](QUERIES.md) | [Next: Migrations →](MIGRATIONS.md)
 
-> 📘 **TypeScript** : Use typed relations like `HasOneRelation<Profile>`, `HasManyRelation<Post>`. See [TYPESCRIPT.md](TYPESCRIPT.md#relations-typées)
+> 📘 **TypeScript**: Use typed relations like`HasOneRelation<Profile>`,`HasManyRelation<Post>`. See [TYPESCRIPT.md](TYPESCRIPT.md#relations-typées)
 
 ---
 
 ## Naming Conventions
 
 ### Tables
-- Singular or plural: `user` or `users`
-- Pivot tables: alphabetical order `role_user` (not `user_role`)
+- Singular or plural:`user`or`users`
+- Pivot tables: alphabetical order`role_user`(not`user_role`)
 
 ### Foreign Keys
-- Format: `{model}_id` (e.g., `user_id`, `post_id`)
+- Format:`{model}_id`(e.g.,`user_id`,`post_id`)
 
 ### Polymorphic Columns
-- Type: `{name}_type` (e.g., `commentable_type`)
-- ID: `{name}_id` (e.g., `commentable_id`)
+- Type:`{name}_type`(e.g.,`commentable_type`)
+- ID:`{name}_id`(e.g.,`commentable_id`)
 
 ### Relation Methods
+
 | Type | Naming | Example |
 |------|--------|---------|
-| `belongsTo` | singular | `user()`, `category()` |
-| `hasOne` | singular | `profile()` |
-| `hasMany` | plural | `posts()`, `comments()` |
-| `belongsToMany` | plural | `tags()`, `roles()` |
+|`belongsTo`| singular |`user()`,`category()`|
+|`hasOne`| singular |`profile()`|
+|`hasMany`| plural |`posts()`,`comments()`|
+|`belongsToMany`| plural |`tags()`,`roles()`|
+
 
 ---
 
@@ -33,15 +35,15 @@
 
 | Relation | Description | Example |
 |----------|-------------|---------|
-| `hasOne` | One-to-One | User → Profile |
-| `hasMany` | One-to-Many | User → Posts |
-| `belongsTo` | Inverse of hasOne/hasMany | Post → User |
-| `belongsToMany` | Many-to-Many | User ↔ Roles |
-| `hasManyThrough` | One-to-Many via intermediate | Country → Posts via Users |
-| `hasOneThrough` | One-to-One via intermediate | Supplier → UserHistory via User |
-| `morphOne` | Polymorphic One-to-One | Post → Image |
-| `morphMany` | Polymorphic One-to-Many | Post → Comments |
-| `morphTo` | Polymorphic inverse | Comment → (Post\|Video) |
+|`hasOne`| One-to-One | User → Profile |
+|`hasMany`| One-to-Many | User → Posts |
+|`belongsTo`| Inverse of hasOne/hasMany | Post → User |
+|`belongsToMany`| Many-to-Many | User ↔ Roles |
+|`hasManyThrough`| One-to-Many via intermediate | Country → Posts via Users |
+|`hasOneThrough`| One-to-One via intermediate | Supplier → UserHistory via User |
+|`morphOne`| Polymorphic One-to-One | Post → Image |
+|`morphMany`| Polymorphic One-to-Many | Post → Comments |
+|`morphTo`| Polymorphic inverse | Comment → (Post\|Video) |
 
 ---
 
@@ -78,9 +80,9 @@ console.log(user.relations.profile);
 ```
 
 **Parameters:**
-- `hasOne(RelatedModel, foreignKey, localKey)`
-- `foreignKey`: default = `{model}_id`
-- `localKey`: default = `id`
+-`hasOne(RelatedModel, foreignKey, localKey)`
+-`foreignKey`: default =`{model}_id`
+-`localKey`: default =`id`
 
 ---
 
@@ -143,9 +145,9 @@ console.log(post.relations.author);
 ```
 
 **Parameters:**
-- `belongsTo(RelatedModel, foreignKey, ownerKey)`
-- `foreignKey`: FK on current model
-- `ownerKey`: default = `id`
+-`belongsTo(RelatedModel, foreignKey, ownerKey)`
+-`foreignKey`: FK on current model
+-`ownerKey`: default =`id`
 
 ---
 
@@ -204,7 +206,7 @@ roles.forEach(role => {
 
 ## Has Many Through
 
-Access distant relations via intermediate model.
+Access remote relations via intermediate model.
 
 ```sql
 -- Country -> User -> Post
@@ -362,7 +364,7 @@ console.log(comment.relations.commentable); // Post or Video
 // Single relation
 const users = await User.with('posts').get();
 
-// Multiple relations
+// Multiple relationships
 const users = await User.with('posts', 'profile', 'roles').get();
 
 // Access loaded relations
@@ -376,7 +378,7 @@ users.forEach(user => {
 ### Nested Relations (Dot Notation)
 
 ```javascript
-// Load nested relations
+// Load nested relationships
 const users = await User.with('posts.comments.author').get();
 
 // Combined
@@ -465,16 +467,16 @@ users.forEach(user => {
 
 ## Automatic Relations Detection
 
-The `outlet-convert` CLI automatically detects relations from your SQL schema.
+The`outlet-convert`CLI automatically detects relationships from your SQL schema.
 
 ### Detection Rules
 
 | Pattern | Detected Relation |
 |---------|-------------------|
-| Column `*_id` with FK | `belongsTo()` |
-| FK referencing this table (non-unique) | `hasMany()` |
-| FK referencing this table (UNIQUE) | `hasOne()` |
-| Pivot table (2 FKs only) | `belongsToMany()` |
+| Column`*_id`with FK |`belongsTo()`|
+| FK referencing this table (non-unique) |`hasMany()`|
+| FK referencing this table (UNIQUE) |`hasOne()`|
+| Pivot table (2 FKs only) |`belongsToMany()`|
 | Self-referencing FK | Recursive relation |
 
 ### Example: Auto-Generated
@@ -526,24 +528,24 @@ class Category extends Model {
 
 | Method | Description |
 |--------|-------------|
-| `hasOne(Model, fk, lk)` | One-to-One |
-| `hasMany(Model, fk, lk)` | One-to-Many |
-| `belongsTo(Model, fk, ok)` | Inverse relation |
-| `belongsToMany(Model, pivot, fk, rk)` | Many-to-Many |
-| `hasManyThrough(Model, Through, fk1, fk2)` | Via intermediate |
-| `hasOneThrough(Model, Through, fk1, fk2)` | One via intermediate |
-| `morphOne(Model, name)` | Polymorphic One-to-One |
-| `morphMany(Model, name)` | Polymorphic One-to-Many |
-| `morphTo(name)` | Polymorphic inverse |
-| `with(...relations)` | Eager load |
-| `load(...relations)` | Load on instance |
-| `whereHas(rel, cb)` | Filter by relation |
-| `has(rel, op, count)` | Relation count filter |
-| `whereDoesntHave(rel)` | Filter by no relation |
-| `withCount(rel)` | Add relation count |
-| `attach(ids)` | Attach (many-to-many) |
-| `detach(ids?)` | Detach (many-to-many) |
-| `sync(ids)` | Sync (many-to-many) |
+|`hasOne(Model, fk, lk)`| One-to-One |
+|`hasMany(Model, fk, lk)`| One-to-Many |
+|`belongsTo(Model, fk, ok)`| Inverse relation |
+|`belongsToMany(Model, pivot, fk, rk)`| Many-to-Many |
+|`hasManyThrough(Model, Through, fk1, fk2)`| Via intermediate |
+|`hasOneThrough(Model, Through, fk1, fk2)`| One via intermediate |
+|`morphOne(Model, name)`| Polymorphic One-to-One |
+|`morphMany(Model, name)`| Polymorphic One-to-Many |
+|`morphTo(name)`| Polymorphic inverse |
+|`with(...relations)`| Eager load |
+|`load(...relations)`| Load on instance |
+|`whereHas(rel, cb)`| Filter by relation |
+|`has(rel, op, count)`| Relation count filter |
+|`whereDoesntHave(rel)`| Filter by no relation |
+|`withCount(rel)`| Add relation count |
+|`attach(ids)`| Attach (many-to-many) |
+|`detach(ids?)`| Detach (many-to-many) |
+|`sync(ids)`| Sync (many-to-many) |
 
 ---
 

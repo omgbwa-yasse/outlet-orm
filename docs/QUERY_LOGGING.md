@@ -1,41 +1,41 @@
 # 🔍 Query Logging
 
-Le query logging permet de tracer et débugger les requêtes SQL exécutées par votre application.
+Query logging allows you to trace and debug the SQL queries executed by your application.
 
-> � **Utilisation** : Activez dans `services/` ou `middlewares/` pour le débug — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> � **Use**: Enable in `services/` or `middlewares/` for debugging — See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
 >
-> �📘 **TypeScript** : Le type `QueryLogEntry` définit la structure des entrées de log. Voir [TYPESCRIPT.md](TYPESCRIPT.md#querylogentry)
+> �📘 **TypeScript**: The type`QueryLogEntry`defines the structure of log entries. See [TYPESCRIPT.md](TYPESCRIPT.md#querylogentry)
 
-## Activer le logging
+## Enable logging
 
 ```javascript
 const { Model } = require('outlet-orm');
 
-// Obtenir la connexion via Model (connexion automatique depuis .env)
+// Get connection via Model (automatic connection from .env)
 const db = Model.getConnection();
 
-// Activer le logging
+// Enable logging
 db.enableQueryLog();
 
-// Exécuter des requêtes
+// Run queries
 await User.all();
 await Post.where('status', 'published').get();
 await User.find(1);
 
-// Récupérer le log
+// Retrieve the log
 const queries = db.getQueryLog();
 console.log(queries);
 ```
 
-## Structure du log
+## Log structure
 
-Chaque entrée du log contient :
+Each log entry contains:
 
 ```javascript
 {
-  sql: 'SELECT * FROM users WHERE id = ?',  // Requête SQL
-  bindings: [1],                             // Paramètres
-  time: 2.5                                  // Temps d'exécution (ms)
+  sql: 'SELECT * FROM users WHERE id = ?',  // SQL Query
+  bindings: [1],                             // Settings
+  time: 2.5                                  // Execution time (ms)
 }
 ```
 
@@ -43,7 +43,7 @@ Chaque entrée du log contient :
 
 ### enableQueryLog()
 
-Active l'enregistrement des requêtes.
+Enables query recording.
 
 ```javascript
 db.enableQueryLog();
@@ -51,7 +51,7 @@ db.enableQueryLog();
 
 ### disableQueryLog()
 
-Désactive l'enregistrement des requêtes.
+Disables query recording.
 
 ```javascript
 db.disableQueryLog();
@@ -59,7 +59,7 @@ db.disableQueryLog();
 
 ### getQueryLog()
 
-Retourne toutes les requêtes enregistrées.
+Returns all saved queries.
 
 ```javascript
 const queries = db.getQueryLog();
@@ -71,16 +71,16 @@ const queries = db.getQueryLog();
 
 ### flushQueryLog()
 
-Vide le log des requêtes.
+Clear the query log.
 
 ```javascript
 db.flushQueryLog();
 const queries = db.getQueryLog(); // []
 ```
 
-## Cas d'utilisation
+## Use cases
 
-### Debug en développement
+### Debug in development
 
 ```javascript
 // config/database.js
@@ -92,7 +92,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 ```
 
-### Profiler une opération
+### Profile an operation
 
 ```javascript
 const { Model, User } = require('outlet-orm');
@@ -103,7 +103,7 @@ async function profileOperation() {
   db.flushQueryLog();  // Reset
   db.enableQueryLog();
   
-  // Opérations à profiler
+  // Operations to profile
   const users = await User.with('posts', 'profile').limit(10).get();
   
   const queries = db.getQueryLog();
@@ -121,7 +121,7 @@ async function profileOperation() {
 }
 ```
 
-### Détecter le N+1 Problem
+### Detect N+1 Problem
 
 ```javascript
 const { Model, User } = require('outlet-orm');
@@ -131,27 +131,27 @@ async function detectN1Problem() {
   db.flushQueryLog();
   db.enableQueryLog();
   
-  // Code potentiellement problématique
+  // Potentially problematic code
   const users = await User.all();
   for (const user of users) {
-    await user.load('posts');  // N requêtes supplémentaires!
+    await user.load('posts');  // N additional requests!
   }
   
   const queries = db.getQueryLog();
   
   if (queries.length > 10) {
     console.warn(`⚠️ Possible N+1 Problem détecté: ${queries.length} requêtes`);
-    console.warn('Utilisez .with() pour eager loading');
+    console.warn('Use .with() for eager loading');
   }
   
   db.disableQueryLog();
 }
 
 // Solution
-const users = await User.with('posts').all();  // 2 requêtes seulement
+const users = await User.with('posts').all();  // 2 requests only
 ```
 
-### Logger vers fichier
+### Log to file
 
 ```javascript
 const fs = require('fs');
@@ -172,11 +172,11 @@ class QueryLogger {
   }
 }
 
-// Utilisation
+// Usage
 const { Model } = require('outlet-orm');
 const logger = new QueryLogger();
 
-// Après chaque requête
+// After each request
 setInterval(() => {
   const db = Model.getConnection();
   const queries = db.getQueryLog();
@@ -196,16 +196,16 @@ function queryLoggerMiddleware(req, res, next) {
   db.flushQueryLog();
   db.enableQueryLog();
   
-  // Intercepter la réponse
+  // Intercept response
   const originalSend = res.send;
   res.send = function(body) {
     const queries = db.getQueryLog();
     
-    // Ajouter header avec stats
+    // Add header with stats
     res.setHeader('X-Query-Count', queries.length);
     res.setHeader('X-Query-Time', queries.reduce((sum, q) => sum + q.time, 0).toFixed(2));
     
-    // Log en console
+    // Console log
     if (process.env.NODE_ENV === 'development') {
       console.log(`[${req.method} ${req.path}] ${queries.length} queries, ${queries.reduce((sum, q) => sum + q.time, 0).toFixed(2)}ms`);
     }
@@ -219,7 +219,7 @@ function queryLoggerMiddleware(req, res, next) {
 app.use(queryLoggerMiddleware);
 ```
 
-### Test de performance
+### Performance test
 
 ```javascript
 const { Model, User } = require('outlet-orm');
@@ -242,7 +242,7 @@ async function benchmarkQueries() {
     time: db.getQueryLog().reduce((sum, q) => sum + q.time, 0)
   };
   
-  // Test 2: Avec eager loading
+  // Test 2: With eager loading
   db.flushQueryLog();
   
   const users2 = await User.with('posts').all();
@@ -263,7 +263,7 @@ async function benchmarkQueries() {
 }
 ```
 
-## Affichage formaté
+## Formatted display
 
 ```javascript
 function formatQueryLog(queries) {
@@ -285,19 +285,19 @@ function formatQueryLog(queries) {
   console.log('└────────────────────────────────────────────────────────────────┘\n');
 }
 
-// Utilisation
+// Usage
 const { Model } = require('outlet-orm');
 const db = Model.getConnection();
 db.enableQueryLog();
 
-// ... vos requêtes ...
+// ... your requests...
 
 formatQueryLog(db.getQueryLog());
 ```
 
-## Bonnes pratiques
+## Best practices
 
-### 1. Désactivez en production
+### 1. Disable in production
 
 ```javascript
 if (process.env.NODE_ENV !== 'production') {
@@ -305,10 +305,10 @@ if (process.env.NODE_ENV !== 'production') {
 }
 ```
 
-### 2. Videz régulièrement le log
+### 2. Clear the log regularly
 
 ```javascript
-// Évite les fuites mémoire
+// Avoid memory leaks
 setInterval(() => {
   const queries = db.getQueryLog();
   // Process queries...
@@ -316,10 +316,10 @@ setInterval(() => {
 }, 60000);
 ```
 
-### 3. Limitez en production
+### 3. Limit in production
 
 ```javascript
-// Log seulement les requêtes lentes
+// Log only slow queries
 const SLOW_QUERY_THRESHOLD = 100; // ms
 
 db.enableQueryLog();
@@ -336,8 +336,8 @@ setInterval(() => {
 }, 10000);
 ```
 
-## Prochaines étapes
+## Next steps
 
-- [Transactions](TRANSACTIONS.md) - Gestion des transactions
-- [Models](MODELS.md) - Guide complet des modèles
-- [Query Builder](QUERY_BUILDER.md) - Requêtes avancées
+- [Transactions](TRANSACTIONS.md) - Transaction management
+- [Models](MODELS.md) - Complete Model Guide
+- [Query Builder](QUERY_BUILDER.md) - Advanced queries

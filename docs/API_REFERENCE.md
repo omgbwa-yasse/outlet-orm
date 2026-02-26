@@ -1,109 +1,109 @@
 # 📘 API Reference
 
-Référence complète de l'API Outlet ORM v4.0.0.
+Full Outlet ORM API Reference v4.0.0.
 
-> � **Structure** : Utilisez ces APIs dans `models/`, `controllers/`, `services/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> � **Structure**: Use these APIs in`models/`,`controllers/`,`services/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
 >
-> �📘 **TypeScript** : Voir [TYPESCRIPT.md](TYPESCRIPT.md) pour les interfaces et types génériques.
+> �📘 **TypeScript**: See [TYPESCRIPT.md](TYPESCRIPT.md) for interfaces and generic types.
 
-## Table des matières
+## Table of contents
 
 - [Model](#model)
 - [QueryBuilder](#querybuilder)
 - [DatabaseConnection](#databaseconnection)
-- [Relations](#relations)
+- [Relationships](#relationships)
 
 ---
 
 ## Model
 
-Classe de base pour tous les modèles.
+Base class for all models.
 
-### Propriétés statiques
+### Static properties
 
-| Propriété | Type | Default | Description |
+| Property | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `table` | `string` | - | **Requis.** Nom de la table |
-| `primaryKey` | `string` | `'id'` | Nom de la clé primaire |
-| `timestamps` | `boolean` | `true` | Gestion auto de created_at/updated_at |
-| `fillable` | `string[]` | `[]` | Attributs modifiables en masse |
-| `hidden` | `string[]` | `[]` | Attributs exclus de toJSON() |
-| `casts` | `object` | `{}` | Types de cast pour les attributs |
-| `softDeletes` | `boolean` | `false` | Activer la suppression douce |
-| `rules` | `object` | `{}` | Règles de validation |
-| `scopes` | `object` | `{}` | Local scopes définis |
-| `globalScopes` | `object` | `{}` | Global scopes définis |
+|`table`|`string`| - | **Required.** Table name |
+|`primaryKey`|`string`|`'id'`| Primary key name |
+|`timestamps`|`boolean`|`true`| Auto management of created_at/updated_at |
+|`fillable`|`string[]`|`[]`| Mass editable attributes |
+|`hidden`|`string[]`|`[]`| Attributes excluded from toJSON() |
+|`casts`|`object`|`{}`| Cast types for attributes |
+|`softDeletes`|`boolean`|`false`| Enable soft deletion |
+|`rules`|`object`|`{}`| Validation rules |
+|`scopes`|`object`|`{}`| Local scopes defined |
+|`globalScopes`|`object`|`{}`| Global scopes defined |
 
-### Méthodes statiques
+### Static methods
 
-#### Récupération
+#### Recovery
 
 ```javascript
-// Tous les enregistrements
+// All records
 static async all(): Promise<Model[]>
 
 // Par ID
 static async find(id: any): Promise<Model | null>
 
-// Par ID ou erreur
+// By ID or error
 static async findOrFail(id: any): Promise<Model>
 
-// Premier résultat
+// First result
 static async first(): Promise<Model | null>
 
-// Avec conditions
+// With conditions
 static async get(): Promise<Model[]>
 
-// Compter
+// Count
 static async count(): Promise<number>
 
-// Existe
+// There is
 static async exists(): Promise<boolean>
 ```
 
-#### Création
+#### Creation
 
 ```javascript
-// Créer et sauvegarder
+// Create and save
 static async create(data: object): Promise<Model>
 
 // Insertion brute
 static async insert(data: object | object[]): Promise<void>
 ```
 
-#### Mise à jour
+#### Update
 
 ```javascript
-// Mettre à jour par ID
+// Update by ID
 static async updateById(id: any, data: object): Promise<void>
 
-// Mettre à jour et récupérer
+// Update and recover
 static async updateAndFetchById(id: any, data: object, relations?: string[]): Promise<Model>
 
-// Incrémenter
+// Increment
 static async increment(column: string, amount?: number): Promise<void>
 
-// Décrémenter
+// Decrement
 static async decrement(column: string, amount?: number): Promise<void>
 ```
 
 #### Suppression
 
 ```javascript
-// Supprimer en masse
+// Bulk Delete
 static async delete(): Promise<void>
 
-// Vider la table
+// Clear the table
 static async truncate(): Promise<void>
 ```
 
 #### Query Builder
 
 ```javascript
-// Démarrer une requête
+// Start a query
 static query(): QueryBuilder
 
-// Sélection
+// Selection
 static select(...columns: string[]): QueryBuilder
 
 // Conditions
@@ -117,12 +117,12 @@ static whereLike(column: string, pattern: string): QueryBuilder
 static whereRaw(sql: string, bindings?: any[]): QueryBuilder
 static orWhere(column: string, operatorOrValue: any, value?: any): QueryBuilder
 
-// Tri et limite
+// Sort and limit
 static orderBy(column: string, direction?: 'asc' | 'desc'): QueryBuilder
 static limit(n: number): QueryBuilder
 static offset(n: number): QueryBuilder
 
-// Relations
+// Relationships
 static with(...relations: string[]): QueryBuilder
 
 // Soft Deletes
@@ -132,7 +132,7 @@ static onlyTrashed(): QueryBuilder
 // Scopes
 static scope(...names: string[]): QueryBuilder
 
-// Attributs cachés
+// Hidden attributes
 static withHidden(): QueryBuilder
 
 // Pagination
@@ -141,7 +141,7 @@ static async paginate(page?: number, perPage?: number): Promise<PaginationResult
 // Transaction
 static useTransaction(trx: Transaction): QueryBuilder
 
-// Connexion (v3.0.0+)
+// Connection (v3.0.0+)
 static setConnection(db: DatabaseConnection): void
 static getConnection(): DatabaseConnection
 ```
@@ -163,17 +163,17 @@ static restored(callback: (model: Model) => void): void
 static addEventListener(event: string, callback: Function): void
 ```
 
-### Méthodes d'instance
+### Instance methods
 
 ```javascript
-// Attributs
+// Attributes
 getAttribute(key: string): any
 setAttribute(key: string, value: any): void
 fill(data: object): void
 isDirty(): boolean
 getDirty(): object
 
-// Sauvegarde
+// Backup
 async save(): Promise<void>
 
 // Suppression
@@ -181,13 +181,13 @@ async destroy(): Promise<void>
 async forceDelete(): Promise<void>
 async restore(): Promise<void>
 
-// Relations
+// Relationships
 async load(...relations: string[]): Promise<void>
 
 // Validation
 validate(): ValidationResult
 
-// Sérialisation
+// Serialization
 toJSON(): object
 ```
 
@@ -195,12 +195,12 @@ toJSON(): object
 
 ## QueryBuilder
 
-Constructeur de requêtes SQL.
+SQL query builder.
 
-### Méthodes
+### Methods
 
 ```javascript
-// Sélection
+// Selection
 select(...columns: string[]): QueryBuilder
 distinct(): QueryBuilder
 
@@ -216,23 +216,23 @@ whereNotBetween(column: string, min: any, max: any): QueryBuilder
 whereLike(column: string, pattern: string): QueryBuilder
 whereRaw(sql: string, bindings?: any[]): QueryBuilder
 
-// Jointures
+// Joins
 join(table: string, col1: string, operator: string, col2: string): QueryBuilder
 leftJoin(table: string, col1: string, operator: string, col2: string): QueryBuilder
 rightJoin(table: string, col1: string, operator: string, col2: string): QueryBuilder
 
-// Tri et groupement
+// Sorting and grouping
 orderBy(column: string, direction?: 'asc' | 'desc'): QueryBuilder
 groupBy(...columns: string[]): QueryBuilder
 having(column: string, operator: string, value: any): QueryBuilder
 
-// Limite
+// Limit
 limit(n: number): QueryBuilder
 take(n: number): QueryBuilder
 offset(n: number): QueryBuilder
 skip(n: number): QueryBuilder
 
-// Relations
+// Relationships
 with(...relations: string[]): QueryBuilder
 
 // Soft Deletes
@@ -242,7 +242,7 @@ onlyTrashed(): QueryBuilder
 // Scopes
 scope(...names: string[]): QueryBuilder
 
-// Exécution
+// Execution
 async get(): Promise<Model[]>
 async first(): Promise<Model | null>
 async find(id: any): Promise<Model | null>
@@ -270,9 +270,9 @@ toSQL(): { sql: string, bindings: any[] }
 
 ## DatabaseConnection
 
-Gestion de la connexion à la base de données.
+Database connection management.
 
-### Configuration
+### Setup
 
 ```javascript
 const config = {
@@ -291,7 +291,7 @@ const config = {
   user: 'postgres',
   password: '',
   database: 'mydb',
-  poolSize: 10,  // Taille du pool
+  poolSize: 10,  // Pool size
   
   // SQLite
   driver: 'sqlite',
@@ -299,7 +299,7 @@ const config = {
 };
 ```
 
-### Méthodes statiques
+### Static methods
 
 ```javascript
 // Singleton
@@ -307,14 +307,14 @@ static getInstance(): DatabaseConnection
 static setInstance(db: DatabaseConnection): void
 ```
 
-### Méthodes d'instance
+### Instance methods
 
 ```javascript
 // Connexion
 async connect(): Promise<void>
 async close(): Promise<void>
 
-// Requêtes
+// Queries
 async query(sql: string, params?: any[]): Promise<any>
 async raw(sql: string, params?: any[]): Promise<any>
 
@@ -330,7 +330,7 @@ disableQueryLog(): void
 getQueryLog(): QueryLogEntry[]
 flushQueryLog(): void
 
-// Sécurité
+// Security
 sanitizeIdentifier(identifier: string): string
 ```
 
@@ -344,13 +344,13 @@ interface QueryLogEntry {
 }
 
 interface Transaction {
-  // Dépend du driver
+  // Depends on driver
 }
 ```
 
 ---
 
-## Relations
+## Relationships
 
 ### HasOne
 
@@ -377,7 +377,7 @@ hasMany(
 ```javascript
 belongsTo(
   RelatedModel: typeof Model,
-  foreignKey?: string,  // Clé sur ce modèle
+  foreignKey?: string,  // Key on this model
   ownerKey?: string     // default: id
 ): BelongsToRelation
 ```
@@ -401,8 +401,8 @@ belongsToMany(
 hasManyThrough(
   FinalModel: typeof Model,
   IntermediateModel: typeof Model,
-  firstKey: string,     // Clé sur intermédiaire
-  secondKey: string,    // Clé sur final
+  firstKey: string,     // Key on intermediate
+  secondKey: string,    // Key on final
   localKey?: string,
   secondLocalKey?: string
 ): HasManyThroughRelation
@@ -426,7 +426,7 @@ hasOneThrough(
 ```javascript
 morphOne(
   RelatedModel: typeof Model,
-  name: string  // Préfixe des colonnes {name}_type, {name}_id
+  name: string  // Column prefix {name}_type, {name}_id
 ): MorphOneRelation
 ```
 
@@ -496,7 +496,7 @@ const {
   QueryBuilder,
   DatabaseConnection,
   
-  // Relations
+  // Relationships
   Relation,
   HasOneRelation,
   HasManyRelation,

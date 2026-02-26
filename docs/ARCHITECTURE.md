@@ -1,31 +1,31 @@
-# Architecture du Code
+# Code Architecture
 
-Ce document décrit l'architecture et la structure du code de l'ORM Outlet ORM.
+This document describes the architecture and code structure of the Outlet ORM ORM.
 
-## Structure du Projet Utilisateur (Architecture en Couches)
+## Structure of the User Project (Layered Architecture)
 
-Voici la structure recommandée pour un projet utilisant Outlet ORM, basée sur le pattern **Architecture en Couches** :
+Here is the recommended structure for a project using Outlet ORM, based on the **Layered Architecture** pattern:
 
-> 🔐 **Sécurité** : Voir le [Guide de Sécurité](SECURITY.md) pour les bonnes pratiques.
+> 🔐 **Security**: See [Security Guide](SECURITY.md) for best practices.
 
 ```
 mon-projet/
-├── .env                           # ⚠️ JAMAIS commité (dans .gitignore)
+├── .env                           # ⚠️ NEVER commit (in .gitignore)
 ├── .env.example                   # Template sans secrets
 ├── .gitignore
 ├── package.json
 ├── src/
 │   ├── index.js                   # Point d'entrée
-│   ├── controllers/               # 🎮 Couche Présentation
+│   ├── controllers/               # 🎮 Presentation Layer
 │   │   ├── UserController.js
 │   │   └── PostController.js
-│   ├── services/                  # ⚙️ Couche Métier (Business Logic)
+│   ├── services/                  # ⚙️ Business Layer
 │   │   ├── UserService.js
 │   │   └── PostService.js
-│   ├── repositories/              # 📦 Couche Accès Données
+│   ├── repositories/              # 📦 Data Access Layer
 │   │   ├── UserRepository.js
 │   │   └── PostRepository.js
-│   ├── models/                    # 📊 Couche Modèles (outlet-orm)
+│   ├── models/                    # 📊 Models Layer (outlet-orm)
 │   │   ├── User.js
 │   │   ├── Post.js
 │   │   └── index.js
@@ -56,7 +56,7 @@ mon-projet/
     └── integration/
 ```
 
-### Flux de l'Architecture en Couches
+### Layered Architecture Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -64,7 +64,7 @@ mon-projet/
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  🛤️ ROUTES          Routage vers le bon controller          │
+│  🛤️ ROUTES          Routing to the correct controller          │
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -72,7 +72,7 @@ mon-projet/
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  🎮 CONTROLLERS      Gestion HTTP (req/res) uniquement      │
+│  🎮 CONTROLLERS      HTTP handling only (req/res)      │
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -92,22 +92,22 @@ mon-projet/
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Responsabilités par Couche
+### Responsibilities by Layer
 
-| Couche | Fichiers | Responsabilité | Sécurité |
+| Layer | Files | Responsibility | Security |
 |--------|----------|----------------|----------|
-| **Controllers** | `src/controllers/` | HTTP uniquement (req/res) | Validation entrée |
-| **Services** | `src/services/` | Logique métier, règles | Autorisation |
-| **Repositories** | `src/repositories/` | Abstraction BDD, requêtes | Sanitization |
-| **Models** | `src/models/` | Structure données, relations | Fillable/Hidden |
-| **Middlewares** | `src/middlewares/` | Auth, validation, erreurs | 🔒 **Critique** |
-| **Config** | `src/config/` | Variables d'environnement | 🔒 Lit .env |
-| **Utils** | `src/utils/` | Hash, tokens, helpers | 🔒 Ne pas exposer |
+| **Controllers** |`src/controllers/`| HTTP only (req/res) | Entry validation |
+| **Services** |`src/services/`| Business logic, rules | Authorisation |
+| **Repositories** |`src/repositories/`| Database abstraction, queries | Sanitisation |
+| **Models** |`src/models/`| Data structure, relationships | Fillable/Hidden |
+| **Middlewares** |`src/middlewares/`| Auth, validation, errors | 🔒 **Critical** |
+| **Config** |`src/config/`| Environment Variables | 🔒 Reads .env |
+| **Utils** |`src/utils/`| Hash, tokens, helpers | 🔒 Do not expose |
 
-### Exemple d'Implémentation
+### Implementation Example
 
 ```javascript
-// src/models/User.js - Couche Modèle
+// src/models/User.js - Model Layer
 const { Model } = require('outlet-orm');
 
 class User extends Model {
@@ -117,7 +117,7 @@ class User extends Model {
 }
 module.exports = User;
 
-// src/repositories/UserRepository.js - Couche Repository
+// src/repositories/UserRepository.js - Repository layer
 const User = require('../models/User');
 
 class UserRepository {
@@ -141,13 +141,13 @@ class UserRepository {
 }
 module.exports = new UserRepository();
 
-// src/services/UserService.js - Couche Service
+// src/services/UserService.js - Service Layer
 const userRepository = require('../repositories/UserRepository');
 const bcrypt = require('bcrypt');
 
 class UserService {
   async register(data) {
-    // Logique métier : validation, hash password
+    // Business logic: validation, hash password
     const existing = await userRepository.findByEmail(data.email);
     if (existing) throw new Error('Email déjà utilisé');
     
@@ -165,7 +165,7 @@ class UserService {
 }
 module.exports = new UserService();
 
-// src/controllers/UserController.js - Couche Controller
+// src/controllers/UserController.js - Controller layer
 const userService = require('../services/UserService');
 
 class UserController {
@@ -184,7 +184,7 @@ class UserController {
       if (!user) {
         return res.status(401).json({ success: false, message: 'Identifiants invalides' });
       }
-      // Générer JWT token...
+      // Generate JWT token...
       res.json({ success: true, user, token: '...' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -194,7 +194,7 @@ class UserController {
 module.exports = new UserController();
 ```
 
-## Structure Interne de l'ORM
+## Internal structure of the ORM
 
 ```
 src/
@@ -210,102 +210,102 @@ src/
     └── BelongsToManyRelation.js # Relation Many-to-Many
 ```
 
-## Composants Principaux
+## Main Components
 
 ### Model.js
 
-La classe `Model` est le cœur de l'ORM. Elle implémente le pattern Active Record où chaque instance représente une ligne de la base de données.
+The class`Model`is the heart of ORM. It implements the Active Record pattern where each instance represents a row in the database.
 
-**Responsabilités :**
-- Gestion des attributs du modèle
+**Responsibilities:**
+- Management of model attributes
 - Opérations CRUD (Create, Read, Update, Delete)
-- Casting des types
-- Gestion des timestamps
-- Mass assignment avec protection fillable
-- Relations entre modèles
-- Conversion JSON avec attributs cachés
+- Casting of types
+- Timestamp management
+- Mass assignment with fillable protection
+- Relationships between models
+- JSON conversion with hidden attributes
 
-**Propriétés statiques :**
-- `table` : Nom de la table
-- `primaryKey` : Clé primaire (défaut: 'id')
-- `timestamps` : Active/désactive les timestamps automatiques
-- `fillable` : Attributs autorisés pour l'assignation en masse
-- `hidden` : Attributs cachés lors de la sérialisation JSON
-- `casts` : Types de casting pour les attributs
-- `connection` : Instance de connexion à la base de données
+**Static properties:**
+-`table`: Table name
+-`primaryKey`: Primary key (default: 'id')
+-`timestamps`: Enables/disables automatic timestamps
+-`fillable`: Attributes allowed for mass assignment
+-`hidden`: Hidden attributes during JSON serialization
+-`casts`: Casting types for attributes
+-`connection`: Database connection instance
 
 ### QueryBuilder.js
 
-Le `QueryBuilder` construit et exécute des requêtes SQL de manière fluide et chainable.
+THE`QueryBuilder`builds and executes SQL queries in a smooth and chainable manner.
 
-**Responsabilités :**
-- Construction de requêtes SQL
+**Responsibilities:**
+- Construction of SQL queries
 - Clauses WHERE, ORDER BY, LIMIT, OFFSET
 - Joins
-- Eager loading des relations
+- Eager loading of relationships
 - Pagination
 - Agrégation (count, exists)
 
-**Méthodes principales :**
-- `where()`, `whereIn()`, `whereNull()`, etc. : Filtrage
-- `orderBy()` : Tri
-- `limit()`, `offset()` : Limitation
-- `get()`, `first()`, `paginate()` : Exécution
-- `with()` : Eager loading
+**Main methods:**
+-`where()`,`whereIn()`,`whereNull()`, etc. : Filtering
+-`orderBy()`: Tri
+-`limit()`,`offset()`: Limitation
+-`get()`,`first()`,`paginate()`: Execution
+-`with()`: Eager loading
 
 ### DatabaseConnection.js
 
-Gère les connexions aux différentes bases de données (MySQL, PostgreSQL, SQLite).
+Manages connections to different databases (MySQL, PostgreSQL, SQLite).
 
-**Responsabilités :**
-- Établir et gérer les connexions
-- Exécuter les requêtes SQL
-- Adapter les requêtes pour chaque driver
-- Pooling de connexions (MySQL)
-- Transactions (à venir)
+**Responsibilities:**
+- Establish and manage connections
+- Execute SQL queries
+- Adapt the requests for each driver
+- Connection pooling (MySQL)
+- Transactions (to come)
 
-**Méthodes principales :**
-- `connect()` : Établit la connexion
-- `select()`, `insert()`, `update()`, `delete()` : Opérations CRUD
-- `count()` : Comptage
-- `executeRawQuery()` : Exécution SQL brute
-- `close()` : Fermeture de la connexion
+**Main methods:**
+-`connect()`: Establishes the connection
+-`select()`,`insert()`,`update()`,`delete()`: CRUD operations
+-`count()`: Counting
+-`executeRawQuery()`: Raw SQL execution
+-`close()`: Closing the connection
 
-### Relations
+### Relationships
 
 #### Relation.js
-Classe de base abstraite pour toutes les relations.
+Abstract base class for all relationships.
 
 #### HasOneRelation.js
-Implémente la relation one-to-one où le parent possède un enfant.
+Implements the one-to-one relationship where the parent owns a child.
 
-**Exemple :** User -> Profile
+**Example:** User -> Profile
 
 #### HasManyRelation.js
-Implémente la relation one-to-many où le parent possède plusieurs enfants.
+Implements the one-to-many relationship where the parent has multiple children.
 
-**Exemple :** User -> Posts
+**Example:** User -> Posts
 
 #### BelongsToRelation.js
-Implémente la relation inverse où l'enfant appartient au parent.
+Implements the inverse relationship where the child belongs to the parent.
 
-**Exemple :** Post -> User (author)
+**Example:** Post -> User (author)
 
 #### BelongsToManyRelation.js
-Implémente la relation many-to-many via une table pivot.
+Implements the many-to-many relationship via a pivot table.
 
-**Exemple :** User <-> Roles (via user_roles)
+**Example:** User <-> Roles (via user_roles)
 
-## Flux de Données
+## Data Flow
 
-### Création d'un Enregistrement
+### Creating a Record
 
 ```
 User.create(data)
   ↓
 new User(data)
   ↓
-user.fill(data) // Vérifie fillable
+user.fill(data) // Check fillable
   ↓
 user.save()
   ↓
@@ -316,7 +316,7 @@ connection.insert(table, data)
 Base de données
 ```
 
-### Requête Simple
+### Simple Query
 
 ```
 User.where('status', 'active').get()
@@ -331,7 +331,7 @@ queryBuilder.get()
   ↓
 connection.select(table, query)
   ↓
-queryBuilder.hydrate(rows) // Crée des instances Model
+queryBuilder.hydrate(rows) // Creates Model instances
   ↓
 Retourne Array<User>
 ```
@@ -345,7 +345,7 @@ queryBuilder.with('posts')
   ↓
 queryBuilder.get()
   ↓
-connection.select(table, query) // Récupère les users
+connection.select(table, query) // Get the users
   ↓
 queryBuilder.eagerLoadRelations(users)
   ↓
@@ -358,78 +358,78 @@ Pour chaque relation:
     Assigne les posts à chaque user.relations.posts
 ```
 
-## Patterns de Conception
+## Design Patterns
 
 ### Active Record
-Le modèle combine les données et la logique métier dans une seule classe.
+The model combines data and business logic into a single class.
 
 ### Builder Pattern
-Le QueryBuilder utilise le pattern builder pour construire des requêtes de manière fluide.
+The QueryBuilder uses the pattern builder to build queries fluidly.
 
 ### Strategy Pattern
-DatabaseConnection adapte les requêtes selon le driver de base de données.
+DatabaseConnection adapts queries according to the database driver.
 
 ### Lazy Loading vs Eager Loading
-- **Lazy Loading** : Les relations sont chargées à la demande
-- **Eager Loading** : Les relations sont chargées en une seule requête optimisée
+- **Lazy Loading**: Relations are loaded on demand
+- **Eager Loading**: Relations are loaded in a single optimised query
 
-## Extensibilité
+## Extensibility
 
-### Créer un Nouveau Type de Cast
+### Create a New Cast Type
 
 ```javascript
-// Dans Model.js, méthode castAttribute()
+// In Model.js, castAttribute() method
 case 'custom_type':
   return customTransformation(value);
 ```
 
-### Ajouter un Nouveau Driver
+### Add a New Driver
 
 ```javascript
-// Dans DatabaseConnection.js
+// In DatabaseConnection.js
 case 'mongodb':
   await this.connectMongoDB();
   break;
 ```
 
-### Créer une Nouvelle Relation
+### Create a New Relationship
 
 ```javascript
-// Créer HasManyThroughRelation.js
+// Create HasManyThroughRelation.js
 class HasManyThroughRelation extends Relation {
-  // Implémenter la logique
+  // Implement the logic
 }
 ```
 
-## Optimisations
+## Optimizations
 
-### Pooling de Connexions
-MySQL utilise le pooling automatiquement via `mysql2/promise`.
+### Connection Pooling
+MySQL uses pooling automatically via`mysql2/promise`.
 
 ### Eager Loading
-Réduit le problème N+1 en chargeant les relations en bulk.
+Reduces the N+1 problem by loading relationships in bulk.
 
 ### Query Building
-Les requêtes sont construites en mémoire avant l'exécution, permettant l'optimisation.
+Queries are constructed in memory before execution, allowing optimisation.
 
-## Points d'Amélioration Futurs
+## Future Improvement Points
 
-- Support des transactions
+- Transaction support
 - Query caching
 - Soft deletes
 - Observers/Events
 - Migration system
 - Schema builder
-- Validation intégrée
-- Relations polymorphiques
+- Integrated validation
+- Polymorphic relationships
 
 ## Tests
 
-Les tests sont organisés par composant :
-- `tests/Model.test.js` : Tests du modèle
-- `tests/DatabaseConnection.test.js` : Tests de connexion
-- Plus de tests à venir pour les relations
+The tests are organised by component:
+-`tests/Model.test.js`: Model testing
+-`tests/DatabaseConnection.test.js`: Connection tests
+- More tests coming for relationships
 
 ## Contribution
 
-Pour contribuer, veuillez lire [CONTRIBUTING.md](../CONTRIBUTING.md).
+To contribute, please read [CONTRIBUTING.md](../CONTRIBUTING.md).

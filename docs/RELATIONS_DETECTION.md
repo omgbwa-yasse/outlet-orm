@@ -1,20 +1,20 @@
-# Détection Automatique des Relations
+# Automatic Relationship Detection
 
-Le convertisseur SQL d'Outlet ORM analyse intelligemment votre schéma de base de données pour générer **automatiquement** toutes les relations entre vos modèles.
+Outlet ORM's SQL Converter intelligently analyzes your database schema to **automatically** generate all relationships between your models.
 
-> 📁 **Génération** : Les modèles générés vont dans `models/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Generation**: The generated models go into`models/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
 
-## 🎯 Types de Relations Détectées
+## 🎯 Types of Relationships Detected
 
-### 1. **belongsTo** (Appartient à)
+### 1. **belongsTo** (Belongs To)
 
-Détectée automatiquement lorsqu'une table contient une clé étrangère.
+Automatically detected when a table contains a foreign key.
 
-**Détection :**
-- Colonne se terminant par `_id` (ex: `user_id`, `category_id`)
-- Clause `FOREIGN KEY` explicite
+**Detection:**
+- Column ending with`_id`(ex:`user_id`,`category_id`)
+- Clause`FOREIGN KEY`explicit
 
-**Exemple SQL :**
+**SQL example:**
 ```sql
 CREATE TABLE posts (
   id INT PRIMARY KEY,
@@ -23,9 +23,9 @@ CREATE TABLE posts (
 );
 ```
 
-**Relation générée :**
+**Generated relationship:**
 ```javascript
-// Dans Post.js
+// In Post.js
 user() {
   return this.belongsTo(User, 'user_id');
 }
@@ -33,14 +33,14 @@ user() {
 
 ---
 
-### 2. **hasMany** (A plusieurs)
+### 2. **hasMany** (To many)
 
-Détectée automatiquement comme **relation inverse** d'un `belongsTo`.
+Automatically detected as **inverse relationship** of a`belongsTo`.
 
-**Détection :**
-- Lorsqu'une autre table fait référence à cette table via une clé étrangère **non-unique**
+**Detection:**
+- When another table refers to this table via a **non-unique** foreign key
 
-**Exemple SQL :**
+**SQL example:**
 ```sql
 -- Table users
 CREATE TABLE users (
@@ -48,7 +48,7 @@ CREATE TABLE users (
   name VARCHAR(255)
 );
 
--- Table posts référence users
+-- Table posts reference users
 CREATE TABLE posts (
   id INT PRIMARY KEY,
   user_id INT NOT NULL,
@@ -56,14 +56,14 @@ CREATE TABLE posts (
 );
 ```
 
-**Relations générées :**
+**Relationships generated:**
 ```javascript
-// Dans Post.js
+// In Post.js
 user() {
   return this.belongsTo(User, 'user_id');
 }
 
-// Dans User.js (généré automatiquement!)
+// In User.js (automatically generated!)
 posts() {
   return this.hasMany(Post, 'user_id');
 }
@@ -71,15 +71,15 @@ posts() {
 
 ---
 
-### 3. **hasOne** (A un seul)
+### 3. **hasOne**
 
-Détectée automatiquement lorsque la clé étrangère a une **contrainte UNIQUE**.
+Automatically detected when the foreign key has a **UNIQUE constraint**.
 
-**Détection :**
-- Clé étrangère avec `UNIQUE` constraint
-- Relation inverse où une seule instance peut exister
+**Detection:**
+- Foreign key with`UNIQUE`constraint
+- Inverse relationship where only one instance can exist
 
-**Exemple SQL :**
+**SQL example:**
 ```sql
 CREATE TABLE profiles (
   id INT PRIMARY KEY,
@@ -89,14 +89,14 @@ CREATE TABLE profiles (
 );
 ```
 
-**Relations générées :**
+**Relationships generated:**
 ```javascript
-// Dans Profile.js
+// In Profile.js
 user() {
   return this.belongsTo(User, 'user_id');
 }
 
-// Dans User.js (généré automatiquement!)
+// In User.js (automatically generated!)
 profile() {
   return this.hasOne(Profile, 'user_id');
 }
@@ -104,16 +104,16 @@ profile() {
 
 ---
 
-### 4. **belongsToMany** (Plusieurs à plusieurs)
+### 4. **belongsToMany** (Many to Many)
 
-Détectée automatiquement via l'analyse de **tables pivot**.
+Automatically detected via analysis of **pivot tables**.
 
-**Détection d'une table pivot :**
-- Exactement **2 clés étrangères**
-- Aucune autre colonne (sauf `id`, `created_at`, `updated_at`)
-- Généralement nommée `table1_table2` (ex: `post_tag`)
+**Detection of a pivot table:**
+- Exactly **2 foreign keys**
+- No other column (except`id`,`created_at`,`updated_at`)
+- Generally named`table1_table2`(ex:`post_tag`)
 
-**Exemple SQL :**
+**SQL example:**
 ```sql
 -- Table posts
 CREATE TABLE posts (
@@ -138,14 +138,14 @@ CREATE TABLE post_tag (
 );
 ```
 
-**Relations générées :**
+**Relationships generated:**
 ```javascript
-// Dans Post.js (généré automatiquement!)
+// In Post.js (automatically generated!)
 tags() {
   return this.belongsToMany(Tag, 'post_tag', 'post_id', 'tag_id');
 }
 
-// Dans Tag.js (généré automatiquement!)
+// In Tag.js (automatically generated!)
 posts() {
   return this.belongsToMany(Post, 'post_tag', 'tag_id', 'post_id');
 }
@@ -153,13 +153,13 @@ posts() {
 
 ---
 
-## 🔍 Fonctionnalités Avancées
+## 🔍 Advanced Features
 
-### Relations Récursives (Auto-relations)
+### Recursive Relations (Self-Relations)
 
-Le système détecte automatiquement les relations où une table référence elle-même.
+The system automatically detects relationships where a table references itself.
 
-**Exemple : Catégories avec sous-catégories**
+**Example: Categories with subcategories**
 
 ```sql
 CREATE TABLE categories (
@@ -170,23 +170,23 @@ CREATE TABLE categories (
 );
 ```
 
-**Relations générées :**
+**Relationships generated:**
 ```javascript
-// Dans Category.js
+// In Category.js
 parent() {
   return this.belongsTo(Category, 'parent_id');
 }
 
-categories() {  // Sous-catégories
+categories() {  // Subcategories
   return this.hasMany(Category, 'parent_id');
 }
 ```
 
-### Relations Multiples vers la Même Table
+### Multiple Relations to the Same Table
 
-Une table peut avoir plusieurs clés étrangères vers la même table.
+A table can have multiple foreign keys to the same table.
 
-**Exemple : Articles avec auteur et éditeur**
+**Example: Articles with author and editor**
 
 ```sql
 CREATE TABLE posts (
@@ -199,9 +199,9 @@ CREATE TABLE posts (
 );
 ```
 
-**Relations générées :**
+**Relationships generated:**
 ```javascript
-// Dans Post.js
+// In Post.js
 author() {
   return this.belongsTo(User, 'author_id');
 }
@@ -210,19 +210,19 @@ editor() {
   return this.belongsTo(User, 'editor_id');
 }
 
-// Dans User.js
+// In User.js
 posts() {
-  return this.hasMany(Post, 'author_id');  // Articles en tant qu'auteur
+  return this.hasMany(Post, 'author_id');  // Articles as author
 }
 
-// Note: Vous devrez ajouter manuellement la relation editedPosts()
+// Note: You will need to manually add the editedPosts() relationship
 ```
 
 ---
 
-## 📊 Exemple Complet
+## 📊 Full Example
 
-Voici un schéma complet avec toutes les relations :
+Here is a complete diagram with all the relationships:
 
 ```sql
 -- 1. Table roles
@@ -272,14 +272,14 @@ CREATE TABLE post_tag (
 );
 ```
 
-### Modèles Générés Automatiquement
+### Automatically Generated Models
 
 **User.js :**
 ```javascript
 class User extends Model {
   static table = 'users';
 
-  // Relations
+  // Relationships
   role() {
     return this.belongsTo(Role, 'role_id');
   }
@@ -299,7 +299,7 @@ class User extends Model {
 class Role extends Model {
   static table = 'roles';
 
-  // Relations
+  // Relationships
   users() {
     return this.hasMany(User, 'role_id');
   }
@@ -311,7 +311,7 @@ class Role extends Model {
 class Profile extends Model {
   static table = 'profiles';
 
-  // Relations
+  // Relationships
   user() {
     return this.belongsTo(User, 'user_id');
   }
@@ -323,7 +323,7 @@ class Profile extends Model {
 class Post extends Model {
   static table = 'posts';
 
-  // Relations
+  // Relationships
   user() {
     return this.belongsTo(User, 'user_id');
   }
@@ -339,7 +339,7 @@ class Post extends Model {
 class Tag extends Model {
   static table = 'tags';
 
-  // Relations
+  // Relationships
   posts() {
     return this.belongsToMany(Post, 'post_tag', 'tag_id', 'post_id');
   }
@@ -348,28 +348,28 @@ class Tag extends Model {
 
 ---
 
-## ✨ Avantages
+## ✨ Advantages
 
-1. **Gain de temps** : Plus besoin de définir manuellement les relations inverses
-2. **Cohérence** : Les relations sont toujours symétriques et correctes
-3. **Détection intelligente** : Distingue automatiquement `hasOne` et `hasMany`
-4. **Tables pivot** : Détecte et configure automatiquement les relations many-to-many
-5. **Auto-relations** : Gère correctement les relations récursives
+1. **Saves time**: No need to manually define inverse relationships
+2. **Consistency**: Relations are always symmetrical and correct
+3. **Intelligent detection**: Automatically distinguishes`hasOne`et`hasMany`
+4. **Pivot tables**: Automatically detects and configures many-to-many relationships
+5. **Self-Relationships**: Correctly handles recursive relationships
 
 ---
 
-## 🎨 Utilisation
+## 🎨 Usage
 
 ```bash
 outlet-convert
 ```
 
-Lors de la conversion, vous verrez :
+When converting, you will see:
 
 ```
 ✅ 5 table(s) trouvée(s)
 
-🔍 Analyse des relations...
+🔍 Relationship analysis...
 
 ✅ User.js (3 relations)
 ✅ Role.js (1 relation)
@@ -380,23 +380,23 @@ Lors de la conversion, vous verrez :
 ✨ Conversion terminée! 5 modèle(s) créé(s) dans ./models
 ```
 
-Le compteur de relations vous indique combien de méthodes de relation ont été générées pour chaque modèle.
+The relationship counter tells you how many relationship methods have been generated for each model.
 
 ---
 
 ## 🔧 Configuration
 
-### Personnalisation après génération
+### Personalization after generation
 
-Les modèles générés sont des points de départ. Vous pouvez :
+The generated models are starting points. You can :
 
-1. **Renommer les méthodes** de relation pour plus de clarté
-2. **Ajouter des contraintes** aux requêtes de relation
-3. **Définir des relations personnalisées** non détectables automatiquement
+1. **Rename relationship methods** for clarity
+2. **Add constraints** to relationship queries
+3. **Define custom relationships** not automatically detectable
 
-**Exemple :**
+**Example :**
 ```javascript
-// Renommer pour plus de clarté
+// Rename for clarity
 authoredPosts() {
   return this.hasMany(Post, 'author_id');
 }
@@ -405,7 +405,7 @@ editedPosts() {
   return this.hasMany(Post, 'editor_id');
 }
 
-// Ajouter des contraintes
+// Add constraints
 publishedPosts() {
   return this.hasMany(Post, 'user_id')
     .where('status', 'published')
@@ -415,28 +415,28 @@ publishedPosts() {
 
 ---
 
-## 📝 Notes Importantes
+## 📝 Important Notes
 
-1. **Tables pivot** : Ne génèrent pas de modèle si elles ne contiennent que les 2 clés étrangères
-2. **Nommage** : Les méthodes de relation suivent les conventions Laravel :
-   - `belongsTo` → singulier (ex: `user()`, `category()`)
-   - `hasMany` → pluriel (ex: `posts()`, `comments()`)
-   - `hasOne` → singulier (ex: `profile()`)
-   - `belongsToMany` → pluriel (ex: `tags()`, `roles()`)
-3. **Relations polymorphiques** : Non supportées automatiquement, à définir manuellement
+1. **Pivot tables**: Do not generate a model if they only contain the 2 foreign keys
+2. **Naming**: Relationship methods follow Laravel conventions:
+-`belongsTo`→ individually (from:`user()`,`category()`)
+-`hasMany`→ several times (from:`posts()`,`comments()`)
+-`hasOne`→ individually (from:`profile()`)
+-`belongsToMany`→ several times (from:`tags()`,`roles()`)
+3. **Polymorphic relationships**: Not supported automatically, to be defined manually
 
 ---
 
 ## 🧪 Test
 
-Un fichier SQL de test est fourni : `examples/relations-test.sql`
+A test SQL file is provided:`examples/relations-test.sql`
 
-Testez la détection :
+Test detection:
 ```bash
 outlet-convert
-# Choisir option 1
-# Chemin: ./examples/relations-test.sql
-# Dossier: ./test-relations
+# Choose option 1
+# Path: ./examples/relations-test.sql
+# Folder: ./test-relations
 ```
 
-Vérifiez les modèles générés dans `./test-relations` !
+Check the generated models in`./test-relations`!

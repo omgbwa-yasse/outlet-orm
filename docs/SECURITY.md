@@ -1,14 +1,14 @@
-# 🔐 Sécurité Backend
+# 🔐 Backend Security
 
-Ce guide décrit les bonnes pratiques de sécurité pour les applications utilisant Outlet ORM.
+This guide describes security best practices for applications using Outlet ORM.
 
-> ⚠️ **Important** : La structure de dossiers seule ne garantit pas la sécurité. L'implémentation et le respect des bonnes pratiques sont essentiels.
+> ⚠️ **Important**: The folder structure alone does not guarantee security. Implementation and compliance with best practices are essential.
 
-## Structure de Projet Sécurisée
+## Secure Project Structure
 
 ```
 mon-projet/
-├── .env                        # ⚠️ JAMAIS commité (dans .gitignore)
+├── .env                        # ⚠️ NEVER commit (in .gitignore)
 ├── .env.example                # Template sans secrets
 ├── .gitignore                  # Exclure .env, node_modules, logs
 ├── package.json
@@ -43,7 +43,7 @@ mon-projet/
 │   ├── css/
 │   └── js/
 ├── uploads/                    # ⚠️ Fichiers uploadés (validés)
-├── logs/                       # 📋 Journaux (non publics)
+├── logs/                       # 📋 Logs (non publics)
 │   ├── access.log
 │   ├── error.log
 │   └── security.log
@@ -52,40 +52,40 @@ mon-projet/
 └── tests/
 ```
 
-## Checklist de Sécurité
+## Safety Checklist
 
-### 🔴 Priorité Critique
-
-| Action | Description | Status |
-|--------|-------------|--------|
-| `.env` dans `.gitignore` | Ne jamais commiter les secrets | ☐ |
-| Hachage des mots de passe | Bcrypt avec 10+ rounds | ☐ |
-| Protection SQL Injection | Utiliser l'ORM (Outlet protège) | ☐ |
-| Protection XSS | Sanitizer les entrées/sorties | ☐ |
-| HTTPS obligatoire | TLS/SSL en production | ☐ |
-| Validation des entrées | Valider TOUTES les données utilisateur | ☐ |
-
-### 🟠 Priorité Importante
+### 🔴 Critical Priority
 
 | Action | Description | Status |
 |--------|-------------|--------|
-| JWT sécurisé | Expiration courte, refresh token | ☐ |
-| Rate Limiting | Limiter requêtes par IP | ☐ |
-| Headers sécurité | Helmet.js | ☐ |
-| Protection CSRF | Token pour formulaires | ☐ |
-| CORS configuré | Whitelist des origines | ☐ |
+|`.env`In`.gitignore`| Never commit secrets | ☐ |
+| Password hashing | Bcrypt with 10+ rounds | ☐ |
+| SQL Injection Protection | Use ORM (Outlet protects) | ☐ |
+| XSS protection | Sanitize entrances/exits | ☐ |
+| HTTPS required | TLS/SSL in production | ☐ |
+| Input Validation | Validate ALL user data | ☐ |
 
-### 🟡 Recommandé
+### 🟠 Important Priority
 
 | Action | Description | Status |
 |--------|-------------|--------|
-| Logging sécurité | Journaliser accès/erreurs | ☐ |
-| Audit des dépendances | `npm audit` régulier | ☐ |
-| Variables d'environnement | Pas de secrets en dur | ☐ |
+| Secure JWT | Short expiration, refresh token | ☐ |
+| Rate Limiting | Limit requests by IP | ☐ |
+| Security headers | Helmet.js | ☐ |
+| CSRF protection | Token for forms | ☐ |
+| CORS configured | Whitelist of origins | ☐ |
+
+### 🟡 Recommended
+
+| Action | Description | Status |
+|--------|-------------|--------|
+| Security logging | Log access/errors | ☐ |
+| Audit of dependencies |`npm audit`regular | ☐ |
+| Environment Variables | No hard secrets | ☐ |
 
 ---
 
-## Configuration Sécurisée
+## Secure Configuration
 
 ### .gitignore
 
@@ -99,10 +99,10 @@ mon-projet/
 logs/
 *.log
 
-# Uploads non versionnés
+# Unversioned uploads
 uploads/
 
-# Dépendances
+# Dependencies
 node_modules/
 
 # Build
@@ -113,7 +113,7 @@ build/
 ### .env.example
 
 ```env
-# Base de données
+# Database
 DB_DRIVER=mysql
 DB_HOST=localhost
 DB_PORT=3306
@@ -121,7 +121,7 @@ DB_DATABASE=myapp
 DB_USER=your_user
 DB_PASSWORD=your_password
 
-# Sécurité
+# Security
 JWT_SECRET=your_jwt_secret_here
 JWT_EXPIRES_IN=15m
 REFRESH_TOKEN_EXPIRES_IN=7d
@@ -136,9 +136,9 @@ CORS_ORIGIN=http://localhost:3000
 
 ---
 
-## Middlewares de Sécurité
+## Security Middleware
 
-### Installation des dépendances
+### Installing dependencies
 
 ```bash
 npm install helmet express-rate-limit xss-clean hpp bcrypt jsonwebtoken express-validator
@@ -153,7 +153,7 @@ const xss = require('xss-clean');
 const hpp = require('hpp');
 
 module.exports = {
-  // Headers de sécurité HTTP
+  // HTTP security headers
   helmet: helmet({
     contentSecurityPolicy: {
       directives: {
@@ -166,7 +166,7 @@ module.exports = {
     crossOriginEmbedderPolicy: false,
   }),
 
-  // Rate limiting (100 requêtes/15min par IP)
+  // Rate limiting (100 requests/15min per IP)
   rateLimiter: rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100,
@@ -177,19 +177,19 @@ module.exports = {
     legacyHeaders: false,
   }),
 
-  // Rate limiting strict pour auth (5 tentatives/15min)
+  // Strict rate limiting for auth (5 attempts/15min)
   authLimiter: rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5,
     message: {
-      error: 'Trop de tentatives de connexion'
+      error: 'Too many login attempts'
     }
   }),
 
   // Protection XSS
   xss: xss(),
 
-  // Protection pollution paramètres HTTP
+  // HTTP settings pollution protection
   hpp: hpp(),
 };
 ```
@@ -205,7 +205,7 @@ const { User } = require('../models');
  */
 const authenticate = async (req, res, next) => {
   try {
-    // Récupérer le token
+    // Retrieve the token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Token manquant' });
@@ -213,16 +213,16 @@ const authenticate = async (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
 
-    // Vérifier le token
+    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Récupérer l'utilisateur
+    // Recover user
     const user = await User.find(decoded.userId);
     if (!user) {
       return res.status(401).json({ error: 'Utilisateur non trouvé' });
     }
 
-    // Attacher l'utilisateur à la requête
+    // Attach user to query
     req.user = user;
     next();
   } catch (error) {
@@ -264,10 +264,10 @@ const { validationResult } = require('express-validator');
  */
 const validate = (validations) => {
   return async (req, res, next) => {
-    // Exécuter toutes les validations
+    // Run all validations
     await Promise.all(validations.map(validation => validation.run(req)));
 
-    // Vérifier les erreurs
+    // Check for errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -290,13 +290,13 @@ module.exports = { validate };
  * Gestionnaire d'erreurs centralisé
  */
 const errorHandler = (err, req, res, next) => {
-  // Log l'erreur (en production, utiliser un logger comme Winston)
+  // Log the error (in production, use a logger like Winston)
   console.error(`[${new Date().toISOString()}] Error:`, err);
 
-  // Ne pas exposer les détails en production
+  // Do not expose details in production
   const isDev = process.env.NODE_ENV === 'development';
 
-  // Erreurs de validation Outlet ORM
+  // Outlet ORM validation errors
   if (err.name === 'ValidationError') {
     return res.status(400).json({
       error: 'Validation échouée',
@@ -304,14 +304,14 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // Erreur JWT
+  // JWT error
   if (err.name === 'JsonWebTokenError') {
     return res.status(401).json({ error: 'Token invalide' });
   }
 
-  // Erreur par défaut
+  // Default error
   res.status(err.status || 500).json({
-    error: isDev ? err.message : 'Erreur serveur',
+    error: isDev ? err.message : 'Server error',
     stack: isDev ? err.stack : undefined
   });
 };
@@ -321,7 +321,7 @@ module.exports = errorHandler;
 
 ---
 
-## Utilitaires de Sécurité
+## Security Utilities
 
 ### utils/hash.js
 
@@ -331,7 +331,7 @@ const bcrypt = require('bcrypt');
 const SALT_ROUNDS = 12;
 
 /**
- * Hacher un mot de passe
+ * Hash a password
  */
 const hashPassword = async (password) => {
   return bcrypt.hash(password, SALT_ROUNDS);
@@ -389,7 +389,7 @@ module.exports = {
 
 ---
 
-## Application des Middlewares
+## Middleware application
 
 ### src/index.js
 
@@ -402,13 +402,13 @@ const routes = require('./routes');
 
 const app = express();
 
-// 🔒 Middlewares de sécurité (AVANT les routes)
+// 🔒 Security middleware (BEFORE the roads)
 app.use(security.helmet);
 app.use(security.rateLimiter);
 app.use(security.xss);
 app.use(security.hpp);
 
-// CORS configuré
+// CORS configured
 app.use(cors({
   origin: process.env.CORS_ORIGIN,
   credentials: true,
@@ -416,20 +416,20 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Parser JSON avec limite
+// Parse JSON with limit
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// Fichiers statiques (seulement public/)
+// Static files (public only)
 app.use('/static', express.static('public'));
 
 // Routes
 app.use('/api', routes);
 
-// 🔒 Gestionnaire d'erreurs (APRÈS les routes)
+// 🔒 Error handler (AFTER routes)
 app.use(errorHandler);
 
-// Démarrage
+// Startup
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
@@ -438,7 +438,7 @@ app.listen(PORT, () => {
 
 ---
 
-## Exemple de Route Sécurisée
+## Example of Secure Route
 
 ### routes/userRoutes.js
 
@@ -452,7 +452,7 @@ const UserController = require('../controllers/UserController');
 
 const router = express.Router();
 
-// Routes publiques avec rate limiting strict
+// Public roads with strict rate limiting
 router.post('/register',
   security.authLimiter,
   validate([
@@ -472,7 +472,7 @@ router.post('/login',
   UserController.login
 );
 
-// Routes protégées
+// Protected roads
 router.get('/profile',
   authenticate,
   UserController.getProfile
@@ -487,7 +487,7 @@ router.put('/profile',
   UserController.updateProfile
 );
 
-// Routes admin seulement
+// Admin routes only
 router.get('/users',
   authenticate,
   authorize('admin'),
@@ -505,7 +505,7 @@ module.exports = router;
 
 ---
 
-## Modèle User Sécurisé
+## Secure User Model
 
 ### models/User.js
 
@@ -516,7 +516,7 @@ const { hashPassword, verifyPassword } = require('../utils/hash');
 class User extends Model {
   static table = 'users';
   
-  // ⚠️ Ne jamais exposer le mot de passe
+  // ⚠️ Never expose password
   static hidden = ['password', 'refresh_token', 'reset_token'];
   
   static fillable = ['name', 'email', 'password', 'role'];
@@ -547,7 +547,7 @@ class User extends Model {
 
     this.updating(async (user) => {
       const password = user.getAttribute('password');
-      // Hacher seulement si le mot de passe a changé
+      // Hash only if password has changed
       if (password && !password.startsWith('$2b$')) {
         user.setAttribute('password', await hashPassword(password));
       }
@@ -567,37 +567,37 @@ module.exports = User;
 
 ---
 
-## Protection Outlet ORM Intégrée
+## Integrated ORM Outlet Protection
 
-Outlet ORM fournit déjà plusieurs protections :
+Outlet ORM already provides several protections:
 
 ### ✅ Protection SQL Injection
 
 ```javascript
-// ✅ Sécurisé - Paramètres échappés automatiquement
+// ✅ Secure – Parameters escaped automatically
 const users = await User.where('email', userInput).get();
 
-// ✅ Sécurisé - whereIn avec tableau
+// ✅ Secure - whereIn with table
 const users = await User.whereIn('id', [1, 2, 3]).get();
 
-// ⚠️ Attention avec whereRaw - échapper manuellement
+// ⚠️ Be careful with whereRaw - escape manually
 const users = await User.whereRaw('email = ?', [userInput]).get();
 ```
 
 ### ✅ Mass Assignment Protection
 
 ```javascript
-// ✅ Seuls les champs fillable sont assignés
+// ✅ Only fillable fields are assigned
 const user = await User.create(req.body);
 
-// ✅ Les champs sensibles sont ignorés
-static fillable = ['name', 'email']; // 'role' exclu = non modifiable
+// ✅ Sensitive fields are ignored
+static fillable = ['name', 'email']; // 'role' excluded = not modifiable
 ```
 
-### ✅ Attributs Cachés
+### ✅ Hidden Attributes
 
 ```javascript
-// ✅ Mot de passe jamais exposé dans JSON
+// ✅ Password never exposed in JSON
 static hidden = ['password'];
 
 const user = await User.find(1);
@@ -606,9 +606,9 @@ console.log(user.toJSON()); // { id: 1, name: "John", email: "..." }
 
 ---
 
-## Prochaines étapes
+## Next steps
 
-- [Installation](INSTALLATION.md) - Configuration initiale
-- [Validation](VALIDATION.md) - Règles de validation
-- [Transactions](TRANSACTIONS.md) - Opérations atomiques
-- [Events](EVENTS.md) - Hooks de cycle de vie
+- [Installation](INSTALLATION.md) - Initial configuration
+- [Validation](VALIDATION.md) - Validation rules
+- [Transactions](TRANSACTIONS.md) - Atomic operations
+- [Events](EVENTS.md) - Lifecycle hooks

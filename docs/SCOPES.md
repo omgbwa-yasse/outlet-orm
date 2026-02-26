@@ -1,23 +1,23 @@
 # 🔭 Scopes
 
-Les scopes permettent de définir des contraintes de requête réutilisables sur vos modèles.
+Scopes allow you to define reusable query constraints on your models.
 
-> 📁 **Emplacement** : Définissez vos scopes dans `models/` ou `services/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Location**: Define your scopes in`models/`or`services/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
 >
-> 📘 **TypeScript** : Les scopes sont typés avec `ScopeFunction`. Voir [TYPESCRIPT.md](TYPESCRIPT.md)
+> 📘 **TypeScript**: Scopes are typed with`ScopeFunction`. See [TYPESCRIPT.md](TYPESCRIPT.md)
 
-## Types de Scopes
+## Types of Scopes
 
-| Type | Application | Utilisation |
+| Type | Application | Usage |
 |------|-------------|-------------|
-| **Global Scopes** | Automatique sur toutes les requêtes | Toujours actif |
-| **Local Scopes** | Manuel via `.scope()` | À la demande |
+| **Global Scopes** | Automatic on all queries | Always active |
+| **Local Scopes** | Manuel via`.scope()`| On demand |
 
 ## Global Scopes
 
-Les scopes globaux s'appliquent automatiquement à chaque requête sur le modèle.
+Global scopes automatically apply to every query on the model.
 
-### Définir un global scope
+### Define a global scope
 
 ```javascript
 const { Model } = require('outlet-orm');
@@ -25,7 +25,7 @@ const { Model } = require('outlet-orm');
 class Post extends Model {
   static table = 'posts';
   
-  // Scopes globaux - s'appliquent automatiquement
+  // Global scopes - apply automatically
   static globalScopes = {
     published: (query) => query.where('status', 'published'),
     ordered: (query) => query.orderBy('created_at', 'desc')
@@ -33,10 +33,10 @@ class Post extends Model {
 }
 ```
 
-### Utilisation automatique
+### Automatic use
 
 ```javascript
-// Ces requêtes incluent automatiquement les global scopes
+// These queries automatically include global scopes
 const posts = await Post.all();
 // SQL: SELECT * FROM posts WHERE status = 'published' ORDER BY created_at DESC
 
@@ -47,22 +47,22 @@ const userPosts = await Post.where('user_id', 1).get();
 // SQL: SELECT * FROM posts WHERE user_id = 1 AND status = 'published' ORDER BY created_at DESC
 ```
 
-### Désactiver les global scopes
+### Disable global scopes
 
 ```javascript
-// Désactiver tous les global scopes
+// Disable all global scopes
 const allPosts = await Post.withoutGlobalScopes().get();
 // SQL: SELECT * FROM posts
 
-// Désactiver un scope spécifique (à implémenter selon vos besoins)
+// Disable a specific scope (to be implemented according to your needs)
 const drafts = await Post.where('status', 'draft').withoutGlobalScopes().get();
 ```
 
 ## Local Scopes
 
-Les scopes locaux sont appliqués manuellement via la méthode `.scope()`.
+Local scopes are applied manually via the method`.scope()`.
 
-### Définir des local scopes
+### Define local scopes
 
 ```javascript
 class User extends Model {
@@ -79,18 +79,18 @@ class User extends Model {
 }
 ```
 
-### Utiliser les local scopes
+### Use local scopes
 
 ```javascript
-// Un seul scope
+// A single scope
 const activeUsers = await User.scope('active').get();
 // SQL: SELECT * FROM users WHERE status = 'active'
 
-// Plusieurs scopes
+// Multiple scopes
 const activeAdmins = await User.scope('active', 'admins').get();
 // SQL: SELECT * FROM users WHERE status = 'active' AND role = 'admin'
 
-// Combiner avec d'autres méthodes
+// Combine with other methods
 const recentVerified = await User
   .scope('recent', 'verified')
   .orderBy('created_at', 'desc')
@@ -98,7 +98,7 @@ const recentVerified = await User
   .get();
 ```
 
-## Scopes avec paramètres
+## Scopes with parameters
 
 ### Via closures
 
@@ -107,17 +107,17 @@ class Post extends Model {
   static table = 'posts';
   
   static scopes = {
-    // Scope sans paramètre
+    // Scope without parameter
     published: (query) => query.where('status', 'published'),
     
-    // Scope qui utilise une variable externe
+    // Scope that uses an external variable
     byAuthor: (query, userId) => query.where('user_id', userId),
     
-    // Scope avec plage de dates
+    // Scope with date range
     between: (query, start, end) => query.whereBetween('created_at', start, end)
   };
 
-  // Méthode helper pour scopes paramétrés
+  // Helper method for parameterised scopes
   static byAuthor(userId) {
     return this.where('user_id', userId);
   }
@@ -130,14 +130,14 @@ class Post extends Model {
 }
 ```
 
-### Utilisation
+### Usage
 
 ```javascript
-// Via méthode helper
+// Via helper method
 const johnsPosts = await Post.byAuthor(1).get();
 const weekPosts = await Post.recentDays(7).get();
 
-// Chaînage
+// Chaining
 const johnsRecentPosts = await Post
   .byAuthor(1)
   .recentDays(30)
@@ -145,16 +145,16 @@ const johnsRecentPosts = await Post
   .get();
 ```
 
-## Exemples pratiques
+## Practical examples
 
-### Blog avec visibilité
+### Blog with visibility
 
 ```javascript
 class Article extends Model {
   static table = 'articles';
   
   static globalScopes = {
-    // Exclure les brouillons par défaut
+    // Exclude drafts by default
     notDraft: (query) => query.where('status', '!=', 'draft')
   };
   
@@ -165,7 +165,7 @@ class Article extends Model {
     category: (query, categoryId) => query.where('category_id', categoryId)
   };
   
-  // Méthodes helpers
+  // Helper methods
   static published() {
     return this.scope('published');
   }
@@ -179,12 +179,12 @@ class Article extends Model {
   }
 }
 
-// Utilisation
+// Usage
 const featuredArticles = await Article.featured().limit(5).get();
 const techArticles = await Article.inCategory(3).scope('published').get();
 ```
 
-### E-commerce avec statuts de commande
+### E-commerce with order statuses
 
 ```javascript
 class Order extends Model {
@@ -197,14 +197,14 @@ class Order extends Model {
     cancelled: (query) => query.where('status', 'cancelled'),
     refunded: (query) => query.where('status', 'refunded'),
     
-    // Groupements
+    // Groupings
     active: (query) => query.whereIn('status', ['pending', 'processing']),
     finished: (query) => query.whereIn('status', ['completed', 'cancelled', 'refunded']),
     
-    // Par montant
+    // By amount
     highValue: (query) => query.where('total', '>', 1000),
     
-    // Par date
+    // By date
     today: (query) => {
       const today = new Date().toISOString().split('T')[0];
       return query.where('created_at', '>=', today);
@@ -223,39 +223,39 @@ const todayRevenue = await Order.scope('completed', 'today').sum('total');
 const highValueThisMonth = await Order.scope('highValue', 'thisMonth', 'completed').get();
 ```
 
-### Utilisateurs avec rôles
+### Users with roles
 
 ```javascript
 class User extends Model {
   static table = 'users';
   
   static scopes = {
-    // Par statut
+    // By status
     active: (query) => query.where('status', 'active'),
     inactive: (query) => query.where('status', 'inactive'),
     banned: (query) => query.where('status', 'banned'),
     
-    // Par rôle
+    // By role
     admins: (query) => query.where('role', 'admin'),
     moderators: (query) => query.where('role', 'moderator'),
     users: (query) => query.where('role', 'user'),
     
-    // Par vérification
+    // By verification
     verified: (query) => query.whereNotNull('email_verified_at'),
     unverified: (query) => query.whereNull('email_verified_at'),
     
-    // Par activité
+    // By activity
     recentlyActive: (query) => {
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       return query.where('last_login_at', '>', weekAgo.toISOString());
     },
     
-    // Combinés
+    // Combined
     activeAdmins: (query) => query.where('status', 'active').where('role', 'admin')
   };
 }
 
-// Rapports
+// Reports
 const activeCount = await User.scope('active').count();
 const unverifiedUsers = await User.scope('active', 'unverified').get();
 const adminList = await User.scope('activeAdmins').orderBy('name').get();
@@ -263,7 +263,7 @@ const adminList = await User.scope('activeAdmins').orderBy('name').get();
 
 ## Soft Deletes et Scopes
 
-Les soft deletes agissent comme un scope global automatique :
+Soft deletes act as an automatic global scope:
 
 ```javascript
 class Post extends Model {
@@ -275,16 +275,16 @@ class Post extends Model {
   };
 }
 
-// Exclut automatiquement les supprimés
+// Automatically exclude deleted ones
 const posts = await Post.scope('published').get();
 
-// Inclure les supprimés
+// Include deleted
 const allPosts = await Post.withTrashed().scope('published').get();
 ```
 
-## Bonnes pratiques
+## Best practices
 
-### 1. Nommez clairement vos scopes
+### 1. Clearly name your scopes
 
 ```javascript
 // ✅ Bon
@@ -294,30 +294,30 @@ static scopes = {
   recent: (q) => q.orderBy('created_at', 'desc')
 };
 
-// ❌ Mauvais
+// ❌ Bad
 static scopes = {
   s1: (q) => q.where('status', 'active'),
   doThing: (q) => q.where('published', true)
 };
 ```
 
-### 2. Un scope = une responsabilité
+### 2. A scope = a responsibility
 
 ```javascript
-// ✅ Bon - scopes atomiques
+// ✅ Good - atomic scopes
 static scopes = {
   active: (q) => q.where('status', 'active'),
   verified: (q) => q.whereNotNull('verified_at')
 };
 // Usage: User.scope('active', 'verified')
 
-// ❌ Mauvais - scope trop complexe
+// ❌ Bad - scope too complex
 static scopes = {
   activeAndVerified: (q) => q.where('status', 'active').whereNotNull('verified_at')
 };
 ```
 
-### 3. Utilisez des méthodes pour les scopes paramétrés
+### 3. Use methods for parameterised scopes
 
 ```javascript
 class Post extends Model {
@@ -331,8 +331,8 @@ class Post extends Model {
 }
 ```
 
-## Prochaines étapes
+## Next steps
 
-- [Events](EVENTS.md) - Hooks sur le cycle de vie
-- [Validation](VALIDATION.md) - Valider les données
-- [Query Builder](QUERY_BUILDER.md) - Requêtes avancées
+- [Events](EVENTS.md) - Hooks on the life cycle
+- [Validation](VALIDATION.md) - Validate data
+- [Query Builder](QUERY_BUILDER.md) - Advanced queries

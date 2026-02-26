@@ -1,37 +1,37 @@
 # 🔍 Query Builder
 
-Le Query Builder d'Outlet ORM offre une interface fluide pour construire des requêtes SQL.
+Outlet ORM's Query Builder offers a fluid interface for building SQL queries.
 
-> 📁 **Utilisation** : Dans vos fichiers `models/`, `controllers/`, `services/` ou `src/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Use**: In your files`models/`,`controllers/`,`services/`or`src/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
 >
-> 📘 **TypeScript** : Le type `WhereOperator` définit tous les opérateurs disponibles. Voir [TYPESCRIPT.md](TYPESCRIPT.md)
+> 📘 **TypeScript**: The type`WhereOperator`defines all available operators. See [TYPESCRIPT.md](TYPESCRIPT.md)
 
-## Utilisation de base
+## Basic Usage
 
 ```javascript
 const { Model } = require('outlet-orm');
 
-// Via un modèle (recommandé)
+// Via a template (recommended)
 const users = await User.query()
   .where('status', 'active')
   .get();
 
-// Ou avec QueryBuilder directement (avancé)
+// Or with QueryBuilder directly (advanced)
 const { QueryBuilder } = require('outlet-orm');
 const db = Model.getConnection();
 const qb = new QueryBuilder(db, 'users');
 ```
 
-## Sélection de colonnes
+## Column selection
 
 ```javascript
-// Toutes les colonnes
+// All columns
 const users = await User.select('*').get();
 
-// Colonnes spécifiques
+// Specific columns
 const users = await User.select('id', 'name', 'email').get();
 
-// Avec alias
+// With alias
 const users = await User.select('id', 'name AS username').get();
 
 // RAW expression
@@ -43,16 +43,16 @@ const users = await User.select('*', 'COUNT(*) as total').get();
 ### Where simple
 
 ```javascript
-// Égalité
+// Equality
 User.where('status', 'active');
 User.where('status', '=', 'active');
 
-// Comparaisons
+// Comparisons
 User.where('age', '>', 18);
 User.where('price', '<=', 100);
 User.where('email', '!=', 'spam@example.com');
 
-// Chaîner plusieurs where (AND)
+// Chain multiple where (AND)
 User.where('status', 'active').where('role', 'admin');
 ```
 
@@ -113,7 +113,7 @@ User.whereRaw('YEAR(created_at) = ?', [2024]);
 User.whereRaw('age > ? AND age < ?', [18, 65]);
 ```
 
-### Where groupé
+### Where grouped
 
 ```javascript
 User.where('status', 'active')
@@ -124,48 +124,48 @@ User.where('status', 'active')
 // WHERE status = 'active' AND (role = 'admin' OR role = 'moderator')
 ```
 
-## Tri et ordre
+## Try an order
 
 ```javascript
-// Ordre ascendant
+// Ascending order
 User.orderBy('name', 'asc');
 
-// Ordre descendant
+// Descending order
 User.orderBy('created_at', 'desc');
 
 // Multiple
 User.orderBy('status', 'asc').orderBy('name', 'asc');
 
-// Latest (raccourci pour orderBy created_at desc)
+// Latest (shortcut for orderBy created_at desc)
 User.latest();
 
-// Oldest (raccourci pour orderBy created_at asc)
+// Oldest (shortcut for orderBy created_at asc)
 User.oldest();
 ```
 
-## Limite et offset
+## Limit and offset
 
 ```javascript
-// Limiter le nombre de résultats
+// Limit the number of results
 User.limit(10);
 
-// Offset pour pagination
+// Offset for paging
 User.offset(20);
 
-// Les deux ensemble
-User.limit(10).offset(20); // Page 3 avec 10 par page
+// Both together
+User.limit(10).offset(20); // Page 3 with 10 per page
 
-// Take (alias de limit)
+// Take (aka limit)
 User.take(5);
 
-// Skip (alias de offset)
+// Skip (aka offset)
 User.skip(10);
 ```
 
-## Agrégations
+## Aggregations
 
 ```javascript
-// Compter
+// Count
 const total = await User.where('status', 'active').count();
 
 // Maximum
@@ -177,7 +177,7 @@ const minPrice = await Product.min('price');
 // Somme
 const totalRevenue = await Order.sum('amount');
 
-// Moyenne
+// Average
 const avgRating = await Review.avg('rating');
 ```
 
@@ -197,7 +197,7 @@ const stats = await Order
 const countries = await User.select('country').distinct().get();
 ```
 
-## Jointures
+## Joins
 
 ```javascript
 // Inner Join
@@ -210,64 +210,64 @@ User.leftJoin('profiles', 'users.id', '=', 'profiles.user_id');
 User.rightJoin('departments', 'users.dept_id', '=', 'departments.id');
 ```
 
-## Sous-requêtes
+## Subqueries
 
 ```javascript
-// Where avec sous-requête
+// Where with subquery
 User.whereIn('id', subQuery => {
   return subQuery.select('user_id').from('orders').where('amount', '>', 100);
 });
 ```
 
-## Exécution
+## Execution
 
-### Récupérer les résultats
+### Retrieve results
 
 ```javascript
-// Tous les résultats
+// All results
 const users = await User.where('status', 'active').get();
 
-// Premier résultat
+// First result
 const user = await User.where('email', 'john@example.com').first();
 
 // Par ID
 const user = await User.find(1);
 
-// Tous sans filtres
+// All without filters
 const all = await User.all();
 ```
 
-### Vérifier l'existence
+### Check for existence
 
 ```javascript
 const hasActive = await User.where('status', 'active').exists();
-// true ou false
+// true or false
 
 const isEmpty = await User.where('status', 'deleted').doesntExist();
-// true ou false
+// true or false
 ```
 
-### Récupérer une colonne
+### Retrieve a column
 
 ```javascript
-// Liste d'emails uniquement
+// Email list only
 const emails = await User.pluck('email');
 // ['john@example.com', 'jane@example.com', ...]
 ```
 
-## Mise à jour
+## Update
 
 ```javascript
-// Update en masse
+// Update a lot
 await User.where('status', 'pending')
           .where('created_at', '<', '2024-01-01')
           .update({ status: 'expired' });
 
-// Incrément
+// Increment
 await Product.where('id', 1).increment('views');
 await Product.where('id', 1).increment('views', 10);
 
-// Décrément
+// Decrement
 await Product.where('id', 1).decrement('stock');
 await Product.where('id', 1).decrement('stock', 5);
 ```
@@ -275,16 +275,16 @@ await Product.where('id', 1).decrement('stock', 5);
 ## Suppression
 
 ```javascript
-// Supprimer en masse
+// Bulk Delete
 await User.where('status', 'inactive')
           .where('last_login', '<', '2023-01-01')
           .delete();
 
-// Truncate (supprimer tout)
+// Truncate (remove all)
 await User.truncate();
 ```
 
-## Transactions (voir TRANSACTIONS.md)
+## Transactions (see TRANSACTIONS.md)
 
 ```javascript
 const db = Model.getConnection();
@@ -292,53 +292,53 @@ const db = Model.getConnection();
 await db.transaction(async (trx) => {
   await User.useTransaction(trx).create({ name: 'John' });
   await Profile.useTransaction(trx).create({ user_id: 1 });
-  // Commit automatique si pas d'erreur
+  // Automatic commit if no errors
 });
 ```
 
 ## Debug et logging
 
 ```javascript
-// Obtenir le SQL généré (sans exécuter)
+// Get generated SQL (without executing)
 const sql = User.where('status', 'active').toSQL();
 console.log(sql);
 // { sql: 'SELECT * FROM users WHERE status = ?', bindings: ['active'] }
 ```
 
-## Pagination intégrée
+## Integrated pagination
 
 ```javascript
-// Page 1, 15 éléments par page
+// Page 1, 15 items per page
 const result = await User.paginate(1, 15);
 
-// Résultat
+// Result
 {
-  data: [User, User, ...],   // Modèles de la page
-  total: 150,                // Nombre total
-  per_page: 15,              // Par page
-  current_page: 1,           // Page actuelle
-  last_page: 10,             // Dernière page
-  from: 1,                   // Index début
+  data: [User, User, ...],   // Page Templates
+  total: 150,                // Total name
+  per_page: 15,              // Per page
+  current_page: 1,           // Current page
+  last_page: 10,             // Last page
+  from: 1,                   // Index start
   to: 15                     // Index fin
 }
 ```
 
-## Soft Deletes dans le Query Builder
+## Soft Deletes in Query Builder
 
-Quand un modèle a `softDeletes = true` :
+When a model has`softDeletes = true`:
 
 ```javascript
-// Par défaut, les supprimés sont exclus
+// By default, deleted ones are excluded
 const users = await User.get(); // Exclut deleted_at NOT NULL
 
-// Inclure les supprimés
+// Include deleted
 const allUsers = await User.withTrashed().get();
 
-// Seulement les supprimés
+// Only the deleted ones
 const deletedUsers = await User.onlyTrashed().get();
 ```
 
-## Scopes dans le Query Builder
+## Scopes in Query Builder
 
 ```javascript
 class User extends Model {
@@ -349,12 +349,12 @@ class User extends Model {
   };
 }
 
-// Utiliser les scopes
+// Use scopes
 const users = await User.scope('active', 'verified').get();
 const recentActive = await User.scope('active', 'recent').get();
 ```
 
-## Chaîner les méthodes
+## Chain methods
 
 ```javascript
 const results = await User
@@ -370,8 +370,8 @@ const results = await User
   .get();
 ```
 
-## Prochaines étapes
+## Next steps
 
-- [Relations](RELATIONS.md) - Associations entre modèles
-- [Transactions](TRANSACTIONS.md) - Gestion des transactions
-- [Scopes](SCOPES.md) - Requêtes réutilisables
+- [Relationships](RELATIONS.md) - Model associations
+- [Transactions](TRANSACTIONS.md) - Transaction management
+- [Scopes](SCOPES.md) - Reusable queries

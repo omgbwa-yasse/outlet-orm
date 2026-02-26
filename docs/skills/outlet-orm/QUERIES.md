@@ -1,8 +1,8 @@
 # Outlet ORM - Query Builder
 
-[← Back to Index](SKILL.md) | [Previous: Models](MODELS.md) | [Next: Relations →](RELATIONS.md)
+[← Back to Index](SKILL.md) | [Previous: Models](MODELS.md) | [Next: Relationships →](RELATIONS.md)
 
-> 📘 **TypeScript** : The `WhereOperator` type defines all available operators (`=`, `!=`, `>`, `<`, `LIKE`, etc.). See [TYPESCRIPT.md](TYPESCRIPT.md)
+> 📘 **TypeScript** : The`WhereOperator`type defines all available operators (`=`,`!=`,`>`,`<`,`LIKE`, etc.). See [TYPESCRIPT.md](TYPESCRIPT.md)
 
 ---
 
@@ -285,7 +285,7 @@ await User.where('id', 1).decrement('credits', 50);
 ```javascript
 const db = Model.getConnection();
 
-// Normalized results (cross-database)
+// Normalised results (cross-database)
 const results = await db.executeRawQuery(
   'SELECT * FROM users WHERE age > ?',
   [18]
@@ -304,42 +304,42 @@ const native = await db.execute(
 
 | Method | Description |
 |--------|-------------|
-| `select(...cols)` | Select columns |
-| `columns([...])` | Select columns (alias) |
-| `distinct()` | SELECT DISTINCT |
-| `where(col, op?, val)` | WHERE clause |
-| `orWhere(col, op?, val)` | OR WHERE |
-| `whereIn(col, vals)` | WHERE IN |
-| `whereNotIn(col, vals)` | WHERE NOT IN |
-| `whereNull(col)` | WHERE IS NULL |
-| `whereNotNull(col)` | WHERE IS NOT NULL |
-| `whereBetween(col, [min, max])` | WHERE BETWEEN |
-| `whereLike(col, pattern)` | WHERE LIKE |
-| `orderBy(col, dir?)` | ORDER BY |
-| `limit(n)` / `take(n)` | LIMIT |
-| `offset(n)` / `skip(n)` | OFFSET |
-| `groupBy(...cols)` | GROUP BY |
-| `having(col, op, val)` | HAVING |
-| `join(table, col1, op?, col2)` | INNER JOIN |
-| `leftJoin(table, col1, op?, col2)` | LEFT JOIN |
-| `get()` | Execute and get all |
-| `first()` | Get first result |
-| `firstOrFail()` | First or throw |
-| `find(id)` | Find by ID |
-| `findOrFail(id)` | Find or throw |
-| `paginate(page, perPage)` | Pagination |
-| `count()` | Count results |
-| `exists()` | Check existence |
-| `insert(data)` | Insert record(s) |
-| `update(attrs)` | Update records |
-| `delete()` | Delete records |
-| `increment(col, amount?)` | Atomic increment |
-| `decrement(col, amount?)` | Atomic decrement |
-| `clone()` | Clone query builder |
+|`select(...cols)`| Select columns |
+|`columns([...])`| Select columns (alias) |
+|`distinct()`| SELECT DISTINCT |
+|`where(col, op?, val)`| WHERE clause |
+|`orWhere(col, op?, val)`| OR WHERE |
+|`whereIn(col, vals)`| WHERE IN |
+|`whereNotIn(col, vals)`| WHERE NOT IN |
+|`whereNull(col)`| WHERE IS NULL |
+|`whereNotNull(col)`| WHERE IS NOT NULL |
+|`whereBetween(col, [min, max])`| WHERE BETWEEN |
+|`whereLike(col, pattern)`| WHERE LIKE |
+|`orderBy(col, dir?)`| ORDER BY |
+|`limit(n)`/`take(n)`| LIMIT |
+|`offset(n)`/`skip(n)`| OFFSET |
+|`groupBy(...cols)`| GROUP BY |
+|`having(col, op, val)`| HAVING |
+|`join(table, col1, op?, col2)`| INNER JOIN |
+|`leftJoin(table, col1, op?, col2)`| LEFT JOIN |
+|`get()`| Execute and get all |
+|`first()`| Get first result |
+|`firstOrFail()`| First or throw |
+|`find(id)`| Find by ID |
+|`findOrFail(id)`| Find or throw |
+|`paginate(page, perPage)`| Pagination |
+|`count()`| Count results |
+|`exists()`| Check existence |
+|`insert(data)`| Insert record(s) |
+|`update(attrs)`| Update records |
+|`delete()`| Delete records |
+|`increment(col, amount?)`| Atomic increment |
+|`decrement(col, amount?)`| Atomic decrement |
+|`clone()`| Clone query builder |
 
 ---
 
 ## Next Steps
 
-- [Relations & Eager Loading →](RELATIONS.md)
+- [Relationships & Eager Loading →](RELATIONS.md)
 - [Advanced Features →](ADVANCED.md)

@@ -1,14 +1,14 @@
 # Outlet ORM - Migrations & Schema Builder
 
-[← Back to Index](SKILL.md) | [Previous: Relations](RELATIONS.md) | [Next: Advanced →](ADVANCED.md)
+[← Back to Index](SKILL.md) | [Previous: Relationships](RELATIONS.md) | [Next: Advanced →](ADVANCED.md)
 
-> 📘 **TypeScript** : Use `MigrationInterface`, `SchemaBuilder`, `TableBuilder`, `ColumnBuilder` for type-safe migrations. See [TYPESCRIPT.md](TYPESCRIPT.md#migrations-typées-v400)
+> 📘 **TypeScript** : Use`MigrationInterface`,`SchemaBuilder`,`TableBuilder`,`ColumnBuilder`for type-safe migrations. See [TYPESCRIPT.md](TYPESCRIPT.md#migrations-typées-v400)
 
 ---
 
 ## Project Structure for Migrations (Layered Architecture)
 
-> 🔐 **Security**: Database credentials should be in `.env` (never committed).
+> 🔐 **Security**: Database credentials should be in`.env`(never committed).
 
 ```
 my-project/
@@ -34,15 +34,15 @@ my-project/
 
 ## CLI Commands
 
-### Initialize Project
+### Initialise Project
 
 ```bash
 outlet-init
 ```
 
 Generates:
-- `database/config.js` - Configuration
-- `.env` - Environment variables
+-`database/config.js`- Configuration
+-`.env`- Environment variables
 - Example model
 - Usage file
 
@@ -163,28 +163,28 @@ module.exports = AddPhoneToUsersTable;
 
 | Method | SQL Type |
 |--------|----------|
-| `table.id()` | BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY |
-| `table.string('col', 100)` | VARCHAR(100) |
-| `table.text('col')` | TEXT |
-| `table.integer('col')` | INT |
-| `table.bigInteger('col')` | BIGINT |
-| `table.boolean('col')` | TINYINT(1) |
-| `table.date('col')` | DATE |
-| `table.datetime('col')` | DATETIME |
-| `table.timestamp('col')` | TIMESTAMP |
-| `table.decimal('col', 8, 2)` | DECIMAL(8,2) |
-| `table.float('col', 3, 1)` | FLOAT(3,1) |
-| `table.json('col')` | JSON |
-| `table.enum('col', ['a', 'b'])` | ENUM('a', 'b') |
-| `table.uuid('col')` | CHAR(36) |
+|`table.id()`| BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY |
+|`table.string('col', 100)`| VARCHAR(100) |
+|`table.text('col')`| TEXT |
+|`table.integer('col')`| INT |
+|`table.bigInteger('col')`| BIGINT |
+|`table.boolean('col')`| TINYINT(1) |
+|`table.date('col')`| DATE |
+|`table.datetime('col')`| DATETIME |
+|`table.timestamp('col')`| TIMESTAMP |
+|`table.decimal('col', 8, 2)`| DECIMAL(8,2) |
+|`table.float('col', 3, 1)`| FLOAT(3,1) |
+|`table.json('col')`| JSON |
+|`table.enum('col', ['a', 'b'])`| ENUM('a', 'b') |
+|`table.uuid('col')`| CHAR(36) |
 
 ### Special Types
 
 | Method | Description |
 |--------|-------------|
-| `table.foreignId('user_id')` | BIGINT UNSIGNED (for FKs) |
-| `table.timestamps()` | created_at, updated_at |
-| `table.softDeletes()` | deleted_at (TIMESTAMP NULL) |
+|`table.foreignId('user_id')`| BIGINT UNSIGNED (for FKs) |
+|`table.timestamps()`| created_at, updated_at |
+|`table.softDeletes()`| deleted_at (TIMESTAMP NULL) |
 
 ### Usage Example
 
@@ -316,7 +316,7 @@ await schema.create('users', (table) => {
   // Unique index
   table.unique('email');
 
-  // Fulltext index
+  // Full text index
   table.fullText('bio');
 });
 ```

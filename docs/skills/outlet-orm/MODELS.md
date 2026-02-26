@@ -2,13 +2,13 @@
 
 [← Back to Index](SKILL.md) | [Next: Queries →](QUERIES.md)
 
-> 📘 **TypeScript** : Use `Model<TAttributes>` for typed attributes. See [TYPESCRIPT.md](TYPESCRIPT.md#generic-model-v400)
+> 📘 **TypeScript** : Use`Model<TAttributes>`for typed attributes. See [TYPESCRIPT.md](TYPESCRIPT.md#generic-model-v400)
 
 ---
 
 ## Recommended Project Structure (Layered Architecture)
 
-> 🔐 **Security**: Use `hidden` for sensitive fields, `fillable` for mass assignment protection.
+> 🔐 **Security**: Use`hidden`for sensitive fields,`fillable`for mass assignment protection.
 
 ```
 my-project/
@@ -83,7 +83,7 @@ class User extends Model {
     role: 'in:admin,user,guest'
   };
   
-  // Relations
+  // Relationships
   posts() {
     return this.hasMany(Post, 'user_id');
   }
@@ -100,16 +100,16 @@ class User extends Model {
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `table` | string | **required** | Table name |
-| `primaryKey` | string | `'id'` | Primary key column |
-| `timestamps` | boolean | `true` | Auto-manage created_at/updated_at |
-| `softDeletes` | boolean | `false` | Enable soft delete |
-| `DELETED_AT` | string | `'deleted_at'` | Soft delete column name |
-| `fillable` | array | `[]` | Mass assignable fields |
-| `hidden` | array | `[]` | Hidden from JSON |
-| `casts` | object | `{}` | Type casting definitions |
-| `rules` | object | `{}` | Validation rules |
-| `connection` | object | `null` | Custom DB connection |
+|`table`| string | **required** | Table name |
+|`primaryKey`| string |`'id'`| Primary key column |
+|`timestamps`| boolean |`true`| Auto-manage created_at/updated_at |
+|`softDeletes`| boolean |`false`| Enable soft delete |
+|`DELETED_AT`| string |`'deleted_at'`| Soft delete column name |
+|`fillable`| array |`[]`| Mass assignable fields |
+|`hidden`| array |`[]`| Hidden from JSON |
+|`casts`| object |`{}`| Type casting definitions |
+|`rules`| object |`{}`| Validation rules |
+|`connection`| object |`null`| Custom DB connection |
 
 ---
 
@@ -138,12 +138,12 @@ console.log(user.getAttribute('metadata'));         // Object
 
 | Type | Description |
 |------|-------------|
-| `int` / `integer` | Integer number |
-| `float` / `double` | Floating point number |
-| `boolean` / `bool` | Boolean value |
-| `json` | Parse JSON to object |
-| `array` | Parse JSON to array |
-| `date` | Convert to Date object |
+|`int`/`integer`| Integer number |
+|`float`/`double`| Floating point number |
+|`boolean`/`bool`| Boolean value |
+|`json`| Parse JSON to object |
+|`array`| Parse JSON to array |
+|`date`| Convert to Date object |
 
 ---
 
@@ -397,7 +397,7 @@ await postgresDb.close();
 
 ## Environment Variables
 
-Configure via `.env` file (auto-loaded):
+Configure via`.env`file (auto-loaded):
 
 ```env
 DB_DRIVER=mysql
@@ -410,18 +410,18 @@ DB_PASSWORD=secret
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DB_DRIVER` | `mysql`, `postgres`, `sqlite` | `mysql` |
-| `DB_HOST` | Database host | `localhost` |
-| `DB_PORT` | Connection port | Driver default |
-| `DB_USER` / `DB_USERNAME` | Username | - |
-| `DB_PASSWORD` | Password | - |
-| `DB_DATABASE` / `DB_NAME` | Database name | - |
-| `DB_FILE` / `SQLITE_DB` | SQLite file path | `:memory:` |
+|`DB_DRIVER`|`mysql`,`postgres`,`sqlite`|`mysql`|
+|`DB_HOST`| Database host |`localhost`|
+|`DB_PORT`| Connection port | Driver default |
+|`DB_USER`/`DB_USERNAME`| Username | - |
+|`DB_PASSWORD`| Password | - |
+|`DB_DATABASE`/`DB_NAME`| Database name | - |
+|`DB_FILE`/`SQLITE_DB`| SQLite file path |`:memory:`|
 
 ---
 
 ## Next Steps
 
 - [Query Builder →](QUERIES.md)
-- [Relations →](RELATIONS.md)
+- [Relationships →](RELATIONS.md)
 - [Advanced Features →](ADVANCED.md)

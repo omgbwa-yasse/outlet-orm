@@ -2,7 +2,7 @@
 
 [← Back to Index](SKILL.md) | [Previous: Advanced](ADVANCED.md)
 
-> 🆕 **v5.0.0** : Support complet des generics avec `Model<TAttributes>`, Schema Builder typé, `MigrationInterface`, et architecture en couches recommandée.
+> 🆕 **v5.0.0**: Full support for generics with`Model<TAttributes>`, Typed Schema Builder,`MigrationInterface`, and recommended layered architecture.
 
 ---
 
@@ -10,11 +10,11 @@
 
 | Feature | Description |
 |---------|-------------|
-| **Generic Model** | `Model<TAttributes>` for typed attributes |
+| **Generic Model** |`Model<TAttributes>`for typed attributes |
 | **Type-safe getAttribute** | Returns correct type based on your interface |
 | **Schema Builder** | Complete interfaces for typed migrations |
 | **MigrationInterface** | Standard interface for TypeScript migrations |
-| **ValidationRule** | Extended with `url`, `array`, `integer`, `alpha`, etc. |
+| **ValidationRule** | Extended with`url`,`array`,`integer`,`alpha`, etc. |
 | **ModelEventName** | Union type for all model events |
 | **WhereOperator** | Union type for all comparison operators |
 
@@ -119,7 +119,7 @@ class User extends Model<UserAttributes> {
     updated_at: 'date' as const
   };
 
-  // Typed relations
+  // Typed relationships
   posts(): HasManyRelation<Post> {
     return this.hasMany(Post, 'user_id');
   }
@@ -143,7 +143,7 @@ export default User;
 export type { UserAttributes };
 ```
 
-### Using `as const` for Casts
+### Using`as const`for Casts
 
 ```typescript
 // ✅ CORRECT - Preserves literal types
@@ -189,7 +189,7 @@ async function getPaginatedUsers(page: number) {
 ### Eager Loading with Types
 
 ```typescript
-// Load relations
+// Load relationships
 const users = await User.with('posts', 'profile').get();
 
 // With constraints
@@ -312,15 +312,15 @@ class User extends Model {
 
 | Relation | Return Type | Usage |
 |----------|-------------|-------|
-| `hasOne` | `HasOneRelation<T>` | `this.hasOne(Profile, 'user_id')` |
-| `hasMany` | `HasManyRelation<T>` | `this.hasMany(Post, 'user_id')` |
-| `belongsTo` | `BelongsToRelation<T>` | `this.belongsTo(User, 'user_id')` |
-| `belongsToMany` | `BelongsToManyRelation<T>` | `this.belongsToMany(Role, 'user_roles')` |
-| `hasManyThrough` | `HasManyThroughRelation<T>` | `this.hasManyThrough(Post, User)` |
-| `hasOneThrough` | `HasOneThroughRelation<T>` | `this.hasOneThrough(Owner, Car)` |
-| `morphOne` | `MorphOneRelation<T>` | `this.morphOne(Image, 'imageable')` |
-| `morphMany` | `MorphManyRelation<T>` | `this.morphMany(Comment, 'commentable')` |
-| `morphTo` | `MorphToRelation<T>` | `this.morphTo()` |
+|`hasOne`|`HasOneRelation<T>`|`this.hasOne(Profile, 'user_id')`|
+|`hasMany`|`HasManyRelation<T>`|`this.hasMany(Post, 'user_id')`|
+|`belongsTo`|`BelongsToRelation<T>`|`this.belongsTo(User, 'user_id')`|
+|`belongsToMany`|`BelongsToManyRelation<T>`|`this.belongsToMany(Role, 'user_roles')`|
+|`hasManyThrough`|`HasManyThroughRelation<T>`|`this.hasManyThrough(Post, User)`|
+|`hasOneThrough`|`HasOneThroughRelation<T>`|`this.hasOneThrough(Owner, Car)`|
+|`morphOne`|`MorphOneRelation<T>`|`this.morphOne(Image, 'imageable')`|
+|`morphMany`|`MorphManyRelation<T>`|`this.morphMany(Comment, 'commentable')`|
+|`morphTo`|`MorphToRelation<T>`|`this.morphTo()`|
 
 ---
 
@@ -458,13 +458,13 @@ class UserService {
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| `Property 'xxx' does not exist` | Missing attribute in interface | Add to interface or use `as any` |
-| `Type 'string' is not assignable` | Missing `as const` on casts | Add `as const` to cast values |
-| `Cannot find module 'outlet-orm'` | Types not found | Check `types` in package.json |
+|`Property 'xxx' does not exist`| Missing attribute in interface | Add to interface or use`as any`|
+|`Type 'string' is not assignable`| Missing`as const`on casts | Add`as const`to cast values |
+|`Cannot find module 'outlet-orm'`| Types not found | Check`types`in package.json |
 
 ### Best Practices
 
-1. **Always use `as const`** for static properties with literal types
+1. **Always use`as const`** for static properties with literal types
 2. **Define attribute interfaces** for each model
 3. **Export types** alongside models for reuse
 4. **Use strict mode** in tsconfig.json
@@ -475,6 +475,6 @@ class UserService {
 ## References
 
 - [TypeScript Documentation](TYPESCRIPT.md)
-- [Models Guide](MODELS.md)
-- [Relations Guide](RELATIONS.md)
-- [Migrations Guide](MIGRATIONS.md)
+- [Model Guide](MODELS.md)
+- [Relationship Guide](RELATIONS.md)
+- [Migration Guide](MIGRATIONS.md)

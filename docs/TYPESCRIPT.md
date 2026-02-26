@@ -1,29 +1,29 @@
 # 📘 TypeScript
 
-Outlet ORM v4.0.0 inclut des définitions TypeScript complètes avec support des **generics pour les attributs typés**.
+Outlet ORM v4.0.0 includes full TypeScript definitions with support for **generics for typed attributes**.
 
-> 📁 **Emplacement recommandé** : `models/`, `controllers/`, `services/` et `src/` — Voir [Structure de projet](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Recommended location**:`models/`,`controllers/`,`services/`and`src/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
 
-## Nouveautés v4.0.0
+## What’s new v4.0.0
 
-- ✅ **Generic Model** : Typez vos attributs avec `Model<TAttributes>`
-- ✅ **Type-safe `getAttribute/setAttribute`** : Autocomplétion et vérification de types
-- ✅ **Schema Builder typé** : Interfaces complètes pour les migrations
-- ✅ **Event names contraints** : `ModelEventName` union type
-- ✅ **WHERE operators typés** : `WhereOperator` union type
-- ✅ **Validation rules étendues** : `url`, `array`, `integer`, etc.
+- ✅ **Generic Model**: Type your attributes with`Model<TAttributes>`
+- ✅ **Type-safe`getAttribute/setAttribute`**: Autocompletion and type checking
+- ✅ **Typed Schema Builder**: Complete interfaces for migrations
+- ✅ **Constrained event names**:`ModelEventName`union type
+- ✅ **WHERE operators typed**:`WhereOperator`union type
+- ✅ **Extended validation rules**:`url`,`array`,`integer`, etc.
 
 ## Installation
 
-Les types sont inclus dans le package :
+The types are included in the package:
 
 ```bash
 npm install outlet-orm
 ```
 
-Aucune installation de `@types/outlet-orm` n'est nécessaire.
+No installation of`@types/outlet-orm`is not necessary.
 
-## Configuration TypeScript
+## TypeScript setup
 
 ```json
 // tsconfig.json
@@ -44,7 +44,7 @@ Aucune installation de `@types/outlet-orm` n'est nécessaire.
 
 ## Generic Model (v4.0.0+)
 
-### Définir une interface d'attributs
+### Define an attribute interface
 
 ```typescript
 interface UserAttributes {
@@ -59,7 +59,7 @@ interface UserAttributes {
 }
 ```
 
-### Créer un modèle typé
+### Create a typed model
 
 ```typescript
 import { Model, HasManyRelation, HasOneRelation } from 'outlet-orm';
@@ -88,7 +88,7 @@ class User extends Model<UserAttributes> {
 const user = await User.find(1);
 
 if (user) {
-  // ✅ TypeScript connaît les types
+  // ✅ TypeScript knows types
   const name: string = user.getAttribute('name');
   const age: number | undefined = user.getAttribute('age');
   const role: 'admin' | 'user' | 'moderator' = user.getAttribute('role');
@@ -106,7 +106,7 @@ if (user) {
 
 ---
 
-## Utilisation de base
+## Basic Usage
 
 ### Import
 
@@ -125,7 +125,7 @@ import {
 } from 'outlet-orm';
 ```
 
-### Définir un modèle
+### Define a template
 
 ```typescript
 import { 
@@ -136,7 +136,7 @@ import {
   BelongsToManyRelation 
 } from 'outlet-orm';
 
-// Définition des modèles liés
+// Defining linked models
 class Post extends Model {
   static table = 'posts';
 }
@@ -179,7 +179,7 @@ class User extends Model<UserAttributes> {
     updated_at: 'date' as const
   };
 
-  // Relations typées
+  // Typed relationships
   posts(): HasManyRelation<Post> {
     return this.hasMany(Post, 'user_id');
   }
@@ -196,43 +196,43 @@ class User extends Model<UserAttributes> {
 export default User;
 ```
 
-### Utiliser le modèle
+### Use template
 
 ```typescript
 import User from './models/User';
 
 async function main() {
-  // Créer
+  // Create
   const user = await User.create({
     name: 'John Doe',
     email: 'john@example.com',
     password: 'hashedpassword123'
   });
 
-  // L'ID est typé
+  // The ID is typed
   const id: number = user.getAttribute('id');
 
-  // Récupérer
+  // To recover
   const foundUser = await User.find(1);
   if (foundUser) {
     const name: string = foundUser.getAttribute('name');
   }
 
-  // Query Builder avec types
+  // Query Builder with types
   const activeUsers = await User
     .where('status', 'active')
     .orderBy('created_at', 'desc')
     .limit(10)
     .get();
 
-  // activeUsers est User[]
+  // activeUsers is User[]
   for (const u of activeUsers) {
     console.log(u.getAttribute('email'));
   }
 }
 ```
 
-## Types disponibles
+## Types available
 
 ### ValidationResult
 
@@ -244,7 +244,7 @@ interface ValidationResult {
   };
 }
 
-// Utilisation
+// Usage
 const user = new User({ name: '' });
 const result: ValidationResult = user.validate();
 
@@ -266,7 +266,7 @@ interface PaginationResult {
   to: number;
 }
 
-// Utilisation
+// Usage
 const result: PaginationResult = await User.paginate(1, 15);
 console.log(`Page ${result.current_page} of ${result.last_page}`);
 ```
@@ -282,7 +282,7 @@ interface QueryLogEntry {
   time: number;
 }
 
-// Utilisation
+// Usage
 const db = Model.getConnection();
 db.enableQueryLog();
 
@@ -299,20 +299,20 @@ queries.forEach(q => {
 ```typescript
 type EventCallback = (model: Model) => void | false | Promise<void | false>;
 
-// Utilisation
+// Usage
 User.creating((user: Model): void | false => {
   if (!user.getAttribute('email')) {
-    return false; // Annule la création
+    return false; // Cancel creation
   }
 });
 ```
 
-## Modèles avec génériques
+## Templates with generics
 
 ```typescript
 import { Model } from 'outlet-orm';
 
-// Interface des attributs
+// Attributes interface
 interface PostAttributes {
   id: number;
   title: string;
@@ -327,7 +327,7 @@ interface PostAttributes {
 class Post extends Model {
   static table = 'posts';
   
-  // Typage fort avec getter
+  // Strong typing with getter
   get id(): number {
     return this.getAttribute('id') as number;
   }
@@ -344,7 +344,7 @@ class Post extends Model {
     return this.getAttribute('status') as PostAttributes['status'];
   }
 
-  // Méthodes typées
+  // Typed methods
   isPublished(): boolean {
     return this.status === 'published';
   }
@@ -388,7 +388,7 @@ interface SQLiteConfig {
 
 type DatabaseConfig = MySQLConfig | PostgresConfig | SQLiteConfig;
 
-// Utilisation
+// Usage
 const config: DatabaseConfig = {
   driver: 'mysql',
   host: 'localhost',
@@ -433,7 +433,7 @@ async function transferFunds(
 }
 ```
 
-## Relations typées
+## Typed relationships
 
 ```typescript
 import { 
@@ -445,7 +445,7 @@ import {
   MorphManyRelation
 } from 'outlet-orm';
 
-// Définition des modèles liés
+// Defining linked models
 class Profile extends Model { static table = 'profiles'; }
 class Role extends Model { static table = 'roles'; }
 class Comment extends Model { static table = 'comments'; }
@@ -453,12 +453,12 @@ class Comment extends Model { static table = 'comments'; }
 class Post extends Model {
   static table = 'posts';
 
-  // Appartient à
+  // Belongs to
   author(): BelongsToRelation {
     return this.belongsTo(User, 'user_id');
   }
 
-  // Polymorphique
+  // Polymorphic
   comments(): MorphManyRelation {
     return this.morphMany(Comment, 'commentable');
   }
@@ -467,24 +467,24 @@ class Post extends Model {
 class User extends Model {
   static table = 'users';
 
-  // Un-à-un
+  // One-to-one
   profile(): HasOneRelation {
     return this.hasOne(Profile, 'user_id');
   }
 
-  // Un-à-plusieurs
+  // One-to-many
   posts(): HasManyRelation {
     return this.hasMany(Post, 'user_id');
   }
 
-  // Plusieurs-à-plusieurs
+  // Many-to-many
   roles(): BelongsToManyRelation {
     return this.belongsToMany(Role, 'role_user', 'user_id', 'role_id');
   }
 }
 ```
 
-## Scopes typés
+## Typed scopes
 
 ```typescript
 import { Model, QueryBuilder } from 'outlet-orm';
@@ -507,11 +507,11 @@ class User extends Model {
   };
 }
 
-// Utilisation
+// Usage
 const activeAdmins = await User.scope('active', 'admins').get();
 ```
 
-## Validation typée
+## Typed validation
 
 ```typescript
 interface ValidationRules {
@@ -529,12 +529,12 @@ class User extends Model {
   };
 }
 
-// Valider
+// To validate
 const user = new User({ name: '', email: 'invalid' });
 const result = user.validate();
 
 if (!result.valid) {
-  // result.errors est typé comme { [field: string]: string[] }
+  // result.errors is typed as { [field: string]: string[] }
   Object.entries(result.errors).forEach(([field, messages]) => {
     console.log(`${field}: ${messages.join(', ')}`);
   });
@@ -545,9 +545,9 @@ if (!result.valid) {
 
 ## Schema Builder typé (v4.0.0+)
 
-Le Schema Builder offre des interfaces TypeScript complètes pour créer des migrations type-safe.
+The Schema Builder offers comprehensive TypeScript interfaces for creating type-safe migrations.
 
-### Interfaces disponibles
+### Available interfaces
 
 ```typescript
 import { 
@@ -559,13 +559,13 @@ import {
 } from 'outlet-orm';
 ```
 
-### Création de tables
+### Creating tables
 
 ```typescript
 import { Schema } from 'outlet-orm';
 
 await Schema.create('users', (table: TableBuilder) => {
-  // Colonnes avec types
+  // Columns with types
   table.id();                                    // BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY
   table.string('name', 100);                     // VARCHAR(100)
   table.string('email').unique();                // VARCHAR(255) UNIQUE
@@ -584,7 +584,7 @@ await Schema.create('users', (table: TableBuilder) => {
 });
 ```
 
-### Clés étrangères
+### Foreign keys
 
 ```typescript
 await Schema.create('posts', (table: TableBuilder) => {
@@ -595,7 +595,7 @@ await Schema.create('posts', (table: TableBuilder) => {
   table.unsignedBigInteger('category_id').nullable();
   table.timestamps();
 
-  // Clés étrangères avec options
+  // Foreign keys with options
   table.foreign('user_id')
     .references('id')
     .on('users')
@@ -609,7 +609,7 @@ await Schema.create('posts', (table: TableBuilder) => {
 });
 ```
 
-### Modification de tables
+### Editing tables
 
 ```typescript
 await Schema.table('users', (table: TableBuilder) => {
@@ -622,11 +622,11 @@ await Schema.table('users', (table: TableBuilder) => {
 
 ---
 
-## Migrations typées (v4.0.0+)
+## Typed migrations (v4.0.0+)
 
-L'interface `MigrationInterface` garantit une structure cohérente pour toutes vos migrations.
+L'interface`MigrationInterface`guarantees a consistent structure for all your migrations.
 
-### Structure d'une migration
+### Structure of a migration
 
 ```typescript
 import { MigrationInterface, Schema, TableBuilder } from 'outlet-orm';
@@ -650,12 +650,12 @@ export const migration: MigrationInterface = {
 };
 ```
 
-### Migration complète avec relations
+### Full migration with relationships
 
 ```typescript
 import { MigrationInterface, Schema, TableBuilder } from 'outlet-orm';
 
-// Migration pour les posts avec clés étrangères
+// Migration for posts with foreign keys
 export const postsTableMigration: MigrationInterface = {
   name: 'create_posts_table',
   
@@ -672,11 +672,11 @@ export const postsTableMigration: MigrationInterface = {
       table.timestamps();
       table.softDeletes();
 
-      // Index composite pour performance
+      // Composite index for performance
       table.index(['user_id', 'status']);
       table.index(['created_at']);
 
-      // Clés étrangères
+      // Foreign keys
       table.foreign('user_id')
         .references('id')
         .on('users')
@@ -716,10 +716,10 @@ export const tagsTableMigration: MigrationInterface = {
       table.unsignedBigInteger('tag_id');
       table.timestamp('created_at').useCurrent();
 
-      // Clé primaire composite
+      // Composite primary key
       table.primary(['post_id', 'tag_id']);
 
-      // Clés étrangères
+      // Foreign keys
       table.foreign('post_id')
         .references('id')
         .on('posts')
@@ -741,13 +741,13 @@ export const tagsTableMigration: MigrationInterface = {
 
 ---
 
-## Exemple complet
+## Full example
 
 ```typescript
 // models/index.ts
 import { Model, DatabaseConnection, QueryBuilder } from 'outlet-orm';
 
-// Configuration (optionnel si .env est configuré)
+// Configuration (optional if .env is configured)
 const db = new DatabaseConnection({
   driver: 'mysql',
   host: process.env.DB_HOST || 'localhost',
@@ -759,7 +759,7 @@ const db = new DatabaseConnection({
 
 Model.setConnection(db);
 
-// Post Model (défini en premier car référencé par User)
+// Post Model (defined first because referenced by User)
 export class Post extends Model {
   static table = 'posts';
   static fillable = ['title', 'content', 'user_id', 'status'];
@@ -786,7 +786,7 @@ export class User extends Model {
     return this.hasMany(Post, 'user_id');
   }
 
-  // Méthodes personnalisées
+  // Custom methods
   async getPostCount(): Promise<number> {
     return await Post.where('user_id', this.getAttribute('id')).count();
   }
@@ -796,14 +796,14 @@ export class User extends Model {
 async function main(): Promise<void> {
   await db.connect();
 
-  // Créer un utilisateur
+  // Create a user
   const user = await User.create({
     name: 'John Doe',
     email: 'john@example.com',
     password: 'hashedpassword'
   });
 
-  // Créer des posts
+  // Create posts
   await Post.create({
     title: 'Hello World',
     content: 'My first post',
@@ -811,7 +811,7 @@ async function main(): Promise<void> {
     status: 'published'
   });
 
-  // Requêtes typées
+  // Typed queries
   const publishedPosts = await Post
     .scope('published')
     .with('author')
@@ -828,8 +828,8 @@ async function main(): Promise<void> {
 main().catch(console.error);
 ```
 
-## Prochaines étapes
+## Next steps
 
-- [API Reference](API_REFERENCE.md) - Référence complète de l'API
-- [Models](MODELS.md) - Guide des modèles
-- [Query Builder](QUERY_BUILDER.md) - Requêtes avancées
+- [API Reference](API_REFERENCE.md) - Full API reference
+- [Models](MODELS.md) - Model Guide
+- [Query Builder](QUERY_BUILDER.md) - Advanced queries

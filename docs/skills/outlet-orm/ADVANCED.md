@@ -2,7 +2,7 @@
 
 [← Back to Index](SKILL.md) | [Previous: Migrations](MIGRATIONS.md) | [Next: Security →](SECURITY.md)
 
-> 📘 **TypeScript** : Use `ModelEventName` for events, `ValidationRule` for validation. See [TYPESCRIPT.md](TYPESCRIPT.md)
+> 📘 **TypeScript** : Use`ModelEventName`for events,`ValidationRule`for validation. See [TYPESCRIPT.md](TYPESCRIPT.md)
 
 ---
 
@@ -165,16 +165,16 @@ Model.addGlobalScope('tenant', (q) => q.where('tenant_id', currentTenantId));
 
 | Event | Trigger |
 |-------|---------|
-| `creating` | Before insert |
-| `created` | After insert |
-| `updating` | Before update |
-| `updated` | After update |
-| `saving` | Before insert OR update |
-| `saved` | After insert OR update |
-| `deleting` | Before delete |
-| `deleted` | After delete |
-| `restoring` | Before restore (soft delete) |
-| `restored` | After restore (soft delete) |
+|`creating`| Before insert |
+|`created`| After insert |
+|`updating`| Before update |
+|`updated`| After update |
+|`saving`| Before insert OR update |
+|`saved`| After insert OR update |
+|`deleting`| Before delete |
+|`deleted`| After delete |
+|`restoring`| Before restore (soft delete) |
+|`restored`| After restore (soft delete) |
 
 ### Register Event Handlers
 
@@ -272,16 +272,16 @@ class User extends Model {
 
 | Rule | Description |
 |------|-------------|
-| `required` | Field is required |
-| `string` | Must be a string |
-| `number` / `numeric` | Must be a number |
-| `email` | Valid email format |
-| `boolean` | Must be boolean |
-| `date` | Valid date |
-| `min:N` | Minimum N (length or value) |
-| `max:N` | Maximum N (length or value) |
-| `in:a,b,c` | Value in list |
-| `regex:pattern` | Match regex pattern |
+|`required`| Field is required |
+|`string`| Must be a string |
+|`number`/`numeric`| Must be a number |
+|`email`| Valid email format |
+|`boolean`| Must be boolean |
+|`date`| Valid date |
+|`min:N`| Minimum N (length or value) |
+|`max:N`| Maximum N (length or value) |
+|`in:a,b,c`| Value in list |
+|`regex:pattern`| Match regex pattern |
 
 ### Validate
 
@@ -362,17 +362,17 @@ const queries = db.getQueryLog();
 
 console.log(queries);
 // [
-//   { 
-//     sql: 'SELECT * FROM users WHERE status = ?', 
-//     params: ['active'], 
-//     duration: 15, 
-//     timestamp: Date 
+//   {
+//     sql: 'SELECT * FROM users WHERE status = ?',
+//     params: ['active'],
+//     duration: 15,
+//     timestamp: Date
 //   },
-//   { 
-//     sql: 'SELECT * FROM posts', 
-//     params: [], 
-//     duration: 8, 
-//     timestamp: Date 
+//   {
+//     sql: 'SELECT * FROM posts',
+//     params: [],
+//     duration: 8,
+//     timestamp: Date
 //   }
 // ]
 ```

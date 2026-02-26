@@ -12,11 +12,11 @@
 
 | Action | Description | Outlet ORM Feature |
 |--------|-------------|-------------------|
-| `.env` in `.gitignore` | Never commit secrets | Auto-connect from .env |
-| Password hashing | Bcrypt with 10+ rounds | Use `utils/hash.js` |
+|`.env`in`.gitignore`| Never commit secrets | Auto-connect from .env |
+| Password hashing | Bcrypt with 10+ rounds | Use`utils/hash.js`|
 | SQL Injection protection | Use ORM queries | ✅ Built-in protection |
 | XSS protection | Sanitize inputs/outputs | Use middleware |
-| Input validation | Validate ALL user data | `static rules` + middleware |
+| Input validation | Validate ALL user data |`static rules`+ middleware |
 
 ### 🟠 Important Priority
 
@@ -26,7 +26,7 @@
 | Rate limiting | Limit requests per IP |
 | Security headers | Use Helmet.js |
 | CSRF protection | Token for forms |
-| CORS configuration | Whitelist origins |
+| CORS setup | Whitelist origins |
 
 ---
 
@@ -81,10 +81,10 @@ const users = await User.whereRaw('email = ?', [userInput]).get();
 
 ```javascript
 class User extends Model {
-  // 🔒 Only these fields can be mass-assigned
-  static fillable = ['name', 'email'];
+// 🔒 Only these fields can be mass-assigned
+static fillable = ['name', 'email'];
   
-  // 'role', 'is_admin' excluded = cannot be modified via create/fill
+// 'role', 'is_admin' excluded = cannot be modified via create/fill
 }
 
 // ✅ SECURE - role is ignored even if in req.body
@@ -95,12 +95,12 @@ const user = await User.create(req.body);
 
 ```javascript
 class User extends Model {
-  // 🔒 Never exposed in JSON
-  static hidden = ['password', 'refresh_token', 'reset_token'];
+// 🔒 Never exposed in JSON
+static hidden = ['password', 'refresh_token', 'reset_token'];
 }
 
 const user = await User.find(1);
-console.log(user.toJSON()); 
+console.log(user.toJSON());
 // { id: 1, name: "John", email: "..." }
 // password is NOT included
 ```
@@ -114,50 +114,50 @@ const { Model } = require('outlet-orm');
 const { hashPassword, verifyPassword } = require('../utils/hash');
 
 class User extends Model {
-  static table = 'users';
+static table = 'users';
   
-  // 🔒 Mass assignment protection
-  static fillable = ['name', 'email', 'password'];
+// 🔒 Mass assignment protection
+static fillable = ['name', 'email', 'password'];
   
-  // 🔒 Never expose sensitive data
-  static hidden = ['password', 'refresh_token', 'reset_token'];
+// 🔒 Never expose sensitive data
+static hidden = ['password', 'refresh_token', 'reset_token'];
   
-  // Type casting
-  static casts = {
-    id: 'int',
-    email_verified: 'boolean',
-    created_at: 'date'
-  };
+// Type casting
+static casts = {
+id: 'int',
+email_verified: 'boolean',
+created_at: 'date'
+};
   
-  // 🔒 Validation rules
-  static rules = {
-    name: 'required|string|min:2|max:100',
-    email: 'required|email',
-    password: 'required|min:8'
-  };
+// 🔒 Validation rules
+static rules = {
+name: 'required|string|min:2|max:100',
+email: 'required|email',
+password: 'required|min:8'
+};
 
-  // 🔒 Hash password before saving
-  static boot() {
-    this.creating(async (user) => {
-      const password = user.getAttribute('password');
-      if (password) {
-        user.setAttribute('password', await hashPassword(password));
-      }
-    });
+// 🔒 Hash password before saving
+static boot() {
+this.creating(async (user) => {
+const password = user.getAttribute('password');
+if (password) {
+user.setAttribute('password', await hashPassword(password));
+}
+});
 
-    this.updating(async (user) => {
-      const password = user.getAttribute('password');
-      // Only hash if password changed
-      if (password && !password.startsWith('$2b$')) {
-        user.setAttribute('password', await hashPassword(password));
-      }
-    });
-  }
+this.updating(async (user) => {
+const password = user.getAttribute('password');
+// Only hash if password changed
+if (password && !password.startsWith('$2b$')) {
+user.setAttribute('password', await hashPassword(password));
+}
+});
+}
 
-  // 🔒 Password verification method
-  async checkPassword(password) {
-    return verifyPassword(password, this.getAttribute('password'));
-  }
+// 🔒 Password verification method
+async checkPassword(password) {
+return verifyPassword(password, this.getAttribute('password'));
+}
 }
 
 module.exports = User;
@@ -173,43 +173,43 @@ const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 
 const authenticate = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Token missing' });
-    }
+try {
+const authHeader = req.headers.authorization;
+if (!authHeader || !authHeader.startsWith('Bearer ')) {
+return res.status(401).json({ error: 'Token missing' });
+}
 
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+const token = authHeader.split(' ')[1];
+const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await User.find(decoded.userId);
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
+const user = await User.find(decoded.userId);
+if (!user) {
+return res.status(401).json({ error: 'User not found' });
+}
 
-    req.user = user;
-    next();
-  } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token expired' });
-    }
-    return res.status(401).json({ error: 'Invalid token' });
-  }
+req.user = user;
+next();
+} catch (error) {
+if (error.name === 'TokenExpiredError') {
+return res.status(401).json({ error: 'Token expired' });
+}
+return res.status(401).json({ error: 'Invalid token' });
+}
 };
 
 const authorize = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
+return (req, res, next) => {
+if (!req.user) {
+return res.status(401).json({ error: 'Not authenticated' });
+}
 
-    const userRole = req.user.getAttribute('role');
-    if (!roles.includes(userRole)) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
+const userRole = req.user.getAttribute('role');
+if (!roles.includes(userRole)) {
+return res.status(403).json({ error: 'Access denied' });
+}
 
-    next();
-  };
+next();
+};
 };
 
 module.exports = { authenticate, authorize };
@@ -230,25 +230,25 @@ const router = express.Router();
 
 // 🔒 Public routes with strict rate limiting
 router.post('/register',
-  validate([
-    body('name').trim().isLength({ min: 2, max: 100 }).escape(),
-    body('email').isEmail().normalizeEmail(),
-    body('password').isLength({ min: 8 }),
-  ]),
-  UserController.register
+validate([
+body('name').trim().isLength({ min: 2, max: 100 }).escape(),
+body('email').isEmail().normalizeEmail(),
+body('password').isLength({ min: 8 }),
+]),
+UserController.register
 );
 
 // 🔒 Protected routes
 router.get('/profile',
-  authenticate,
-  UserController.getProfile
+authenticate,
+UserController.getProfile
 );
 
 // 🔒 Admin only
 router.delete('/users/:id',
-  authenticate,
-  authorize('admin'),
-  UserController.deleteUser
+authenticate,
+authorize('admin'),
+UserController.deleteUser
 );
 
 module.exports = router;
@@ -266,11 +266,11 @@ const bcrypt = require('bcrypt');
 const SALT_ROUNDS = 12;
 
 const hashPassword = async (password) => {
-  return bcrypt.hash(password, SALT_ROUNDS);
+return bcrypt.hash(password, SALT_ROUNDS);
 };
 
 const verifyPassword = async (password, hash) => {
-  return bcrypt.compare(password, hash);
+return bcrypt.compare(password, hash);
 };
 
 module.exports = { hashPassword, verifyPassword };
@@ -283,15 +283,15 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
 const generateAccessToken = (userId) => {
-  return jwt.sign(
-    { userId },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
-  );
+return jwt.sign(
+{ userId },
+process.env.JWT_SECRET,
+{ expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
+);
 };
 
 const generateRefreshToken = () => {
-  return crypto.randomBytes(64).toString('hex');
+return crypto.randomBytes(64).toString('hex');
 };
 
 module.exports = { generateAccessToken, generateRefreshToken };
@@ -305,32 +305,32 @@ module.exports = { generateAccessToken, generateRefreshToken };
 
 ```javascript
 module.exports = {
-  // Rate limiting
-  rateLimit: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100,
-    message: { error: 'Too many requests' }
-  },
+// Rate limiting
+rateLimit: {
+windowMs: 15 * 60 * 1000, // 15 minutes
+max: 100,
+message: { error: 'Too many requests' }
+},
   
-  // Strict rate limit for auth
-  authRateLimit: {
-    windowMs: 15 * 60 * 1000,
-    max: 5,
-    message: { error: 'Too many login attempts' }
-  },
+// Strict rate limit for auth
+authRateLimit: {
+windowMs: 15 * 60 * 1000,
+max: 5,
+message: { error: 'Too many login attempts' }
+},
   
-  // CORS
-  cors: {
-    origin: process.env.CORS_ORIGIN,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
-  },
+// CORS
+cors: {
+origin: process.env.CORS_ORIGIN,
+credentials: true,
+methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
+},
   
-  // JWT
-  jwt: {
-    secret: process.env.JWT_SECRET,
-    expiresIn: '15m'
-  }
+// JWT
+jwt: {
+secret: process.env.JWT_SECRET,
+expiresIn: '15m'
+}
 };
 ```
 
@@ -371,7 +371,7 @@ user.setAttribute('password', await hashPassword(req.body.password));
 // ✅ Hide sensitive fields
 static hidden = ['password', 'refresh_token'];
 
-// ✅ Use parameterized queries
+// ✅ Use parameterised queries
 await User.where('email', email).first();
 
 // ✅ Use .env.example for templates
