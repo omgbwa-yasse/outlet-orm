@@ -2,34 +2,28 @@
 
 This document describes the architecture and code structure of the Outlet ORM ORM.
 
-## Structure of the User Project (Layered Architecture)
+## Project Structure
 
-Here is the recommended structure for a project using Outlet ORM, based on the **Layered Architecture** pattern:
+Here is the recommended structure for a project using Outlet ORM, based on the **2-layer pattern** — Controllers call Models directly, no Services or Repositories needed:
 
 > 🔐 **Security**: See [Security Guide](SECURITY.md) for best practices.
 
 ```
-mon-projet/
+my-project/
 ├── .env                           # ⚠️ NEVER commit (in .gitignore)
 ├── .env.example                   # Template without secrets
 ├── .gitignore
 ├── package.json
 ├── src/
-│   ├── index.js                   # Entry point
-│   ├── controllers/               # 🎮 Presentation Layer
+│   ├── index.js                   # Application entry point
+│   ├── controllers/               # 🎮 HTTP handling + business logic (direct ORM calls)
 │   │   ├── UserController.js
 │   │   └── PostController.js
-│   ├── services/                  # ⚙️ Business Layer
-│   │   ├── UserService.js
-│   │   └── PostService.js
-│   ├── repositories/              # 📦 Data Access Layer
-│   │   ├── UserRepository.js
-│   │   └── PostRepository.js
-│   ├── models/                    # 📊 Models Layer (outlet-orm)
+│   ├── models/                    # 📊 outlet-orm Models (entities)
 │   │   ├── User.js
 │   │   ├── Post.js
 │   │   └── index.js
-│   ├── middlewares/               # 🔒 Critical security
+│   ├── middlewares/               # 🔒 Auth, validation, rate limiting
 │   │   ├── auth.js                # JWT authentication
 │   │   ├── authorization.js       # RBAC
 │   │   ├── rateLimiter.js
@@ -44,27 +38,26 @@ mon-projet/
 │   ├── utils/                     # 🔒 Hash, tokens, encryption
 │   │   ├── hash.js
 │   │   └── token.js
-│   └── validators/                # Validation schemas
 ├── database/
-│   ├── config.js                  # Config migrations
+│   ├── config.js                  # Migration config
 │   └── migrations/
-├── public/                        # ✅ Seul dossier accessible
+├── public/                        # ✅ Only publicly accessible folder
 ├── uploads/                       # ⚠️ Uploaded files
-├── logs/                          # 📋 Non versionnés
+├── logs/                          # 📋 Not versioned
 └── tests/
     ├── unit/
     └── integration/
 ```
 
-### Layered Architecture Flow
+### Architecture Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        REQUÊTE HTTP                         │
+│                        HTTP REQUEST                         │
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  🛤️ ROUTES          Routing to the correct controller          │
+│  🛤️ ROUTES          Routing to the correct controller       │
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -72,15 +65,8 @@ mon-projet/
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  🎮 CONTROLLERS      HTTP handling only (req/res)      │
-└─────────────────────────┬───────────────────────────────────┘
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│  ⚙️ SERVICES         Logique métier, rules business        │
-└─────────────────────────┬───────────────────────────────────┘
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│  📦 REPOSITORIES     Abstraction accès data (CRUD)       │
+│  🎮 CONTROLLERS      HTTP handling + business logic         │
+│                      Direct outlet-orm Model calls          │
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -88,7 +74,7 @@ mon-projet/
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                     DATABASE                         │
+│                       DATABASE                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -96,18 +82,16 @@ mon-projet/
 
 | Layer | Files | Responsibility | Security |
 |--------|----------|----------------|----------|
-| **Controllers** |`src/controllers/`| HTTP only (req/res) | Entry validation |
-| **Services** |`src/services/`| Business logic, rules | Authorisation |
-| **Repositories** |`src/repositories/`| Database abstraction, queries | Sanitisation |
-| **Models** |`src/models/`| Data structure, relationships | Fillable/Hidden |
+| **Controllers** |`src/controllers/`| HTTP handling, business logic, direct ORM calls | Input validation, ownership checks |
+| **Models** |`src/models/`| Data structure, relationships | `fillable`, `hidden` |
 | **Middlewares** |`src/middlewares/`| Auth, validation, errors | 🔒 **Critical** |
-| **Config** |`src/config/`| Environment Variables | 🔒 Reads .env |
+| **Config** |`src/config/`| Environment variables | 🔒 Reads .env |
 | **Utils** |`src/utils/`| Hash, tokens, helpers | 🔒 Do not expose |
 
 ### Implementation Example
 
 ```javascript
-// src/models/User.js - Model Layer
+// src/models/User.js
 const { Model } = require('outlet-orm');
 
 class User extends Model {
@@ -117,78 +101,58 @@ class User extends Model {
 }
 module.exports = User;
 
-// src/repositories/UserRepository.js - Repository layer
+// src/controllers/UserController.js
 const User = require('../models/User');
-
-class UserRepository {
-  async findById(id) {
-    return User.find(id);
-  }
-  async findByEmail(email) {
-    return User.where('email', email).first();
-  }
-  async create(data) {
-    return User.create(data);
-  }
-  async update(id, data) {
-    const user = await User.find(id);
-    if (user) {
-      user.fill(data);
-      await user.save();
-    }
-    return user;
-  }
-}
-module.exports = new UserRepository();
-
-// src/services/UserService.js - Service Layer
-const userRepository = require('../repositories/UserRepository');
 const bcrypt = require('bcrypt');
 
-class UserService {
-  async register(data) {
-    // Business logic: validation, hash password
-    const existing = await userRepository.findByEmail(data.email);
-    if (existing) throw new Error('Email déjà utilisé');
-    
-    data.password = await bcrypt.hash(data.password, 10);
-    return userRepository.create(data);
-  }
-  
-  async authenticate(email, password) {
-    const user = await userRepository.findByEmail(email);
-    if (!user) return null;
-    
-    const valid = await bcrypt.compare(password, user.getAttribute('password'));
-    return valid ? user : null;
-  }
-}
-module.exports = new UserService();
-
-// src/controllers/UserController.js - Controller layer
-const userService = require('../services/UserService');
-
 class UserController {
-  async register(req, res) {
-    try {
-      const user = await userService.register(req.body);
-      res.status(201).json({ success: true, user });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
-    }
+  async index(req, res) {
+    const users = await User.all();
+    res.json({ success: true, data: users });
   }
-  
+
+  async show(req, res) {
+    const user = await User.with('posts').where('id', req.params.id).first();
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    res.json({ success: true, data: user });
+  }
+
+  async store(req, res) {
+    const existing = await User.where('email', req.body.email).first();
+    if (existing) return res.status(409).json({ success: false, message: 'Email already in use' });
+
+    const data = { ...req.body };
+    data.password = await bcrypt.hash(data.password, 10);
+    const user = await User.create(data);
+    res.status(201).json({ success: true, data: user });
+  }
+
+  async update(req, res) {
+    const user = await User.find(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const data = { ...req.body };
+    if (data.password) data.password = await bcrypt.hash(data.password, 10);
+    user.fill(data);
+    await user.save();
+    res.json({ success: true, data: user });
+  }
+
+  async destroy(req, res) {
+    const user = await User.find(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    await user.delete();
+    res.json({ success: true, message: 'User deleted' });
+  }
+
   async login(req, res) {
-    try {
-      const user = await userService.authenticate(req.body.email, req.body.password);
-      if (!user) {
-        return res.status(401).json({ success: false, message: 'Identifiants invalides' });
-      }
-      // Generate JWT token...
-      res.json({ success: true, user, token: '...' });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
-    }
+    const user = await User.where('email', req.body.email).first();
+    if (!user) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+
+    const ok = await bcrypt.compare(req.body.password, user.getAttribute('password'));
+    if (!ok) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+
+    res.json({ success: true, data: user, token: 'your-jwt-token-here' });
   }
 }
 module.exports = new UserController();
@@ -198,12 +162,12 @@ module.exports = new UserController();
 
 ```
 src/
-├── index.js                 # Entry point principal, exporte tous les modules
-├── Model.js                 # Classe Model de base (Active Record)
-├── QueryBuilder.js          # Constructeur de queries
-├── DatabaseConnection.js    # Gestionnaire de connection aux bases de data
-└── Relations/               # Classes de relationships
-    ├── Relation.js          # Classe de base abstraite pour les relationships
+├── index.js                 # Main entry point, exports all modules
+├── Model.js                 # Base Model class (Active Record)
+├── QueryBuilder.js          # Query builder
+├── DatabaseConnection.js    # Database connection manager
+└── Relations/               # Relationship classes
+    ├── Relation.js          # Abstract base class for relationships
     ├── HasOneRelation.js    # Relation One-to-One
     ├── HasManyRelation.js   # Relation One-to-Many
     ├── BelongsToRelation.js # Relation inverse (Many-to-One)
@@ -244,11 +208,11 @@ THE`QueryBuilder`builds and executes SQL queries in a smooth and chainable manne
 - Joins
 - Eager loading of relationships
 - Pagination
-- Agrégation (count, exists)
+- Aggregation (count, exists)
 
 **Main methods:**
 -`where()`,`whereIn()`,`whereNull()`, etc. : Filtering
--`orderBy()`: Tri
+-`orderBy()`: Sort
 -`limit()`,`offset()`: Limitation
 -`get()`,`first()`,`paginate()`: Execution
 -`with()`: Eager loading
@@ -313,7 +277,7 @@ user.performInsert()
   ↓
 connection.insert(table, data)
   ↓
-Base de data
+Database
 ```
 
 ### Simple Query
@@ -333,7 +297,7 @@ connection.select(table, query)
   ↓
 queryBuilder.hydrate(rows) // Creates Model instances
   ↓
-Retourne Array<User>
+Returns Array<User>
 ```
 
 ### Eager Loading
@@ -349,13 +313,13 @@ connection.select(table, query) // Get the users
   ↓
 queryBuilder.eagerLoadRelations(users)
   ↓
-Pour chaque relation:
+For each relation:
   ↓
   relation.eagerLoad(users)
     ↓
-    Récupère tous les posts des users en une requête
+    Fetches all posts for the users in a single query
     ↓
-    Assigne les posts à chaque user.relationships.posts
+    Assigns posts to each user.relationships.posts
 ```
 
 ## Design Patterns
@@ -433,3 +397,133 @@ The tests are organised by component:
 ## Contributions
 
 To contribute, please read [CONTRIBUTING.md](../CONTRIBUTING.md).
+
+
+---
+
+## Working Example
+
+A complete, runnable example of this architecture is available in [`examples/simplified-architecture/`](../examples/simplified-architecture/).
+
+It includes models, controllers, routes, middleware, and an entry point — ready to run with `npm install && node index.js`.
+
+---
+
+## Migration Guide: 4-Layer → 1-Layer
+
+This guide walks through collapsing an existing `UserService.js` + `UserRepository.js` pair into a single `UserController.js` that calls outlet-orm directly.
+
+### Migration Checklist
+
+1. **Identify service/repository pairs**: List every `(XxxService, XxxRepository)` pair in `src/services/` and `src/repositories/`.
+2. **Copy business logic**: Paste each service method as a controller method.
+3. **Replace repository calls with direct ORM calls**: See the method mapping table below.
+4. **Update controller imports**: Remove the service import; add the model import directly.
+5. **Delete the service file** (`src/services/XxxService.js`) and the repository file (`src/repositories/XxxRepository.js`).
+6. **Update route wiring**: Routes that called a service method now call the controller action directly.
+
+### Repository Method → ORM Method Mapping
+
+| Repository call | Direct outlet-orm equivalent |
+|----------------|------------------------------|
+| `userRepository.findById(id)` | `User.find(id)` |
+| `userRepository.findByEmail(email)` | `User.where('email', email).first()` |
+| `userRepository.create(data)` | `User.create(data)` |
+| `userRepository.update(id, data)` | `user.fill(data); await user.save()` |
+| `userRepository.delete(id)` | `await user.delete()` |
+| `userRepository.all()` | `User.all()` |
+| `userRepository.where(col, val)` | `User.where(col, val).get()` |
+
+### Before/After: UserRepository.js → Inline ORM Calls
+
+**Before** — `src/repositories/UserRepository.js`
+
+```javascript
+const User = require('../models/User');
+
+class UserRepository {
+  async findById(id)        { return User.find(id); }
+  async findByEmail(email)  { return User.where('email', email).first(); }
+  async create(data)        { return User.create(data); }
+  async update(id, data) {
+    const user = await User.find(id);
+    if (user) { user.fill(data); await user.save(); }
+    return user;
+  }
+}
+module.exports = new UserRepository();
+```
+
+**After** — equivalent calls inline in `UserController.js` (no repository file needed)
+
+```javascript
+// Inside UserController.store():
+const existing = await User.where('email', req.body.email).first(); // was: userRepository.findByEmail()
+const user     = await User.create(data);                           // was: userRepository.create()
+
+// Inside UserController.update():
+const user = await User.find(req.params.id);    // was: userRepository.findById()
+user.fill(data);
+await user.save();                               // was: userRepository.update()
+```
+
+### Before/After: UserService.js → Inline Controller Logic
+
+**Before** — `src/services/UserService.js`
+
+```javascript
+const userRepository = require('../repositories/UserRepository');
+const bcrypt = require('bcrypt');
+
+class UserService {
+  async register(data) {
+    const existing = await userRepository.findByEmail(data.email);
+    if (existing) throw new Error('Email already in use');
+    data.password = await bcrypt.hash(data.password, 10);
+    return userRepository.create(data);
+  }
+
+  async authenticate(email, password) {
+    const user = await userRepository.findByEmail(email);
+    if (!user) return null;
+    const valid = await bcrypt.compare(password, user.getAttribute('password'));
+    return valid ? user : null;
+  }
+}
+module.exports = new UserService();
+```
+
+**After** — logic merged directly into `UserController.store()` and `UserController.login()`
+
+```javascript
+// UserController.store() — was: userService.register()
+async store(req, res) {
+  const existing = await User.where('email', req.body.email).first();
+  if (existing) return res.status(409).json({ message: 'Email already in use' });
+
+  const data = { ...req.body };
+  data.password = await bcrypt.hash(data.password, 10);
+  const user = await User.create(data);
+  res.status(201).json({ success: true, data: user });
+}
+
+// UserController.login() — was: userService.authenticate()
+async login(req, res) {
+  const user = await User.where('email', req.body.email).first();
+  if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+
+  const ok = await bcrypt.compare(req.body.password, user.getAttribute('password'));
+  if (!ok)  return res.status(401).json({ message: 'Invalid credentials' });
+
+  res.json({ success: true, data: user, token: 'your-jwt-token-here' });
+}
+```
+
+### Risks and Limitations
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|-----------|
+| Controllers become too large (> 100 lines) | Medium | Medium | Group actions into domain-specific controller files; extract shared helpers into `src/utils/` |
+| Business logic duplicated across controllers | Medium | Low | Move shared utilities (e.g., password hashing) into a small `src/utils/` module — not a full Service class |
+| Harder to unit-test without a repository mock | High | Low | Use integration tests against a SQLite in-memory database; outlet-orm makes this straightforward |
+| Pattern misapplied to large, complex applications | Low | High | Apply the "When NOT to Use" checklist above; re-introduce service classes selectively when a controller exceeds ~150 lines |

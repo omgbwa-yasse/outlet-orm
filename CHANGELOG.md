@@ -2,13 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
-## [5.5.2] - 2026-02-26
+## [Unreleased]
+
+## [5.5.3] - 2026-02-26
+
+### 📐 Architecture
+
+- Adopted **2-layer architecture** (Controllers → Models) as the recommended project structure — `services/` and `repositories/` layers removed from documentation and examples.
+- Updated `docs/ARCHITECTURE.md` completely: new project structure, flow diagram, responsibilities table, and implementation example all reflecting the 2-layer pattern; removed the former "Simplified Architecture" appendix (now the primary pattern); fixed all French text remnants.
+- Updated `README.md` project structure section: folder tree, flow diagram, role table, and example workflow all updated to 2-layer (no Services/Repositories).
+- Restructured `examples/simplified-architecture/` as the canonical example (unchanged files, updated documentation context).
 
 ### 📚 Documentation
 
-- Completed UK English translation across markdown documentation.
-- Harmonised terminology, section titles, and examples in README and guides.
-- Fixed mixed-language wording and consistency issues in docs and skills pages.
+- Completed UK English translation of all inline code comments, table descriptions, and paragraph text across `README.md` and `docs/ARCHITECTURE.md`.
+- Added `examples/simplified-architecture/README.md` and `.env.example`.
+
 
 ## [5.5.1] - 2026-02-26
 

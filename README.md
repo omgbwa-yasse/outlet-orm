@@ -3,9 +3,9 @@
 [![npm version](https://badge.fury.io/js/outlet-orm.svg)](https://www.npmjs.com/package/outlet-orm)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Un ORM JavaScript inspired de Laravel Eloquent pour Node.js avec support pour MySQL, PostgreSQL et SQLite.
+A JavaScript ORM inspired by Laravel Eloquent for Node.js with support for MySQL, PostgreSQL and SQLite.
 
-📚 **[Documentation complete available dans `/docs`](./docs/INDEX.md)**
+📚 **[Complete documentation available in `/docs`](./docs/INDEX.md)**
 
 ## ✅ Prerequisites and compatibility
 
@@ -20,7 +20,7 @@ npm install outlet-orm
 
 ### Install the database driver
 
-Outlet ORM utilise des peerDependencies optionnelles pour les drivers de database. Installez uniquement le driver dont vous avez besoin:
+Outlet ORM uses optional peer dependencies for database drivers. Install only the driver you need:
 
 - MySQL/MariaDB: `npm install mysql2`
 - PostgreSQL: `npm install pg`
@@ -28,45 +28,34 @@ Outlet ORM utilise des peerDependencies optionnelles pour les drivers de databas
 
 If no driver is installed, an explicit error message will tell you which one to install when connecting.
 
-## 📁 Structure de Projet recommended
+## 📁 Recommended Project Structure
 
-Organisez votre projet utilisant Outlet ORM avec une **architecture en couches** (recommended pour la production) :
+Organise your project using Outlet ORM with a **2-layer architecture** — Controllers call Models directly, keeping the codebase lean and productive:
 
-> 🔐 **Sécurité** : See the [Security Guide](./docs/SECURITY.md) pour les bonnes pratiques.
+> 🔐 **Security**: See the [Security Guide](./docs/SECURITY.md) for best practices.
 
 ```
-mon-projet/
-├── .env                          # ⚠️ JAMAIS committed (dans .gitignore)
+my-project/
+├── .env                          # ⚠️ NEVER committed (in .gitignore)
 ├── .env.example                  # Template without secrets
 ├── .gitignore
 ├── package.json
 │
-├── src/                          # 📦 Code source centralisé
-│   ├── index.js                  # Entry point de l'application
+├── src/                          # 📦 Centralised source code
+│   ├── index.js                  # Application entry point
 │   │
 │   ├── config/                   # ⚙️ Configuration
 │   │   ├── app.js                # General config (port, env)
-│   │   ├── database.js           # Config DB (lit .env)
+│   │   ├── database.js           # DB config (reads .env)
 │   │   └── security.js           # CORS, helmet, rate limit
 │   │
-│   ├── models/                   # 📊 Data Layer (Entities)
-│   │   ├── index.js              # Export centralisé des models
+│   ├── models/                   # 📊 outlet-orm Models (entities)
+│   │   ├── index.js              # Centralised model exports
 │   │   ├── User.js
 │   │   ├── Post.js
 │   │   └── Comment.js
 │   │
-│   ├── repositories/             # 🗄️ Data Access Layer
-│   │   ├── BaseRepository.js     # Generic CRUD methods
-│   │   ├── UserRepository.js     # Specific queries User
-│   │   └── PostRepository.js
-│   │
-│   ├── services/                 # 💼 Business Layer (Business Logic)
-│   │   ├── AuthService.js        # Logique d'authentification
-│   │   ├── UserService.js        # User business logic
-│   │   ├── PostService.js
-│   │   └── EmailService.js       # Service externe (emails)
-│   │
-│   ├── controllers/              # 🎮 Presentation Layer (HTTP)
+│   ├── controllers/              # 🎮 HTTP handling + business logic (direct ORM calls)
 │   │   ├── AuthController.js
 │   │   ├── UserController.js
 │   │   └── PostController.js
@@ -82,13 +71,13 @@ mon-projet/
 │   │   ├── authorize.js          # RBAC / permissions
 │   │   ├── rateLimiter.js        # Protection DDoS
 │   │   ├── validator.js          # Validation request body
-│   │   └── errorHandler.js       # Gestion centralisede erreurs
+│   │   └── errorHandler.js       # Centralised error handling
 │   │
 │   ├── validators/               # ✅ Validation schemas
 │   │   ├── authValidator.js
 │   │   └── userValidator.js
 │   │
-│   └── utils/                    # 🔧 Utilitaires
+│   └── utils/                    # 🔧 Utilities
 │       ├── hash.js               # bcrypt wrapper
 │       ├── token.js              # JWT helpers
 │       ├── logger.js             # Winston/Pino config
@@ -107,19 +96,17 @@ mon-projet/
 │
 ├── uploads/                      # ⚠️ Uploaded files
 │
-├── logs/                         # 📋 Journaux (not versioned)
+├── logs/                         # 📋 Logs (not versioned)
 │
 └── tests/                        # 🧪 Tests
-    ├── unit/                     # Tests unitaires
-    │   ├── services/
-    │   └── models/
-    ├── integration/              # Integration tests
+    ├── unit/                     # Unit tests (models)
+    ├── integration/              # Integration tests (API)
     │   └── api/
     └── fixtures/                 # Test data
         └── users.json
 ```
 
-### 🏗️ Layered Architecture
+### 🏗️ Architecture Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -133,43 +120,30 @@ mon-projet/
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  ROUTES → CONTROLLERS (Presentation Layer)                 │
-│  Receives the request, calls the service, returns a response   │
+│  ROUTES → CONTROLLERS  HTTP handling + business logic       │
+│                        Direct outlet-orm Model calls        │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  SERVICES (Business Layer / Business Logic)                  │
-│  Logique métier, orchestration, rules business            │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  REPOSITORIES (Data Access Layer)                        │
-│  Abstraction des queries DB, utilise les Models           │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  MODELS (Outlet ORM) → DATABASE                             │
+│  MODELS (outlet-orm) → DATABASE                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### 📋 Role of each layer
 
-| Layer | Folder | Responsibility | Depends on |
-|--------|---------|----------------|-----------|
-| **Présentation** | `controllers/` | Handle HTTP, validate entrées, format responses | Services |
-| **Métier** | `services/` | Logique business, orchestration, rules | Repositories |
-| **Data** | `repositories/` | Complex DB queries, abstraction | Models |
-| **Entities** | `models/` | Entity definitions, relationships, validations | Outlet ORM |
+| Layer | Folder | Responsibility | Security |
+|--------|---------|----------------|----------|
+| **Controllers** | `controllers/` | Handle HTTP, call ORM models, return responses | Input validation, ownership checks |
+| **Models** | `models/` | Entity definition, relationships, validations | `fillable`, `hidden`, rules |
+| **Middlewares** | `middlewares/` | Auth, rate limiting, error handling | 🔒 Critical |
 
 ### ✅ Benefits of this architecture
 
-- **Testability** : Each layer can be tested independently
-- **Maintainability** : Clear separation of responsibilities
-- **Scalability** : Easy to add new features
-- **Reusability** : Services reusable from CLI, workers, etc.
+- **Simplicity**: Less files, less abstraction, faster to navigate
+- **Productivity**: Outlet ORM's expressive API handles data access directly
+- **Testability**: Integration tests with SQLite in-memory cover full request flows
+- **Flexibility**: Add a `services/` or `repositories/` layer later if complexity grows
 
 ### 📝 Example workflow
 
@@ -179,78 +153,78 @@ router.get('/users/:id', auth, UserController.show);
 
 // controllers/UserController.js
 async show(req, res) {
-  const user = await userService.findById(req.params.id);
+  const user = await User.with('posts').find(req.params.id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
   res.json({ data: user });
 }
 
-// services/UserService.js
-async findById(id) {
-  const user = await userRepository.findWithPosts(id);
-  if (!user) throw new NotFoundError('User not found');
-  return user;
-}
+async store(req, res) {
+  const existing = await User.where('email', req.body.email).first();
+  if (existing) return res.status(409).json({ message: 'Email already in use' });
 
-// repositories/UserRepository.js
-async findWithPosts(id) {
-  return User.with('posts').find(id);
+  const data = { ...req.body };
+  data.password = await bcrypt.hash(data.password, 10);
+
+  const user = await User.create(data);
+  res.status(201).json({ success: true, data: user });
 }
 ```
 
 ## ✨ Key features
 
-- **API inspirede d'Eloquent** (Active Record) pour un usage fluide
-- **Query Builder expressif**: where/joins/order/limit/offset/paginate
-- **Relationship filters Laravel-style**: `whereHas()`, `has()`, `whereDoesntHave()`, `withCount()`
-- **Eager Loading** des relationships via `.with(...)` avec constraints et dot-notation
-- **Relations completes**:
-  - `hasOne`, `hasMany`, `belongsTo`, `belongsToMany` (avec attach/detach/sync)
-  - `hasManyThrough`, `hasOneThrough` (relationships transitives)
-  - `morphOne`, `morphMany`, `morphTo` (relationships polymorphiques)
-- **Transactions** completes: `beginTransaction()`, `commit()`, `rollback()`, `transaction()`
-- **Soft Deletes**: soft deletion avec `deleted_at`, `withTrashed()`, `onlyTrashed()`, `restore()`
-- **Scopes**: global and local to reuse your filters
+- **Eloquent-inspired API** (Active Record) for a fluent developer experience
+- **Expressive Query Builder**: where/joins/order/limit/offset/paginate
+- **Laravel-style relationship filters**: `whereHas()`, `has()`, `whereDoesntHave()`, `withCount()`
+- **Eager Loading** of relationships via `.with(...)` with constraints and dot-notation
+- **Complete relations**:
+  - `hasOne`, `hasMany`, `belongsTo`, `belongsToMany` (with attach/detach/sync)
+  - `hasManyThrough`, `hasOneThrough` (transitive relationships)
+  - `morphOne`, `morphMany`, `morphTo` (polymorphic relationships)
+- **Complete Transactions**: `beginTransaction()`, `commit()`, `rollback()`, `transaction()`
+- **Soft Deletes**: soft deletion with `deleted_at`, `withTrashed()`, `onlyTrashed()`, `restore()`
+- **Scopes**: global and local, to reuse your query filters
 - **Events/Hooks**: `creating`, `created`, `updating`, `updated`, `deleting`, `deleted`, etc.
-- **Validation**: rules built-in basic (`required`, `email`, `min`, `max`, etc.)
-- **Query Logging**: mode debug avec `enableQueryLog()` et `getQueryLog()`
-- **Pool PostgreSQL**: pooled connections pour better performance
-- **Protection SQL**: sanitization automatique des identifiants
-- **Casts automatiques** (int, float, boolean, json, date...)
-- **Hidden attributes** (`hidden`) et timestamps automatiques
-- **Visibility control** des attributs cachés: `withHidden()` et `withoutHidden()`
-- **Atomic increment/decrement**: `increment()` et `decrement()`
-- **Aliases ergonomiques**: `columns([...])`, `ordrer()` (alias typo de `orderBy`)
-- **Raw queries**: `executeRawQuery()` et `execute()` (native driver results)
-- **Migrations completes** (create/alter/drop, index, foreign keys, batch tracking)
-- **CLI pratiques**: `outlet-init`, `outlet-migrate`, `outlet-convert`
-- **Configuration via `.env`** (loaded automatically)
-- **Multi-database**: MySQL, PostgreSQL et SQLite
-- **Complete TypeScript types** avec Generic Model et Schema Builder typed (v4.0.0+)
+- **Validation**: built-in basic rules (`required`, `email`, `min`, `max`, etc.)
+- **Query Logging**: debug mode with `enableQueryLog()` and `getQueryLog()`
+- **PostgreSQL Pool**: pooled connections for better performance
+- **SQL Protection**: automatic sanitisation of identifiers
+- **Automatic Casts** (int, float, boolean, json, date...)
+- **Hidden attributes** (`hidden`) and automatic timestamps
+- **Visibility control** of hidden attributes: `withHidden()` and `withoutHidden()`
+- **Atomic increment/decrement**: `increment()` and `decrement()`
+- **Ergonomic aliases**: `columns([...])`, `ordrer()` (typo alias for `orderBy`)
+- **Raw queries**: `executeRawQuery()` and `execute()` (native driver results)
+- **Complete Migrations** (create/alter/drop, index, foreign keys, batch tracking)
+- **Handy CLI tools**: `outlet-init`, `outlet-migrate`, `outlet-convert`
+- **`.env` configuration** (loaded automatically)
+- **Multi-database**: MySQL, PostgreSQL, and SQLite
+- **Complete TypeScript types** with Generic Model and typed Schema Builder (v4.0.0+)
 
 ## ⚡ Quick Start
 
-### Initialisation du projet
+### Project Initialisation
 
 ```bash
-# Create la configuration initiale
+# Create initial configuration
 outlet-init
 
-# Create une migration
+# Create a migration
 outlet-migrate make create_users_table
 
-# Run les migrations
+# Run migrations
 outlet-migrate migrate
 ```
 
-### 🌱 Seeding rapide
+### 🌱 Quick Seeding
 
 ```bash
-# Create un seeder
+# Create a seeder
 outlet-migrate make:seed UserSeeder
 
-# Run les seeds (DatabaseSeeder prioritaire)
+# Run seeders (DatabaseSeeder runs first)
 outlet-migrate seed
 
-# Run un specific seeder
+# Run a specific seeder
 outlet-migrate seed --class UserSeeder
 ```
 
@@ -258,7 +232,7 @@ outlet-migrate seed --class UserSeeder
 
 ### Connection configuration
 
-Outlet ORM charge automatiquement la connection depuis le file `.env`. **Plus besoin d'importer DatabaseConnection !**
+Outlet ORM automatically loads the connection from the `.env` file. **No need to import DatabaseConnection!**
 
 #### `.env` file
 
@@ -280,7 +254,7 @@ class User extends Model {
   static table = 'users';
 }
 
-// C'est tout ! La connection est automatique
+// That's it! The connection is automatic
 const users = await User.all();
 ```
 
@@ -294,7 +268,7 @@ const { DatabaseConnection, Model } = require('outlet-orm');
 // Option 1 – via .env (no parameters required)
 const db = new DatabaseConnection();
 
-// Option 2 – via objet de configuration
+// Option 2 – via configuration object
 const db = new DatabaseConnection({
   driver: 'mysql',
   host: 'localhost',
@@ -304,7 +278,7 @@ const db = new DatabaseConnection({
   port: 3306
 });
 
-// Définir la connection manuellement (optionnel)
+// Set the connection manually (optional)
 Model.setConnection(db);
 ```
 
@@ -313,23 +287,23 @@ Model.setConnection(db);
 | Variable | Description | Default |
 |----------|-------------|------------|
 | `DB_DRIVER` | `mysql`, `postgres`, `sqlite` | `mysql` |
-| `DB_HOST` | Hôte de la base | `localhost` |
-| `DB_PORT` | Port de connection | Selon driver |
-| `DB_USER` / `DB_USERNAME` | Identifiant | - |
-| `DB_PASSWORD` | Mot de passe | - |
-| `DB_DATABASE` / `DB_NAME` | Nom de la base | - |
+| `DB_HOST` | Database host | `localhost` |
+| `DB_PORT` | Connection port | Driver default |
+| `DB_USER` / `DB_USERNAME` | Username | - |
+| `DB_PASSWORD` | Password | - |
+| `DB_DATABASE` / `DB_NAME` | Database name | - |
 | `DB_FILE` / `SQLITE_DB` | SQLite file | `:memory:` |
 
 ### Importation
 
 ```javascript
-// CommonJS - Import simple (connection automatique via .env)
+// CommonJS - Simple import (automatic connection via .env)
 const { Model } = require('outlet-orm');
 
 // ES Modules
 import { Model } from 'outlet-orm';
 
-// Si besoin de Manual control sur la connection
+// If you need manual control over the connection
 const { DatabaseConnection, Model } = require('outlet-orm');
 ```
 
@@ -386,30 +360,30 @@ const user = new User({
 user.setAttribute('password', 'secret456');
 await user.save();
 
-// Insert brut (sans create d'instance)
+// Raw insert (without creating an instance)
 await User.insert({ name: 'Bob', email: 'bob@example.com' });
 ```
 
-#### Lire
+#### Read
 
 ```javascript
-// Tous les enregistrements
+// All records
 const users = await User.all();
 
-// Par ID
+// By ID
 const user = await User.find(1);
 const user = await User.findOrFail(1); // Throws an error if not found
 
 // First result
 const firstUser = await User.first();
 
-// Avec conditions
+// With conditions
 const activeUsers = await User
   .where('status', 'active')
   .where('age', '>', 18)
   .get();
 
-// Avec relationships (Eager Loading)
+// With relationships (Eager Loading)
 const usersWithPosts = await User
   .with('posts', 'profile')
   .get();
@@ -439,7 +413,7 @@ const updated = await User
   .where('id', 1)
   .updateAndFetch({ name: 'Neo' }, ['profile', 'posts']);
 
-// Helpers par ID
+// Helpers by ID
 const user = await User.updateAndFetchById(1, { name: 'Trinity' }, ['profile']);
 await User.updateById(2, { status: 'active' });
 ```
@@ -501,7 +475,7 @@ const stats = await User
   .having('COUNT(*)', '>', 5)
   .get();
 
-// Incrément / Décrément atomique
+// Atomic increment / decrement
 await User.where('id', 1).increment('login_count');
 await User.where('id', 1).decrement('credits', 10);
 ```
@@ -509,22 +483,22 @@ await User.where('id', 1).decrement('credits', 10);
 ### Relationship filters
 
 ```javascript
-// whereHas: Utilisateurs ayant au moins un post publié
+// whereHas: Users who have at least one published post
 const authors = await User
   .whereHas('posts', (q) => {
     q.where('status', 'published');
   })
   .get();
 
-// has: Au moins N enfants
+// has: At least N children
 const prolific = await User.has('posts', '>=', 10).get();
 
 // whereDoesntHave: No children
 const noPostUsers = await User.whereDoesntHave('posts').get();
 
-// withCount: Ajouter une colonne {relation}_count
+// withCount: Add a {relation}_count column
 const withCounts = await User.withCount('posts').get();
-// Chaque user aura: user.getAttribute('posts_count')
+// Each user will have: user.getAttribute('posts_count')
 ```
 
 ## 🔗 Relations
@@ -609,10 +583,10 @@ class User extends Model {
 const user = await User.find(1);
 const roles = await user.roles().get();
 
-// Méthodes pivot
+// Pivot methods
 await user.roles().attach([1, 2]);    // Attach roles
 await user.roles().detach(2);          // Detach a role
-await user.roles().sync([1, 3]);       // Synchroniser (remplace tout)
+await user.roles().sync([1, 3]);       // Synchronise (replaces all)
 ```
 
 ### Has Many Through (hasManyThrough)
@@ -656,7 +630,7 @@ Polymorphic relationships allow a model to belong to multiple other models.
 ```javascript
 const { Model } = require('outlet-orm');
 
-// Configuration du morph map
+// Set up the morph map
 Model.setMorphMap({
   'posts': Post,
   'videos': Video
@@ -686,21 +660,21 @@ const post = await Post.find(1);
 const comments = await post.comments().get();
 
 const comment = await Comment.find(1);
-const parent = await comment.commentable().get(); // Post ou Video
+const parent = await comment.commentable().get(); // Post or Video
 ```
 
-**Relations polymorphiques availables:**
-- `morphOne(Related, 'morphName')` - One-to-One polymorphique
-- `morphMany(Related, 'morphName')` - One-to-Many polymorphique
-- `morphTo('morphName')` - Inverse polymorphique
+**Available polymorphic relationships:**
+- `morphOne(Related, 'morphName')` - One-to-One polymorphic
+- `morphMany(Related, 'morphName')` - One-to-Many polymorphic
+- `morphTo('morphName')` - Inverse polymorphic
 
 ### Eager Loading
 
 ```javascript
-// Charger plusieurs relationships
+// Load multiple relationships
 const users = await User.with('posts', 'profile', 'roles').get();
 
-// Charger avec constraints
+// Load with constraints
 const users = await User.with({
   posts: (q) => q.where('status', 'published').orderBy('created_at', 'desc')
 }).get();
@@ -708,7 +682,7 @@ const users = await User.with({
 // Load nested relationships (dot notation)
 const users = await User.with('posts.comments.author').get();
 
-// Charger sur une instance existante
+// Load on an existing instance
 const user = await User.find(1);
 await user.load('posts', 'profile');
 await user.load(['roles', 'posts.comments']);
@@ -724,7 +698,7 @@ users.forEach(user => {
 
 ### Casts
 
-Les casts convertissent automatiquement les attributs:
+Casts automatically convert attributes:
 
 ```javascript
 const { Model } = require('outlet-orm');
@@ -736,8 +710,8 @@ class User extends Model {
     balance: 'float',       // ou 'double'
     email_verified: 'boolean', // ou 'bool'
     metadata: 'json',       // Parse JSON
-    settings: 'array',      // Parse JSON en array
-    birthday: 'date'        // Convertit en Date
+    settings: 'array',      // Parse JSON as array
+    birthday: 'date'        // Converts to Date
   };
 }
 ```
@@ -752,7 +726,7 @@ class User extends Model {
 }
 
 const user = await User.find(1);
-console.log(user.toJSON()); // password et secret_token exclus
+console.log(user.toJSON()); // password and secret_token excluded
 ```
 
 #### Show hidden attributes
@@ -760,13 +734,13 @@ console.log(user.toJSON()); // password et secret_token exclus
 ```javascript
 // Include hidden attributes
 const user = await User.withHidden().where('email', 'john@example.com').first();
-console.log(user.toJSON()); // password inclus
+console.log(user.toJSON()); // password included
 
 // Control with a boolean
-const user = await User.withoutHidden(true).first(); // true = afficher
+const user = await User.withoutHidden(true).first(); // true = show
 const user = await User.withoutHidden(false).first(); // false = hide (default)
 
-// Cas d'usage: authentification
+// Use case: authentication
 const user = await User.withHidden().where('email', email).first();
 if (user && await bcrypt.compare(password, user.getAttribute('password'))) {
   // Authentication successful
@@ -778,7 +752,7 @@ if (user && await bcrypt.compare(password, user.getAttribute('password'))) {
 ```javascript
 const { Model } = require('outlet-orm');
 
-// Activés Default (created_at, updated_at)
+// Enabled by default (created_at, updated_at)
 class User extends Model {
   static timestamps = true;
 }
@@ -818,7 +792,7 @@ try {
 
 ## 🗑️ Soft Deletes
 
-Suppression logique avec colonne `deleted_at`:
+Soft deletion using a `deleted_at` column:
 
 ```javascript
 const { Model } = require('outlet-orm');
@@ -826,16 +800,16 @@ const { Model } = require('outlet-orm');
 class Post extends Model {
   static table = 'posts';
   static softDeletes = true;
-  // static DELETED_AT = 'deleted_at'; // Personnalisable
+  // static DELETED_AT = 'deleted_at'; // Customisable
 }
 
-// Les queries excluent automatiquement les deleteds
-const posts = await Post.all(); // Seulement les non-deleteds
+// Queries automatically exclude soft-deleted records
+const posts = await Post.all(); // Only non-deleted records
 
-// Inclure les deleteds
+// Include deleted records
 const allPosts = await Post.withTrashed().get();
 
-// Seulement les deleteds
+// Only deleted records
 const trashedPosts = await Post.onlyTrashed().get();
 
 // Delete (soft delete)
@@ -867,18 +841,18 @@ class Post extends Model {
   static table = 'posts';
 }
 
-// Ajouter un scope global
+// Add a global scope
 Post.addGlobalScope('published', (query) => {
   query.where('status', 'published');
 });
 
-// Toutes les queries filtrent automatiquement
+// All queries filter automatically
 const posts = await Post.all(); // Published only
 
-// Disable temporairement un scope
+// Temporarily disable a scope
 const allPosts = await Post.withoutGlobalScope('published').get();
 
-// Disable tous les scopes
+// Disable all scopes
 const rawPosts = await Post.withoutGlobalScopes().get();
 ```
 
@@ -896,12 +870,12 @@ class User extends Model {
 // Before creation
 User.creating((user) => {
   user.setAttribute('uuid', generateUUID());
-  // Retourner false pour rollback
+  // Return false to roll back
 });
 
 // After creation
 User.created((user) => {
-  console.log(`Utilisateur ${user.getAttribute('id')} créé`);
+  console.log(`User ${user.getAttribute('id')} created`);
 });
 
 // Before update
@@ -911,28 +885,28 @@ User.updating((user) => {
 
 // After update
 User.updated((user) => {
-  // Notifier les systèmes externes
+  // Notify external systems
 });
 
 // saving/saved events (creation AND update)
 User.saving((user) => {
-  // Nettoyage des data
+  // Data cleanup
 });
 
 User.saved((user) => {
   // Cache invalidation
 });
 
-// Avant/après suppression
+// Before/after deletion
 User.deleting((user) => {
   // Checks before deletion
 });
 
 User.deleted((user) => {
-  // Nettoyage des relationships
+  // Clean up relationships
 });
 
-// Pour les soft deletes
+// For soft deletes
 User.restoring((user) => {});
 User.restored((user) => {});
 ```
@@ -971,7 +945,7 @@ console.log(errors);
 //   age: ['age must not exceed 150']
 // }
 
-// Valider ou lancer une erreur
+// Validate or throw an error
 try {
   user.validateOrFail();
 } catch (error) {
@@ -981,14 +955,14 @@ try {
 
 ### Available rules
 
-| Règle | Description |
+| Rule | Description |
 |-------|-------------|
-| `required` | Champ obligatoire |
+| `required` | Required field |
 | `string` | Must be a string |
 | `number` / `numeric` | Must be a number |
-| `email` | Format email valide |
+| `email` | Valid email format |
 | `boolean` | Must be a boolean |
-| `date` | Date valide |
+| `date` | Valid date |
 | `min:N` | Minimum N (longueur ou value) |
 | `max:N` | Maximum N (longueur ou value) |
 | `in:a,b,c` | Valeur parmi la liste |
@@ -1005,7 +979,7 @@ const { Model } = require('outlet-orm');
 const db = Model.getConnection();
 db.enableQueryLog();
 
-// Run des queries
+// Run queries
 await User.where('status', 'active').get();
 await Post.with('author').get();
 
@@ -1025,7 +999,7 @@ db.disableQueryLog();
 
 // Check if active
 if (db.isLogging()) {
-  console.log('Logging actif');
+  console.log('Logging active');
 }
 ```
 
@@ -1035,95 +1009,95 @@ if (db.isLogging()) {
 
 | Method | Description |
 |---------|-------------|
-| `new DatabaseConnection(config?)` | Creates a connection (lit `.env` si config omis) |
-| `connect()` | Establishes the connection (appelé automatiquement) |
+| `new DatabaseConnection(config?)` | Creates a connection (reads `.env` if config is omitted) |
+| `connect()` | Establishes the connection (called automatically) |
 | `beginTransaction()` | Starts a transaction |
-| `commit()` | Valide la transaction |
-| `rollback()` | Annule la transaction |
+| `commit()` | Commits the transaction |
+| `rollback()` | Rolls back the transaction |
 | `transaction(callback)` | Runs in a transaction (auto commit/rollback) |
 | `select(table, query)` | Runs a SELECT |
 | `insert(table, data)` | Inserts a record |
 | `insertMany(table, data[])` | Inserts multiple records |
 | `update(table, data, query)` | Updates records |
-| `delete(table, query)` | Supprime des enregistrements |
-| `count(table, query)` | Compte les enregistrements |
-| `executeRawQuery(sql, params?)` | Requête brute (résultats normalisés) |
-| `execute(sql, params?)` | Requête brute (résultats natifs driver) |
-| `increment(table, column, query, amount?)` | Incrément atomique |
-| `decrement(table, column, query, amount?)` | Décrément atomique |
-| `close()` / `disconnect()` | Ferme la connection |
+| `delete(table, query)` | Deletes records |
+| `count(table, query)` | Counts records |
+| `executeRawQuery(sql, params?)` | Raw query (normalised results) |
+| `execute(sql, params?)` | Raw query (native driver results) |
+| `increment(table, column, query, amount?)` | Atomic increment |
+| `decrement(table, column, query, amount?)` | Atomic decrement |
+| `close()` / `disconnect()` | Closes the connection |
 | **Query Logging (static)** | |
-| `enableQueryLog()` | Active le logging des queries |
-| `disableQueryLog()` | Désactive le logging |
+| `enableQueryLog()` | Enables query logging |
+| `disableQueryLog()` | Disables logging |
 | `getQueryLog()` | Returns the query log |
-| `flushQueryLog()` | Vide le log |
+| `flushQueryLog()` | Clears the log |
 | `isLogging()` | Checks whether logging is active |
 
-### Model (methods statiques)
+### Model (static methods)
 
 | Method | Description |
 |---------|-------------|
-| `setConnection(db)` | Définit la connection Default |
+| `setConnection(db)` | Sets the default connection |
 | `getConnection()` | Gets the connection (v3.0.0+) |
 | `setMorphMap(map)` | Defines polymorphic mapping |
-| `query()` | Retourne un QueryBuilder |
-| `all()` | Tous les enregistrements |
-| `find(id)` | Trouve par ID |
-| `findOrFail(id)` | Trouve ou lance une erreur |
-| `first()` | Premier enregistrement |
+| `query()` | Returns a QueryBuilder |
+| `all()` | All records |
+| `find(id)` | Finds by ID |
+| `findOrFail(id)` | Finds or throws an error |
+| `first()` | First record |
 | `where(col, op?, val)` | Clause WHERE |
 | `whereIn(col, vals)` | Clause WHERE IN |
 | `whereNull(col)` | Clause WHERE NULL |
 | `whereNotNull(col)` | Clause WHERE NOT NULL |
 | `create(attrs)` | Creates and saves |
-| `insert(data)` | Insert brut |
+| `insert(data)` | Raw insert |
 | `update(attrs)` | Update bulk |
-| `updateById(id, attrs)` | Update par ID |
-| `updateAndFetchById(id, attrs, rels?)` | Update + fetch avec relationships |
+| `updateById(id, attrs)` | Update by ID |
+| `updateAndFetchById(id, attrs, rels?)` | Update + fetch with relationships |
 | `delete()` | Delete bulk |
 | `with(...rels)` | Eager loading |
 | `withHidden()` | Includes hidden attributes |
-| `withoutHidden(show?)` | Contrôle visibilité |
-| `orderBy(col, dir?)` | Tri |
-| `limit(n)` / `offset(n)` | Limite/Offset |
+| `withoutHidden(show?)` | Control attribute visibility |
+| `orderBy(col, dir?)` | Sort |
+| `limit(n)` / `offset(n)` | Limit/Offset |
 | `paginate(page, perPage)` | Pagination |
-| `count()` | Compte |
+| `count()` | Count |
 | **Soft Deletes** | |
-| `withTrashed()` | Inclut les deleteds |
-| `onlyTrashed()` | Seulement les deleteds |
+| `withTrashed()` | Includes soft-deleted records |
+| `onlyTrashed()` | Only soft-deleted records |
 | **Scopes** | |
 | `addGlobalScope(name, cb)` | Adds a global scope |
 | `removeGlobalScope(name)` | Removes a scope |
 | `withoutGlobalScope(name)` | Query without one scope |
 | `withoutGlobalScopes()` | Query without all scopes |
 | **Events** | |
-| `on(event, callback)` | Enregistre un listener |
+| `on(event, callback)` | Registers a listener |
 | `creating(cb)` / `created(cb)` | Creation events |
 | `updating(cb)` / `updated(cb)` | Update events |
-| `saving(cb)` / `saved(cb)` | Events sauvegarde |
-| `deleting(cb)` / `deleted(cb)` | Events suppression |
-| `restoring(cb)` / `restored(cb)` | Events restauration |
+| `saving(cb)` / `saved(cb)` | Save events |
+| `deleting(cb)` / `deleted(cb)` | Delete events |
+| `restoring(cb)` / `restored(cb)` | Restore events |
 
-### Model (methods d'instance)
+### Model (instance methods)
 
 | Method | Description |
 |---------|-------------|
 | `fill(attrs)` | Fills attributes |
 | `setAttribute(key, val)` | Sets an attribute |
 | `getAttribute(key)` | Gets an attribute |
-| `save()` | Sauvegarde (insert ou update) |
-| `destroy()` | Supprime l'instance (soft si activé) |
-| `load(...rels)` | Charge des relationships |
-| `getDirty()` | Attributs modifiés |
+| `save()` | Save (insert or update) |
+| `destroy()` | Delete the instance (soft if enabled) |
+| `load(...rels)` | Load relationships |
+| `getDirty()` | Modified attributes |
 | `isDirty()` | Has been modified? |
-| `toJSON()` | Convertit en objet |
+| `toJSON()` | Convert to plain object |
 | **Soft Deletes** | |
 | `trashed()` | Is deleted? |
-| `restore()` | Restore le model |
+| `restore()` | Restore the model |
 | `forceDelete()` | Permanent deletion |
 | **Validation** | |
-| `validate()` | Valide selon les rules |
-| `validateOrFail()` | Valide ou lance erreur |
+| `validate()` | Validate against rules |
+| `validateOrFail()` | Validate or throw error |
 
 ### QueryBuilder
 
@@ -1139,22 +1113,22 @@ if (db.isLogging()) {
 | `orWhere(col, op?, val)` | OR WHERE |
 | `whereBetween(col, [min, max])` | WHERE BETWEEN |
 | `whereLike(col, pattern)` | WHERE LIKE |
-| `whereHas(rel, cb?)` | Filtre par relation |
-| `has(rel, op?, count)` | Existence relationnelle |
-| `whereDoesntHave(rel)` | Absence de relation |
-| `orderBy(col, dir?)` / `ordrer(...)` | Tri |
-| `limit(n)` / `take(n)` | Limite |
+| `whereHas(rel, cb?)` | Filter by existence of relation |
+| `has(rel, op?, count)` | Relational existence |
+| `whereDoesntHave(rel)` | Absence of relation |
+| `orderBy(col, dir?)` / `ordrer(...)` | Sort |
+| `limit(n)` / `take(n)` | Limit |
 | `offset(n)` / `skip(n)` | Offset |
 | `groupBy(...cols)` | GROUP BY |
 | `having(col, op, val)` | HAVING |
 | `join(table, first, op?, second)` | INNER JOIN |
 | `leftJoin(table, first, op?, second)` | LEFT JOIN |
 | `with(...rels)` | Eager loading |
-| `withCount(rels)` | Ajoute {rel}_count |
-| `withTrashed()` | Inclut les deleteds |
-| `onlyTrashed()` | Seulement les deleteds |
-| `withoutGlobalScope(name)` | Sans un scope global |
-| `withoutGlobalScopes()` | Sans tous les scopes |
+| `withCount(rels)` | Adds `{rel}_count` |
+| `withTrashed()` | Includes soft-deleted records |
+| `onlyTrashed()` | Only soft-deleted records |
+| `withoutGlobalScope(name)` | Without one global scope |
+| `withoutGlobalScopes()` | Without all global scopes |
 | `get()` | Runs and returns all |
 | `first()` | First result |
 | `firstOrFail()` | Premier ou erreur |
@@ -1165,15 +1139,15 @@ if (db.isLogging()) {
 | `update(attrs)` | Update |
 | `updateAndFetch(attrs, rels?)` | Update + fetch |
 | `delete()` | Delete |
-| `increment(col, amount?)` | Incrément atomique |
-| `decrement(col, amount?)` | Décrément atomique |
-| `clone()` | Clone le query builder |
+| `increment(col, amount?)` | Atomic increment |
+| `decrement(col, amount?)` | Atomic decrement |
+| `clone()` | Clones the query builder |
 
 ## 🛠️ CLI tools
 
 ### outlet-init
 
-Initialise un nouveau projet avec configuration de database.
+Initialises a new project with database configuration.
 
 ```bash
 outlet-init
@@ -1190,19 +1164,19 @@ Generates:
 complete migration system.
 
 ```bash
-# Create une migration
+# Create a migration
 outlet-migrate make create_users_table
 
-# Run les migrations
+# Run migrations
 outlet-migrate migrate
 
-# See le statut
+# See migration status
 outlet-migrate status
 
 # Roll back the latest migration
 outlet-migrate rollback --steps 1
 
-# Reset toutes les migrations
+# Reset all migrations
 outlet-migrate reset --yes
 
 # Refresh (reset + migrate)
@@ -1212,17 +1186,17 @@ outlet-migrate refresh --yes
 outlet-migrate fresh --yes
 ```
 
-**Features des Migrations:**
+**Migration Features:**
 
 - ✅ Creation and management of migrations (create, alter, drop tables)
-- ✅ Types de colonnes: id, string, text, integer, boolean, date, datetime, timestamp, decimal, float, json, enum, uuid, foreignId
-- ✅ Modificateurs: nullable, default, unique, index, unsigned, autoIncrement, comment, after, first
+- ✅ Column types: id, string, text, integer, boolean, date, datetime, timestamp, decimal, float, json, enum, uuid, foreignId
+- ✅ Modifiers: nullable, default, unique, index, unsigned, autoIncrement, comment, after, first
 - ✅ Foreign keys: foreign(), constrained(), onDelete(), onUpdate(), CASCADE
 - ✅ Index: index(), unique(), fullText()
 - ✅ Manipulation: renameColumn(), dropColumn(), dropTimestamps()
-- ✅ Reversible migrations: Méthodes up() et down()
+- ✅ Reversible migrations: up() and down() methods
 - ✅ Batch tracking: Precise rollback by batch
-- ✅ Custom SQL: execute() pour advanced commands
+- ✅ Custom SQL: execute() for advanced commands
 
 ### outlet-convert
 
@@ -1233,29 +1207,29 @@ outlet-convert
 ```
 
 **Options:**
-1. Depuis un file SQL local
+1. From a local SQL file
 2. From a connected database
 
 **Features:**
-- ✅ Detection automatique des types et casts
+- ✅ Automatic type and cast detection
 - ✅ Automatic generation of ALL relationships (belongsTo, hasMany, hasOne, belongsToMany)
 - ✅ Recursive relationships (auto-relationships)
-- ✅ Detection des champs sensibles (password, token, etc.)
-- ✅ Support des timestamps automatiques
-- ✅ Conversion des noms en PascalCase
+- ✅ Detection of sensitive fields (password, token, etc.)
+- ✅ Automatic timestamps support
+- ✅ Class names converted to PascalCase
 
 ## 📚 Documentation
 
-- [Guide des Migrations](docs/MIGRATIONS.md)
-- [Conversion SQL](docs/SQL_CONVERSION.md)
-- [Detection des Relations](docs/RELATIONS_DETECTION.md)
+- [Migrations Guide](docs/MIGRATIONS.md)
+- [SQL Conversion](docs/SQL_CONVERSION.md)
+- [Relation Detection](docs/RELATIONS_DETECTION.md)
 - [Quick Start Guide](docs/QUICKSTART.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [**TypeScript (complet)**](docs/TYPESCRIPT.md)
 
 ## 📘 TypeScript Support
 
-Outlet ORM v4.0.0 inclut des définitions TypeScript completes avec support des **generics pour les attributs typeds**.
+Outlet ORM v4.0.0 includes complete TypeScript definitions with support for **generics for typed model attributes**.
 
 ### Typed models
 

@@ -1,0 +1,21 @@
+{
+  "name": "simplified-architecture-example",
+  "version": "1.0.0",
+  "description": "outlet-orm simplified 2-layer architecture example (Controllers ↔ Models, no Services/Repositories)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "peerDependencies": {
+    "outlet-orm": ">=5.5.0"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
