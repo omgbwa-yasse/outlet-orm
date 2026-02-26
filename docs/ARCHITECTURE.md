@@ -15,7 +15,7 @@ mon-projet/
 ├── .gitignore
 ├── package.json
 ├── src/
-│   ├── index.js                   # Point d'entrée
+│   ├── index.js                   # Entry point
 │   ├── controllers/               # 🎮 Presentation Layer
 │   │   ├── UserController.js
 │   │   └── PostController.js
@@ -29,13 +29,13 @@ mon-projet/
 │   │   ├── User.js
 │   │   ├── Post.js
 │   │   └── index.js
-│   ├── middlewares/               # 🔒 Sécurité critique
+│   ├── middlewares/               # 🔒 Critical security
 │   │   ├── auth.js                # JWT authentication
 │   │   ├── authorization.js       # RBAC
 │   │   ├── rateLimiter.js
 │   │   ├── validator.js
 │   │   └── errorHandler.js
-│   ├── routes/                    # 🛤️ Définition des routes
+│   ├── routes/                    # 🛤️ Route definitions
 │   │   └── index.js
 │   ├── config/                    # 🔒 Centralised configuration
 │   │   ├── app.js
@@ -198,7 +198,7 @@ module.exports = new UserController();
 
 ```
 src/
-├── index.js                 # Point d'entrée principal, exporte tous les modules
+├── index.js                 # Entry point principal, exporte tous les modules
 ├── Model.js                 # Classe Model de base (Active Record)
 ├── QueryBuilder.js          # Constructeur de queries
 ├── DatabaseConnection.js    # Gestionnaire de connection aux bases de data

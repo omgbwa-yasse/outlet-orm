@@ -83,7 +83,7 @@ mon-projet/
 |`config/`| Centralised configuration | 🔒 Reads .env |
 |`database/`| Migrations |`outlet-init`|
 |`models/`| Model classes | 🔒`hidden`,`fillable`|
-|`middlewares/`| Auth, validation, rate limit | 🔒 **Critique** |
+|`middlewares/`| Auth, validation, rate limit | 🔒 **Critical** |
 |`utils/`| Hash, tokens | 🔒 Do not expose |
 |`public/`| Static files | ✅ Only public file |
 |`logs/`| Logs | 📋`.gitignore`|

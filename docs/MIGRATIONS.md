@@ -4,9 +4,9 @@
 
 The Outlet ORM migration system is inspired by Laravel and allows you to manage the evolution of your database schema in a versioned and collaborative manner.
 
-> 📁 **Location** :`database/migrations/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Location** :`database/migrations/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 >
-> 📘 **TypeScript**: Use`MigrationInterface`,`SchemaBuilder`,`TableBuilder`for typical migrations. See [TYPESCRIPT.md](TYPESCRIPT.md#migrations-typées-v400)
+> 📘 **TypeScript**: Use`MigrationInterface`,`SchemaBuilder`,`TableBuilder`for typical migrations. See [TYPESCRIPT.md](TYPESCRIPT.md#migrations-typedes-v400)
 
 ## 🚀 CLI Commands
 
@@ -217,7 +217,7 @@ table.foreign('user_id')
   .cascadeOnDelete()
   .cascadeOnUpdate();
 
-// Options disponibles: CASCADE, SET NULL, NO ACTION, RESTRICT
+// Options availables: CASCADE, SET NULL, NO ACTION, RESTRICT
 table.foreign('category_id')
   .references('id')
   .on('categories')

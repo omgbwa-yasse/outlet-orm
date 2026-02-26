@@ -2,7 +2,7 @@
 
 [← Back to Index](SKILL.md) | [Previous: Relationships](RELATIONS.md) | [Next: Advanced →](ADVANCED.md)
 
-> 📘 **TypeScript** : Use`MigrationInterface`,`SchemaBuilder`,`TableBuilder`,`ColumnBuilder`for type-safe migrations. See [TYPESCRIPT.md](TYPESCRIPT.md#migrations-typées-v400)
+> 📘 **TypeScript** : Use`MigrationInterface`,`SchemaBuilder`,`TableBuilder`,`ColumnBuilder`for type-safe migrations. See [TYPESCRIPT.md](TYPESCRIPT.md#migrations-typedes-v400)
 
 ---
 

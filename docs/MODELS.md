@@ -2,7 +2,7 @@
 
 The models in Outlet ORM follow the Active Record pattern, inspired by Laravel Eloquent.
 
-> 📁 **Recommended location**:`models/`(definitions) and used in`controllers/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Recommended location**:`models/`(definitions) and used in`controllers/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 >
 > 📘 **TypeScript**: Use`Model<TAttributes>`for typed attributes. See [TYPESCRIPT.md](TYPESCRIPT.md#generic-model-v400)
 

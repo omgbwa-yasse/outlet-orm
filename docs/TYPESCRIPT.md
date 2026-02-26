@@ -2,7 +2,7 @@
 
 Outlet ORM v4.0.0 includes full TypeScript definitions with support for **generics for typed attributes**.
 
-> 📁 **Recommended location**:`models/`,`controllers/`,`services/`and`src/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Recommended location**:`models/`,`controllers/`,`services/`and`src/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 
 ## What’s new v4.0.0
 
@@ -543,7 +543,7 @@ if (!result.valid) {
 
 ---
 
-## Schema Builder typé (v4.0.0+)
+## Schema Builder typed (v4.0.0+)
 
 The Schema Builder offers comprehensive TypeScript interfaces for creating type-safe migrations.
 

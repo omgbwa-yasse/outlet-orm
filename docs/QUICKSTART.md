@@ -25,7 +25,7 @@ mon-projet/
 ├── .gitignore
 ├── package.json
 ├── src/
-│   ├── index.js                   # Point d'entrée
+│   ├── index.js                   # Entry point
 │   ├── controllers/               # 🎮 Presentation Layer
 │   │   └── UserController.js
 │   ├── services/                  # ⚙️ Business Layer
@@ -38,7 +38,7 @@ mon-projet/
 │   │   ├── auth.js
 │   │   ├── validator.js
 │   │   └── errorHandler.js
-│   ├── routes/                    # 🛤️ Définition des routes
+│   ├── routes/                    # 🛤️ Route definitions
 │   │   └── index.js
 │   ├── config/                    # 🔒 Configuration
 │   │   ├── database.js
@@ -533,7 +533,7 @@ const posts = await user.posts().get();
 const users = await User.with('posts').get();
 ```
 
-2. **Définissez fillable** pour la sécurité
+2. **Define `fillable`** for security
 ```javascript
 class User extends Model {
 static fillable = ['name', 'email']; // Only these fields
@@ -567,7 +567,7 @@ await db.close();
 
 ## Next Steps
 
-- Consultez le [README.md](README.md) pour la documentation complète
+- Consultez le [README.md](README.md) pour la documentation complete
 - Explorez les [exemples](examples/) pour plus de cas d'usage
 - Lisez le [CONTRIBUTING.md](CONTRIBUTING.md) si vous souhaitez contribuer
 

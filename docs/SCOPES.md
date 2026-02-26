@@ -2,7 +2,7 @@
 
 Scopes allow you to define reusable query constraints on your models.
 
-> 📁 **Location**: Define your scopes in`models/`or`services/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Location**: Define your scopes in`models/`or`services/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 >
 > 📘 **TypeScript**: Scopes are typed with`ScopeFunction`. See [TYPESCRIPT.md](TYPESCRIPT.md)
 

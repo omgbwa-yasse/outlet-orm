@@ -535,7 +535,7 @@ class User extends Model {
   };
 
   /**
-   * Hook: Hacher le mot de passe avant création
+   * Hook: Hacher le mot de passe Before creation
    */
   static boot() {
     this.creating(async (user) => {

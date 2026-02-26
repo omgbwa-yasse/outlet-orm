@@ -2,7 +2,7 @@
 
 Outlet ORM's SQL Converter intelligently analyzes your database schema to **automatically** generate all relationships between your models.
 
-> 📁 **Generation**: The generated models go into`models/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Generation**: The generated models go into`models/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 
 ## 🎯 Types of Relationships Detected
 

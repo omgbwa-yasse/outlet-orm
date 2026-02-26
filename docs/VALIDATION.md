@@ -4,7 +4,7 @@ Outlet ORM v4.0.0 includes a built-in validation system to validate data before 
 
 > 📘 **TypeScript**: The type`ValidationRule`includes all available rules. See [TYPESCRIPT.md](TYPESCRIPT.md).
 
-> 📁 **Location**: Define your rules in`models/`and validate in`controllers/`or`middlewares/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Location**: Define your rules in`models/`and validate in`controllers/`or`middlewares/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 
 ## Configuration
 

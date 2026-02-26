@@ -7,7 +7,7 @@
 ### 🚀 Getting Started
 - [Quick Start Guide](QUICKSTART.md)
 - [Installation and Configuration](INSTALLATION.md)
-- [Project Structure (Layered Architecture)](INSTALLATION.md#structure-de-projet-recommandée-architecture-en-couches)
+- [Project Structure (Layered Architecture)](INSTALLATION.md#structure-de-projet-recommended-architecture-en-couches)
 
 ### 🏗️ Recommended Architecture
 - [Layered Architecture](ARCHITECTURE.md) – Controllers → Services → Repositories → Models

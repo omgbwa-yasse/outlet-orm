@@ -2,7 +2,7 @@
 
 Events allow you to execute code at different stages of a model's lifecycle.
 
-> 📁 **Location**: Define your events in`models/`or`services/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Location**: Define your events in`models/`or`services/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 >
 > 📘 **TypeScript**: Use the type`ModelEventName`for event names. See [TYPESCRIPT.md](TYPESCRIPT.md)
 

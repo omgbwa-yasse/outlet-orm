@@ -2,7 +2,7 @@
 
 Outlet ORM's Query Builder offers a fluid interface for building SQL queries.
 
-> 📁 **Use**: In your files`models/`,`controllers/`,`services/`or`src/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Use**: In your files`models/`,`controllers/`,`services/`or`src/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 >
 > 📘 **TypeScript**: The type`WhereOperator`defines all available operators. See [TYPESCRIPT.md](TYPESCRIPT.md)
 

@@ -2,7 +2,7 @@
 
 Soft delete allows records to be marked as "deleted" without actually deleting them from the database.
 
-> 📁 **Configuration**: In`models/`+ migration in`database/migrations/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Configuration**: In`models/`+ migration in`database/migrations/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 
 ## Principle
 

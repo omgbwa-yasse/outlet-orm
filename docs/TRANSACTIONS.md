@@ -2,7 +2,7 @@
 
 Transactions ensure data integrity by grouping multiple operations into an atomic unit.
 
-> 📁 **Use**: In your files`controllers/`,`services/`or`src/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Use**: In your files`controllers/`,`services/`or`src/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 
 ## Principle
 

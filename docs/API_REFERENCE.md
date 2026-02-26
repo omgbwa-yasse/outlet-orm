@@ -2,7 +2,7 @@
 
 Full Outlet ORM API Reference v4.0.0.
 
-> � **Structure**: Use these APIs in`models/`,`controllers/`,`services/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
+> � **Structure**: Use these APIs in`models/`,`controllers/`,`services/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 >
 > �📘 **TypeScript**: See [TYPESCRIPT.md](TYPESCRIPT.md) for interfaces and generic types.
 

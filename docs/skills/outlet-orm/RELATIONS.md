@@ -2,7 +2,7 @@
 
 [← Back to Index](SKILL.md) | [Previous: Queries](QUERIES.md) | [Next: Migrations →](MIGRATIONS.md)
 
-> 📘 **TypeScript**: Use typed relationships like`HasOneRelation<Profile>`,`HasManyRelation<Post>`. See [TYPESCRIPT.md](TYPESCRIPT.md#relationships-typées)
+> 📘 **TypeScript**: Use typed relationships like`HasOneRelation<Profile>`,`HasManyRelation<Post>`. See [TYPESCRIPT.md](TYPESCRIPT.md#relationships-typedes)
 
 ---
 

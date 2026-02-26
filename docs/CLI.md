@@ -2,7 +2,7 @@
 
 Outlet ORM includes CLI tools for managing migrations and initializing projects.
 
-> 📁 **Generates**:`database/config.js`et`database/migrations/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
+> 📁 **Generates**:`database/config.js`et`database/migrations/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 
 ## Installation
 
