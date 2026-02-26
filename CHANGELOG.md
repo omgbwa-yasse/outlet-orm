@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [5.5.2] - 2026-02-26
+
+### 📚 Documentation
+
+- Completed UK English translation across markdown documentation.
+- Harmonised terminology, section titles, and examples in README and guides.
+- Fixed mixed-language wording and consistency issues in docs and skills pages.
+
 ## [5.5.1] - 2026-02-26
 
 ### 🌱 Migrations & Seeds Enhancement
