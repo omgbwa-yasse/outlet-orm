@@ -21,6 +21,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "check:version": "node scripts/check-changelog-version.js",
+    "prepublishOnly": "npm run check:version",
     "lint": "eslint \"{src,bin}/**/*.js\"",
     "lint:fix": "eslint \"{src,bin}/**/*.js\" --fix",
     "migrate": "node bin/migrate.js migrate",

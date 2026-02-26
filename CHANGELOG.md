@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [5.5.0] - 2026-02-26
+## [5.5.1] - 2026-02-26
 
 ### 🌱 Migrations & Seeds Enhancement
 
