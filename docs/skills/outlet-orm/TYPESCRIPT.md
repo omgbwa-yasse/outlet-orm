@@ -197,9 +197,9 @@ const usersWithRecentPosts = await User.with({
   posts: (qb) => qb.where('created_at', '>', '2024-01-01').orderBy('id', 'desc')
 }).get();
 
-// Access relations
+// Access relationships
 users.forEach(user => {
-  const posts = user.relations.posts as Post[];
+  const posts = user.relationships.posts as Post[];
   console.log(`${user.getAttribute('name')} has ${posts.length} posts`);
 });
 ```

@@ -49,7 +49,7 @@ class Post extends Model {
 
 ## Usage
 
-### Supprimer (soft delete)
+### Delete (soft delete)
 
 ```javascript
 const post = await Post.find(1);
@@ -120,7 +120,7 @@ const post = await Post.withTrashed().find(1);
 
 // Check if deleted
 if (post.getAttribute('deleted_at')) {
-  console.log('Ce post est supprimé');
+  console.log('This post is deleted');
 }
 ```
 
@@ -224,7 +224,7 @@ async function cleanupOldTrashed() {
     await post.forceDelete();
   }
 
-  console.log(`${oldTrashed.length} posts définitivement supprimés`);
+  console.log(`${oldTrashed.length} posts définitivement deleteds`);
 }
 ```
 

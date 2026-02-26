@@ -4,7 +4,7 @@ Outlet ORM supports all Eloquent-style relationships to link your models.
 
 > 📁 **Location**: Define your relationships in`models/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommandée)
 >
-> 📘 **TypeScript**: Use types`HasOneRelation<T>`,`HasManyRelation<T>`, etc. See [TYPESCRIPT.md](TYPESCRIPT.md#relations-typées)
+> 📘 **TypeScript**: Use types`HasOneRelation<T>`,`HasManyRelation<T>`, etc. See [TYPESCRIPT.md](TYPESCRIPT.md#relationships-typées)
 
 ## Types of relationships
 

@@ -107,14 +107,14 @@ const db = new DatabaseConnection({
 |`insert(data)`| Raw insert |
 |`update(attrs)`| Bulk update |
 |`updateById(id, attrs)`| Update by ID |
-|`updateAndFetchById(id, attrs, rels?)`| Update + fetch with relations |
+|`updateAndFetchById(id, attrs, rels?)`| Update + fetch with relationships |
 |`delete()`| Bulk delete |
 
 ### Relationships
 
 | Method | Description |
 |--------|-------------|
-|`with(...relations)`| Eager load relations |
+|`with(...relationships)`| Eager load relationships |
 |`withCount(relation)`| Add relation count |
 |`whereHas(rel, callback?)`| Filter by relation existence |
 |`has(rel, op?, count)`| Filter by relation count |
@@ -206,7 +206,7 @@ const db = new DatabaseConnection({
 
 | Method | Description |
 |--------|-------------|
-|`load(...relations)`| Load relations on instance |
+|`load(...relationships)`| Load relationships on instance |
 |`hasOne(Model, fk, lk)`| Define has-one relation |
 |`hasMany(Model, fk, lk)`| Define has-many relation |
 |`belongsTo(Model, fk, ok)`| Define belongs-to relation |
@@ -293,7 +293,7 @@ const db = new DatabaseConnection({
 
 | Method | Description |
 |--------|-------------|
-|`with(...relations)`| Eager load relations |
+|`with(...relationships)`| Eager load relationships |
 |`with({ rel: callback })`| Eager load with constraints |
 
 ### Soft Deletes

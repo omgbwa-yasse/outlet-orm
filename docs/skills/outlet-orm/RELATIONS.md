@@ -2,7 +2,7 @@
 
 [← Back to Index](SKILL.md) | [Previous: Queries](QUERIES.md) | [Next: Migrations →](MIGRATIONS.md)
 
-> 📘 **TypeScript**: Use typed relations like`HasOneRelation<Profile>`,`HasManyRelation<Post>`. See [TYPESCRIPT.md](TYPESCRIPT.md#relations-typées)
+> 📘 **TypeScript**: Use typed relationships like`HasOneRelation<Profile>`,`HasManyRelation<Post>`. See [TYPESCRIPT.md](TYPESCRIPT.md#relationships-typées)
 
 ---
 
@@ -76,7 +76,7 @@ const profile = await user.profile().get();
 
 // With eager loading
 const user = await User.with('profile').find(1);
-console.log(user.relations.profile);
+console.log(user.relationships.profile);
 ```
 
 **Parameters:**
@@ -113,7 +113,7 @@ const posts = await user.posts().get();
 
 // With eager loading
 const user = await User.with('posts').find(1);
-console.log(user.relations.posts); // Array of posts
+console.log(user.relationships.posts); // Array of posts
 ```
 
 ---
@@ -141,7 +141,7 @@ const author = await post.author().get();
 
 // With eager loading
 const post = await Post.with('author').find(1);
-console.log(post.relations.author);
+console.log(post.relationships.author);
 ```
 
 **Parameters:**
@@ -206,7 +206,7 @@ roles.forEach(role => {
 
 ## Has Many Through
 
-Access remote relations via intermediate model.
+Access remote relationships via intermediate model.
 
 ```sql
 -- Country -> User -> Post
@@ -233,7 +233,7 @@ class Country extends Model {
 
 // Get all posts from French users
 const france = await Country.with('posts').where('name', 'France').first();
-console.log(france.relations.posts);
+console.log(france.relationships.posts);
 ```
 
 ---
@@ -306,10 +306,10 @@ class Image extends Model {
 
 // Usage
 const user = await User.with('image').find(1);
-console.log(user.relations.image);
+console.log(user.relationships.image);
 
 const image = await Image.with('imageable').find(1);
-console.log(image.relations.imageable); // User or Post
+console.log(image.relationships.imageable); // User or Post
 ```
 
 ### Morph Many (Polymorphic One-to-Many)
@@ -348,10 +348,10 @@ class Comment extends Model {
 
 // Usage
 const post = await Post.with('comments').find(1);
-console.log(post.relations.comments);
+console.log(post.relationships.comments);
 
 const comment = await Comment.with('commentable').find(1);
-console.log(comment.relations.commentable); // Post or Video
+console.log(comment.relationships.commentable); // Post or Video
 ```
 
 ---
@@ -367,11 +367,11 @@ const users = await User.with('posts').get();
 // Multiple relationships
 const users = await User.with('posts', 'profile', 'roles').get();
 
-// Access loaded relations
+// Access loaded relationships
 users.forEach(user => {
-  console.log(user.relations.posts);
-  console.log(user.relations.profile);
-  console.log(user.relations.roles);
+  console.log(user.relationships.posts);
+  console.log(user.relationships.profile);
+  console.log(user.relationships.roles);
 });
 ```
 
@@ -409,7 +409,7 @@ await user.load('posts', 'profile');
 await user.load(['roles', 'posts.comments']);
 
 // Access
-console.log(user.relations.posts);
+console.log(user.relationships.posts);
 ```
 
 ---
@@ -537,8 +537,8 @@ class Category extends Model {
 |`morphOne(Model, name)`| Polymorphic One-to-One |
 |`morphMany(Model, name)`| Polymorphic One-to-Many |
 |`morphTo(name)`| Polymorphic inverse |
-|`with(...relations)`| Eager load |
-|`load(...relations)`| Load on instance |
+|`with(...relationships)`| Eager load |
+|`load(...relationships)`| Load on instance |
 |`whereHas(rel, cb)`| Filter by relation |
 |`has(rel, op, count)`| Relation count filter |
 |`whereDoesntHave(rel)`| Filter by no relation |

@@ -1,6 +1,6 @@
 # Outlet ORM v5.0.0 — Bugs & Anomalies identifiés (24 au total)
 
-> Rapport issu de la migration du projet **Le Continent** (46 tables, 11 fichiers de migration)
+> Rapport issu de la migration du projet **Le Continent** (46 tables, 11 files de migration)
 > et d'une analyse approfondie de **l'intégralité du code source** d'outlet-orm.
 > Date : Février 2026
 
@@ -8,7 +8,7 @@
 
 ## Sommaire
 
-| # | Sévérité | Fichier | Bug | Impact |
+| # | Severity | Fichier | Bug | Impact |
 |---|----------|---------|-----|--------|
 | 1 | 🔴 Critique | Schema.js | `foreignId().constrained()` ne fonctionne pas | Toutes les FK en syntaxe simplifiée échouent |
 | 2 | 🔴 Critique | Schema.js | Shadowing `this.onDelete` / `this.onUpdate` | `cascadeOnDelete()` et `onDelete()` inutilisables |
@@ -24,8 +24,8 @@
 | 12 | 🟠 Majeur | DatabaseConn. | `buildSelectQuery()` — colonnes non assainies | Colonnes SELECT, JOIN, ORDER BY sans sanitization |
 | 13 | 🟡 Mineur | DatabaseConn. | `buildWhereClause()` — opérateur non validé | L'opérateur WHERE est injecté tel quel dans le SQL |
 | 14 | 🟠 Majeur | DatabaseConn. | `select()` vs `update()` — incohérence de placeholder | `select()` ne convertit pas les placeholders pour Postgres |
-| 15 | 🟡 Mineur | DatabaseConn. | Fuite potentielle de connexion transactionnelle | Si `commit()` échoue après `release()`, la connexion est perdue |
-| 16 | 🟠 Majeur | Model.js | `eventListeners` partagé entre classes filles | Propriété statique partagée — les listeners polluent tous les modèles |
+| 15 | 🟡 Mineur | DatabaseConn. | Fuite potentielle de connection transactionnelle | Si `commit()` échoue après `release()`, la connection est perdue |
+| 16 | 🟠 Majeur | Model.js | `eventListeners` partagé entre classes filles | Propriété statique partagée — les listeners polluent tous les models |
 | 17 | 🟡 Mineur | Model.js | `hasOne`/`hasMany` — pluralisation naïve dans foreignKey par défaut | `table.slice(0, -1) + '_id'` échoue pour les tables non suffixées en 's' |
 | 18 | 🟡 Mineur | Model.js | `fill()` avec `fillable = []` accepte tout | Pas de protection mass-assignment si `fillable` non défini |
 | 19 | 🟠 Majeur | Model.js | `static delete()` sans WHERE supprime tout | `Model.delete()` envoie une requête DELETE sans condition |
@@ -47,7 +47,7 @@ La méthode `foreignId(column)` retourne un objet `ColumnDefinition`, mais `cons
 TypeError: table.foreignId(...).constrained is not a function
 ```
 
-### Fichier source
+### Source file
 
 `node_modules/outlet-orm/src/Schema/Schema.js`, ligne ~316 :
 
@@ -107,7 +107,7 @@ Dans le constructeur de `ForeignKeyDefinition`, les propriétés `this.onDelete 
 TypeError: this.onDelete is not a function
 ```
 
-### Fichier source
+### Source file
 
 `node_modules/outlet-orm/src/Schema/Schema.js`, ligne ~740 :
 
@@ -134,7 +134,7 @@ class ForeignKeyDefinition {
 
 ### Contournement appliqué
 
-Patch du fichier source : renommer les propriétés internes en `this.deleteAction` et `this.updateAction` pour éviter le conflit avec les méthodes.
+Patch du file source : renommer les propriétés internes en `this.deleteAction` et `this.updateAction` pour éviter le conflit avec les méthodes.
 
 ### Recommandation
 
@@ -176,7 +176,7 @@ class ForeignKeyDefinition {
 
 ### Description
 
-Même problème que le Bug 2 : la propriété `this.references = { table: null, column: 'id' }` dans le constructeur masque la méthode `references(column)`. Appeler `.references('id')` retourne l'objet `{ table, column }` au lieu d'exécuter la méthode.
+Même problème que le Bug 2 : la propriété `this.references = { table: null, column: 'id' }` dans le constructeur masque la méthode `references(column)`. Appeler `.references('id')` retourne l'objet `{ table, column }` au lieu d'run la méthode.
 
 ```
 TypeError: table.foreign(...).references is not a function
@@ -240,7 +240,7 @@ Erreur de syntaxe près de 'groups (
 
 ### Contournement appliqué
 
-Patch du fichier `Schema.js` pour ajouter les backticks partout.
+Patch du file `Schema.js` pour ajouter les backticks partout.
 
 ### Recommandation
 
@@ -269,7 +269,7 @@ Et l'utiliser systématiquement dans toute la génération SQL.
 
 ### Description
 
-La documentation officielle (fichiers `MIGRATIONS.md`, `API.md`, `SKILL.md`) présente des exemples qui ne fonctionnent pas en raison des bugs 1, 2 et 3.
+La documentation officielle (files `MIGRATIONS.md`, `API.md`, `SKILL.md`) présente des exemples qui ne fonctionnent pas en raison des bugs 1, 2 et 3.
 
 ### Exemples documentés mais cassés
 
@@ -303,25 +303,25 @@ table.foreign('group_id').constrained('groups').cascadeOnDelete();
 
 ## Anomalies supplémentaires identifiées par analyse approfondie du code source
 
-Les anomalies 6 à 24 ci-dessous ont été identifiées par une revue systématique de **tous les fichiers source** d'outlet-orm v5.0.0 :
+Les anomalies 6 à 24 ci-dessous ont été identifiées par une revue systématique de **tous les files source** d'outlet-orm v5.0.0 :
 - `Schema/Schema.js` (791 lignes)
 - `DatabaseConnection.js` (1052 lignes)
 - `Model.js` (1119 lignes)
 - `QueryBuilder.js` (795 lignes)
 - `Migrations/Migration.js` + `MigrationManager.js` (327 lignes)
-- `Relations/` (10 fichiers, ~1500 lignes)
+- `Relations/` (10 files, ~1500 lignes)
 
 ---
 
 ## Bug 6 — `rename()` — backticks manquants
 
-### Sévérité : 🟠 Majeur
+### Severity : 🟠 Majeur
 
 ### Description
 
 La méthode `Schema.rename(from, to)` génère du SQL sans backticks autour des noms de tables, même après le patch appliqué pour le Bug 4 (le patch ne couvrait que `create`, `drop`, `dropIfExists`, `toCreateSql`, `toAlterSql` et `getConstraints`).
 
-### Fichier source
+### Source file
 
 `Schema/Schema.js`, lignes ~56-69 :
 
@@ -352,13 +352,13 @@ sql = `RENAME TABLE \`${from}\` TO \`${to}\``;
 
 ## Bug 7 — Injection SQL dans `hasTable()` / `hasColumn()`
 
-### Sévérité : 🔴 Critique
+### Severity : 🔴 Critique
 
 ### Description
 
-Les méthodes `Schema.hasTable(tableName)` et `Schema.hasColumn(tableName, columnName)` utilisent l'interpolation de chaîne directe pour insérer les noms dans la requête SQL, au lieu d'utiliser des requêtes paramétrées. Ironiquement, `DatabaseConnection.js` fournit une fonction `sanitizeIdentifier()` qui n'est jamais utilisée par le Schema Builder.
+Les méthodes `Schema.hasTable(tableName)` et `Schema.hasColumn(tableName, columnName)` utilisent l'interpolation de chaîne directe pour insérer les noms dans la requête SQL, au lieu d'utiliser des queries paramétrées. Ironiquement, `DatabaseConnection.js` fournit une fonction `sanitizeIdentifier()` qui n'est jamais utilisée par le Schema Builder.
 
-### Fichier source
+### Source file
 
 `Schema/Schema.js`, lignes ~106-155 :
 
@@ -380,7 +380,7 @@ Si `tableName` ou `columnName` proviennent d'une entrée utilisateur (par exempl
 
 ### Recommandation
 
-Utiliser des requêtes paramétrées :
+Utiliser des queries paramétrées :
 
 ```javascript
 async hasTable(tableName) {
@@ -395,13 +395,13 @@ async hasTable(tableName) {
 
 ## Bug 8 — `renameColumn` — syntaxe MySQL CHANGE incomplète
 
-### Sévérité : 🔴 Critique
+### Severity : 🔴 Critique
 
 ### Description
 
 La commande `renameColumn` dans `Blueprint.toAlterSql()` génère un SQL `CHANGE` incomplet. En MySQL, `ALTER TABLE ... CHANGE old_name new_name` **exige** la définition du type de colonne après le nouveau nom. Sans elle, MySQL retourne une erreur de syntaxe.
 
-### Fichier source
+### Source file
 
 `Schema/Schema.js`, ligne ~491 :
 
@@ -444,13 +444,13 @@ case 'renameColumn':
 
 ## Bug 9 — `formatDefaultValue()` — pas d'échappement des apostrophes
 
-### Sévérité : 🟠 Majeur
+### Severity : 🟠 Majeur
 
 ### Description
 
 La méthode `ColumnDefinition.formatDefaultValue()` encadre les valeurs string avec des apostrophes simples mais ne les échappe pas. Si la valeur par défaut contient une apostrophe, le SQL généré sera invalide ou exploitable.
 
-### Fichier source
+### Source file
 
 `Schema/Schema.js`, ligne ~752 :
 
@@ -486,13 +486,13 @@ formatDefaultValue() {
 
 ## Bug 10 — `constrained()` — pluralisation naïve
 
-### Sévérité : 🟡 Mineur
+### Severity : 🟡 Mineur
 
 ### Description
 
 La méthode `ForeignKeyDefinition.constrained()` infère le nom de la table cible en supprimant `_id` du nom de colonne et en ajoutant `'s'`. Cette logique échoue pour les pluriels irréguliers anglais.
 
-### Fichier source
+### Source file
 
 `Schema/Schema.js`, ligne ~780 :
 
@@ -533,13 +533,13 @@ constrained(table = null) {
 
 ## Bug 11 — Noms de colonnes sans backticks dans le SQL du Schema
 
-### Sévérité : 🟠 Majeur
+### Severity : 🟠 Majeur
 
 ### Description
 
 Le patch pour le Bug 4 a ajouté les backticks sur les **noms de tables**, mais les **noms de colonnes** restent non protégés dans le SQL généré. Cela concerne `ColumnDefinition.toSql()`, les contraintes PRIMARY KEY, FOREIGN KEY, INDEX et UNIQUE dans `getConstraints()` et `toAlterSql()`.
 
-### Fichier source
+### Source file
 
 `Schema/Schema.js`, multiples emplacements :
 
@@ -578,13 +578,13 @@ toSql(driver) {
 
 ## Bug 12 — `buildSelectQuery()` — colonnes non assainies
 
-### Sévérité : 🟠 Majeur
+### Severity : 🟠 Majeur
 
 ### Description
 
 Dans `DatabaseConnection.buildSelectQuery()`, les colonnes du SELECT, les tables et colonnes des JOINs, les colonnes du GROUP BY, HAVING et ORDER BY sont directement concaténées dans le SQL sans aucune sanitization ni échappement.
 
-### Fichier source
+### Source file
 
 `DatabaseConnection.js`, lignes ~880-960 :
 
@@ -622,13 +622,13 @@ Si des noms de colonnes sont fournis dynamiquement (par ex. via une API REST ave
 
 ## Bug 13 — `buildWhereClause()` — opérateur non validé
 
-### Sévérité : 🟡 Mineur
+### Severity : 🟡 Mineur
 
 ### Description
 
 Dans `buildWhereClause()`, le champ `where.operator` est directement inséré dans le SQL sans validation. Un opérateur arbitraire pourrait être exploité.
 
-### Fichier source
+### Source file
 
 `DatabaseConnection.js`, ligne ~985 :
 
@@ -655,7 +655,7 @@ if (!ALLOWED_OPERATORS.includes(where.operator.toUpperCase())) {
 
 ## Bug 14 — `select()` vs `update()` — incohérence de conversion de placeholders
 
-### Sévérité : 🟠 Majeur
+### Severity : 🟠 Majeur
 
 ### Description
 
@@ -665,7 +665,7 @@ Les méthodes `select()`, `update()`, `delete()` dans `DatabaseConnection` trait
 - `update()` et `delete()` appellent `convertToDriverPlaceholder()` explicitement pour MySQL aussi (inutile, la méthode no-op pour MySQL).
 - `insert()` pour MySQL utilise `conn.execute(sql, values)` sans conversion, mais pour Postgres appelle `convertToDriverPlaceholder(sql)`.
 
-### Fichier source
+### Source file
 
 `DatabaseConnection.js`, lignes ~395-600 :
 
@@ -693,15 +693,15 @@ Uniformiser en utilisant systématiquement `convertToDriverPlaceholder()` dans u
 
 ---
 
-## Bug 15 — Fuite potentielle de connexion transactionnelle
+## Bug 15 — Fuite potentielle de connection transactionnelle
 
-### Sévérité : 🟡 Mineur
+### Severity : 🟡 Mineur
 
 ### Description
 
-Dans les méthodes `commit()` et `rollback()`, si `release()` lève une exception, la connexion transactionnelle n'est jamais libérée et `this._transactionConnection` n'est jamais remis à `null`.
+Dans les méthodes `commit()` et `rollback()`, si `release()` lève une exception, la connection transactionnelle n'est jamais libérée et `this._transactionConnection` n'est jamais remis à `null`.
 
-### Fichier source
+### Source file
 
 `DatabaseConnection.js`, lignes ~268-310 :
 
@@ -718,7 +718,7 @@ async commit() {
 
 ### Impact
 
-En cas d'erreur de `release()`, la connexion du pool est perdue (leak). Sous charge, le pool de connexions MySQL peut être épuisé.
+En cas d'erreur de `release()`, la connection du pool est perdue (leak). Sous charge, le pool de connexions MySQL peut être épuisé.
 
 ### Recommandation
 
@@ -741,13 +741,13 @@ async commit() {
 
 ## Bug 16 — `eventListeners` partagé entre toutes les classes filles de Model
 
-### Sévérité : 🟠 Majeur
+### Severity : 🟠 Majeur
 
 ### Description
 
 La propriété statique `eventListeners` est un objet défini directement sur la classe `Model`. Comme JavaScript partage les propriétés statiques par référence entre les classes parentes et filles, enregistrer un listener sur `User.on('creating', fn)` l'enregistre aussi pour `Post`, `Comment`, etc.
 
-### Fichier source
+### Source file
 
 `Model.js`, lignes ~22-33 :
 
@@ -763,14 +763,14 @@ class Model {
     if (!this.eventListeners[event]) {
       this.eventListeners[event] = [];
     }
-    this.eventListeners[event].push(callback);  // ← Partagé entre TOUS les modèles !
+    this.eventListeners[event].push(callback);  // ← Partagé entre TOUS les models !
   }
 }
 ```
 
 ### Impact
 
-Les hooks d'un modèle sont déclenchés pour un autre modèle. Exemple : un hook `User.creating()` qui hashe le mot de passe sera aussi appelé pour `Post.create()`.
+Les hooks d'un model sont déclenchés pour un autre model. Exemple : un hook `User.creating()` qui hashe le mot de passe sera aussi appelé pour `Post.create()`.
 
 ### Recommandation
 
@@ -794,13 +794,13 @@ static on(event, callback) {
 
 ## Bug 17 — `hasOne`/`hasMany`/`belongsTo` — déduction de FK naïve
 
-### Sévérité : 🟡 Mineur
+### Severity : 🟡 Mineur
 
 ### Description
 
 Les méthodes `hasOne()`, `hasMany()` et `belongsTo()` déduisent la foreignKey par défaut en faisant `table.slice(0, -1) + '_id'`. Ce qui supprime simplement le dernier caractère du nom de table, ce qui échoue dès que le nom de table ne finit pas par `'s'`.
 
-### Fichier source
+### Source file
 
 `Model.js`, lignes ~1000-1040 :
 
@@ -837,13 +837,13 @@ function singularize(table) {
 
 ## Bug 18 — `fill()` avec `fillable = []` accepte tout
 
-### Sévérité : 🟡 Mineur
+### Severity : 🟡 Mineur
 
 ### Description
 
 La méthode `Model.fill()` vérifie `this.constructor.fillable.length === 0` et dans ce cas accepte **tous** les attributs. Cela signifie que si un développeur oublie de définir `fillable`, tous les champs sont mass-assignable, y compris `is_admin`, `role`, etc.
 
-### Fichier source
+### Source file
 
 `Model.js`, lignes ~760-770 :
 
@@ -886,13 +886,13 @@ fill(attributes) {
 
 ## Bug 19 — `static delete()` sans WHERE supprime toutes les lignes
 
-### Sévérité : 🟠 Majeur
+### Severity : 🟠 Majeur
 
 ### Description
 
 La méthode statique `Model.delete()` appelle `this.query().delete()` sans aucune clause WHERE. Cela envoie `DELETE FROM table` qui supprime **toutes** les lignes de la table.
 
-### Fichier source
+### Source file
 
 `Model.js`, lignes ~560-565 :
 
@@ -922,15 +922,15 @@ async delete() {
 
 ---
 
-## Bug 20 — `withCount()` — sous-requêtes sans protection
+## Bug 20 — `withCount()` — sous-queries sans protection
 
-### Sévérité : 🟡 Mineur
+### Severity : 🟡 Mineur
 
 ### Description
 
-La méthode `QueryBuilder.withCount()` génère des sous-requêtes SQL en concaténant directement les noms de tables et de colonnes sans backticks ni sanitization.
+La méthode `QueryBuilder.withCount()` génère des sous-queries SQL en concaténant directement les noms de tables et de colonnes sans backticks ni sanitization.
 
-### Fichier source
+### Source file
 
 `QueryBuilder.js`, lignes ~440-475 :
 
@@ -945,19 +945,19 @@ withCount(rels) {
 
 ### Recommandation
 
-Appliquer les backticks sur tous les identifiants dans les sous-requêtes.
+Appliquer les backticks sur tous les identifiants dans les sous-queries.
 
 ---
 
 ## Bug 21 — `paginate()` — double application des globalScopes
 
-### Sévérité : 🟡 Mineur
+### Severity : 🟡 Mineur
 
 ### Description
 
-La méthode `QueryBuilder.paginate()` appelle `_applyGlobalScopes()` puis `count()` et `get()`. Or `count()` et `get()` appellent eux-mêmes `_applyGlobalScopes()` et `_applySoftDeleteConstraints()`. Les scopes sont donc appliqués **trois fois**, ce qui peut créer des clauses WHERE dupliquées.
+La méthode `QueryBuilder.paginate()` appelle `_applyGlobalScopes()` puis `count()` et `get()`. Or `count()` et `get()` appellent eux-mêmes `_applyGlobalScopes()` et `_applySoftDeleteConstraints()`. Les scopes sont donc appliqués **trois fois**, ce qui peut create des clauses WHERE dupliquées.
 
-### Fichier source
+### Source file
 
 `QueryBuilder.js`, lignes ~555-575 :
 
@@ -973,7 +973,7 @@ async paginate(page = 1, perPage = 15) {
 
 ### Impact
 
-Clauses WHERE dupliquées (ex. `WHERE deleted_at IS NULL AND deleted_at IS NULL AND deleted_at IS NULL`). Pas d'erreur SQL mais performances dégradées et requêtes inutilement complexes.
+Clauses WHERE dupliquées (ex. `WHERE deleted_at IS NULL AND deleted_at IS NULL AND deleted_at IS NULL`). Pas d'erreur SQL mais performances dégradées et queries inutilement complexes.
 
 ### Recommandation
 
@@ -991,13 +991,13 @@ _applyGlobalScopes() {
 
 ## Bug 22 — `BelongsToManyRelation.withTimestamps()` — conflit méthode/propriété
 
-### Sévérité : 🟡 Mineur
+### Severity : 🟡 Mineur
 
 ### Description
 
 Même pattern que les Bugs 2 et 3 : la propriété `this.withTimestamps = false` définie dans le constructeur masque la méthode `withTimestamps()`.
 
-### Fichier source
+### Source file
 
 `Relations/BelongsToManyRelation.js`, lignes ~18 et ~325 :
 
@@ -1035,13 +1035,13 @@ withTimestamps() {
 
 ## Bug 23 — `MigrationManager.getLastBatchMigrations()` — interpolation de `steps`
 
-### Sévérité : 🟡 Mineur
+### Severity : 🟡 Mineur
 
 ### Description
 
 Le paramètre `steps` est directement interpolé dans la requête SQL sans être paramétré. Si `steps` provient d'une entrée non validée, cela ouvre une injection SQL.
 
-### Fichier source
+### Source file
 
 `Migrations/MigrationManager.js`, lignes ~245-255 :
 
@@ -1071,13 +1071,13 @@ return await this.connection.execute(sql, [steps - 1]);
 
 ## Bug 24 — `QueryBuilder.clone()` ne copie pas tous les flags
 
-### Sévérité : 🟡 Mineur
+### Severity : 🟡 Mineur
 
 ### Description
 
 La méthode `clone()` copie les arrays (`wheres`, `orders`, etc.) mais oublie de copier les flags `_showHidden`, `_withTrashed`, `_onlyTrashed`, `_excludedScopes` et `_excludeAllScopes`.
 
-### Fichier source
+### Source file
 
 `QueryBuilder.js`, lignes ~770-795 :
 
@@ -1128,7 +1128,7 @@ clone() {
 
 ## Patches appliqués au projet
 
-Les corrections suivantes ont été appliquées manuellement au fichier `node_modules/outlet-orm/src/Schema/Schema.js` :
+Les corrections suivantes ont été appliquées manuellement au file `node_modules/outlet-orm/src/Schema/Schema.js` :
 
 1. **Backticks** sur tous les noms de tables dans le SQL généré (partiel — `rename()` non couvert, cf. Bug 6)
 2. **Renommage** des propriétés internes de `ForeignKeyDefinition` :
@@ -1176,10 +1176,10 @@ Ajouter dans `package.json` :
 | Valider les opérateurs SQL (Bug 13) | 🟡 Moyenne | Mainteneur outlet-orm |
 | Corriger `clone()` — flags manquants (Bug 24) | 🟡 Moyenne | Mainteneur outlet-orm |
 | Corriger la double application des scopes (Bug 21) | 🟡 Moyenne | Mainteneur outlet-orm |
-| Corriger la fuite de connexion transactionnelle (Bug 15) | 🟡 Moyenne | Mainteneur outlet-orm |
+| Corriger la fuite de connection transactionnelle (Bug 15) | 🟡 Moyenne | Mainteneur outlet-orm |
 | Améliorer la pluralisation (Bugs 10, 17) | 🟡 Basse | Mainteneur outlet-orm |
 | Améliorer le mass-assignment avec `guarded` (Bug 18) | 🟡 Basse | Mainteneur outlet-orm |
 | Paramétrer `steps` dans `getLastBatchMigrations()` (Bug 23) | 🟡 Basse | Mainteneur outlet-orm |
-| Mettre à jour la documentation (Bug 5) | 🟡 Moyenne | Mainteneur outlet-orm |
+| Update la documentation (Bug 5) | 🟡 Moyenne | Mainteneur outlet-orm |
 | Ouvrir une issue / PR sur le dépôt GitHub | 🟢 Recommandé | Équipe Le Continent |
 | Pérenniser les patches avec `patch-package` | 🟢 Recommandé | Équipe Le Continent |

@@ -108,7 +108,7 @@ async function profileOperation() {
   
   const queries = db.getQueryLog();
   
-  console.log(`Nombre de requêtes: ${queries.length}`);
+  console.log(`Nombre de queries: ${queries.length}`);
   console.log(`Temps total: ${queries.reduce((sum, q) => sum + q.time, 0).toFixed(2)}ms`);
   
   queries.forEach((q, i) => {
@@ -140,7 +140,7 @@ async function detectN1Problem() {
   const queries = db.getQueryLog();
   
   if (queries.length > 10) {
-    console.warn(`⚠️ Possible N+1 Problem détecté: ${queries.length} requêtes`);
+    console.warn(`⚠️ Possible N+1 Problem détecté: ${queries.length} queries`);
     console.warn('Use .with() for eager loading');
   }
   

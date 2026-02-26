@@ -78,7 +78,7 @@ static async insert(data: object | object[]): Promise<void>
 static async updateById(id: any, data: object): Promise<void>
 
 // Update and recover
-static async updateAndFetchById(id: any, data: object, relations?: string[]): Promise<Model>
+static async updateAndFetchById(id: any, data: object, relationships?: string[]): Promise<Model>
 
 // Increment
 static async increment(column: string, amount?: number): Promise<void>
@@ -123,7 +123,7 @@ static limit(n: number): QueryBuilder
 static offset(n: number): QueryBuilder
 
 // Relationships
-static with(...relations: string[]): QueryBuilder
+static with(...relationships: string[]): QueryBuilder
 
 // Soft Deletes
 static withTrashed(): QueryBuilder
@@ -182,7 +182,7 @@ async forceDelete(): Promise<void>
 async restore(): Promise<void>
 
 // Relationships
-async load(...relations: string[]): Promise<void>
+async load(...relationships: string[]): Promise<void>
 
 // Validation
 validate(): ValidationResult
@@ -233,7 +233,7 @@ offset(n: number): QueryBuilder
 skip(n: number): QueryBuilder
 
 // Relationships
-with(...relations: string[]): QueryBuilder
+with(...relationships: string[]): QueryBuilder
 
 // Soft Deletes
 withTrashed(): QueryBuilder

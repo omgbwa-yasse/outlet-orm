@@ -172,7 +172,7 @@ await User.updateById(1, { name: 'Updated Name' });
 const user = await User.updateAndFetchById(1, { name: 'New' }, ['posts']);
 ```
 
-### Delete (Supprimer)
+### Delete (Delete)
 
 ```javascript
 // Delete an instance

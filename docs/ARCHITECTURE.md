@@ -11,7 +11,7 @@ Here is the recommended structure for a project using Outlet ORM, based on the *
 ```
 mon-projet/
 ├── .env                           # ⚠️ NEVER commit (in .gitignore)
-├── .env.example                   # Template sans secrets
+├── .env.example                   # Template without secrets
 ├── .gitignore
 ├── package.json
 ├── src/
@@ -37,19 +37,19 @@ mon-projet/
 │   │   └── errorHandler.js
 │   ├── routes/                    # 🛤️ Définition des routes
 │   │   └── index.js
-│   ├── config/                    # 🔒 Configuration centralisée
+│   ├── config/                    # 🔒 Centralised configuration
 │   │   ├── app.js
 │   │   ├── database.js
 │   │   └── security.js            # Rate limit, helmet, CORS
 │   ├── utils/                     # 🔒 Hash, tokens, encryption
 │   │   ├── hash.js
 │   │   └── token.js
-│   └── validators/                # Schémas de validation
+│   └── validators/                # Validation schemas
 ├── database/
 │   ├── config.js                  # Config migrations
 │   └── migrations/
 ├── public/                        # ✅ Seul dossier accessible
-├── uploads/                       # ⚠️ Fichiers uploadés
+├── uploads/                       # ⚠️ Uploaded files
 ├── logs/                          # 📋 Non versionnés
 └── tests/
     ├── unit/
@@ -76,11 +76,11 @@ mon-projet/
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  ⚙️ SERVICES         Logique métier, règles business        │
+│  ⚙️ SERVICES         Logique métier, rules business        │
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  📦 REPOSITORIES     Abstraction accès données (CRUD)       │
+│  📦 REPOSITORIES     Abstraction accès data (CRUD)       │
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -88,7 +88,7 @@ mon-projet/
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                     BASE DE DONNÉES                         │
+│                     DATABASE                         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -200,10 +200,10 @@ module.exports = new UserController();
 src/
 ├── index.js                 # Point d'entrée principal, exporte tous les modules
 ├── Model.js                 # Classe Model de base (Active Record)
-├── QueryBuilder.js          # Constructeur de requêtes
-├── DatabaseConnection.js    # Gestionnaire de connexion aux bases de données
-└── Relations/               # Classes de relations
-    ├── Relation.js          # Classe de base abstraite pour les relations
+├── QueryBuilder.js          # Constructeur de queries
+├── DatabaseConnection.js    # Gestionnaire de connection aux bases de data
+└── Relations/               # Classes de relationships
+    ├── Relation.js          # Classe de base abstraite pour les relationships
     ├── HasOneRelation.js    # Relation One-to-One
     ├── HasManyRelation.js   # Relation One-to-Many
     ├── BelongsToRelation.js # Relation inverse (Many-to-One)
@@ -218,7 +218,7 @@ The class`Model`is the heart of ORM. It implements the Active Record pattern whe
 
 **Responsibilities:**
 - Management of model attributes
-- Opérations CRUD (Create, Read, Update, Delete)
+- CRUD operations (Create, Read, Update, Delete)
 - Casting of types
 - Timestamp management
 - Mass assignment with fillable protection
@@ -313,7 +313,7 @@ user.performInsert()
   ↓
 connection.insert(table, data)
   ↓
-Base de données
+Base de data
 ```
 
 ### Simple Query
@@ -355,7 +355,7 @@ Pour chaque relation:
     ↓
     Récupère tous les posts des users en une requête
     ↓
-    Assigne les posts à chaque user.relations.posts
+    Assigne les posts à chaque user.relationships.posts
 ```
 
 ## Design Patterns
@@ -430,6 +430,6 @@ The tests are organised by component:
 -`tests/DatabaseConnection.test.js`: Connection tests
 - More tests coming for relationships
 
-## Contribution
+## Contributions
 
 To contribute, please read [CONTRIBUTING.md](../CONTRIBUTING.md).

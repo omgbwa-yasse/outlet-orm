@@ -196,7 +196,7 @@ const activeUsers = await User
   .where('age', '>', 18)
   .get();
 
-// With relations (Eager Loading)
+// With relationships (Eager Loading)
 const usersWithPosts = await User
   .with('posts', 'profile')
   .get();

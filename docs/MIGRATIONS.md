@@ -337,7 +337,7 @@ await schema.table('users', (table) => {
 });
 ```
 
-### Supprimer timestamps
+### Delete timestamps
 
 ```javascript
 await schema.table('users', (table) => {

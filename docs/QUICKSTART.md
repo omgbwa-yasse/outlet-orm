@@ -21,7 +21,7 @@ The layered architecture clearly separates responsibilities:
 ```
 mon-projet/
 ├── .env                           # ⚠️ NEVER commit
-├── .env.example                   # Template sans secrets
+├── .env.example                   # Template without secrets
 ├── .gitignore
 ├── package.json
 ├── src/
@@ -48,7 +48,7 @@ mon-projet/
 ├── database/
 │   ├── config.js                  # Config migrations CLI
 │   └── migrations/
-├── public/                        # ✅ Fichiers statiques publics
+├── public/                        # ✅ Public static files
 ├── logs/                          # 📋 Logs
 └── tests/
     ├── unit/
@@ -75,11 +75,11 @@ mon-projet/
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  ⚙️ SERVICES         Logique métier, règles business        │
+│  ⚙️ SERVICES         Logique métier, rules business        │
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  📦 REPOSITORIES     Abstraction accès données (CRUD)       │
+│  📦 REPOSITORIES     Abstraction accès data (CRUD)       │
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -87,7 +87,7 @@ mon-projet/
 └─────────────────────────┬───────────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                     BASE DE DONNÉES                         │
+│                     DATABASE                         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -279,7 +279,7 @@ await User
 .update({ status: 'active' });
 ```
 
-### Delete (Supprimer)
+### Delete (Delete)
 
 ```javascript
 // Suppression d'instance
@@ -402,8 +402,8 @@ const profile = await user.profile().get();
 const users = await User.with('posts', 'profile').get();
 
 users.forEach(user => {
-console.log(user.relations.posts);
-console.log(user.relations.profile);
+console.log(user.relationships.posts);
+console.log(user.relationships.profile);
 });
 ```
 
@@ -561,7 +561,7 @@ settings: 'json'
 5. **Close connections** cleanly
 ```javascript
 const db = new DatabaseConnection(config);
-// ... utilisation ...
+// ... usage ...
 await db.close();
 ```
 

@@ -371,13 +371,13 @@ When converting, you will see:
 
 🔍 Relationship analysis...
 
-✅ User.js (3 relations)
+✅ User.js (3 relationships)
 ✅ Role.js (1 relation)
 ✅ Profile.js (1 relation)
-✅ Post.js (2 relations)
+✅ Post.js (2 relationships)
 ✅ Tag.js (1 relation)
 
-✨ Conversion terminée! 5 modèle(s) créé(s) dans ./models
+✨ Conversion terminée! 5 model(s) créé(s) dans ./models
 ```
 
 The relationship counter tells you how many relationship methods have been generated for each model.
@@ -429,14 +429,14 @@ publishedPosts() {
 
 ## 🧪 Test
 
-A test SQL file is provided:`examples/relations-test.sql`
+A test SQL file is provided:`examples/relationships-test.sql`
 
 Test detection:
 ```bash
 outlet-convert
 # Choose option 1
-# Path: ./examples/relations-test.sql
-# Folder: ./test-relations
+# Path: ./examples/relationships-test.sql
+# Folder: ./test-relationships
 ```
 
-Check the generated models in`./test-relations`!
+Check the generated models in`./test-relationships`!
