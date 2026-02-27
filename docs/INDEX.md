@@ -27,6 +27,9 @@
 - [Validation](VALIDATION.md)
 - [Query Logging](QUERY_LOGGING.md)
 
+### 🗄️ Backup & Restore (v6.0.0)
+- [**Backup Guide**](BACKUP.md) – Full / partial / journal backups, scheduling, AES-256-GCM encryption, TCP daemon, remote restore
+
 ### 🔐 Security
 - [**Backend Security Guide**](SECURITY.md) – Secure structure, middleware, and best practices
 
@@ -35,7 +38,9 @@
 
 ### 🛠️ Tools
 - [Migrations](MIGRATIONS.md)
+- [Seeds](SEEDS.md)
 - [CLI (outlet-init, outlet-migrate, outlet-convert)](CLI.md)
+- [Backup daemon (BackupSocketServer)](BACKUP.md#4-backupsocketserver--tcp-daemon)
 
 ### 📚 Reference
 - [Internal ORM Architecture](ARCHITECTURE.md#structure-interne-de-lorm)

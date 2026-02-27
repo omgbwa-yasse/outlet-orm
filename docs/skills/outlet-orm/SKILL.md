@@ -26,6 +26,7 @@ Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for N
 | **[ADVANCED.md](ADVANCED.md)** | Transactions, Soft Deletes, Events, Validation, Best Practices |
 | **[TYPESCRIPT.md](TYPESCRIPT.md)** | TypeScript types, generics, typed models, migrations |
 | **[SECURITY.md](SECURITY.md)** | 🔐 Security best practices, authentication, authorisation |
+| **[BACKUP.md](BACKUP.md)** | 🗄️ Backups, scheduling, AES-256-GCM encryption, TCP daemon, restore |
 | **[API.md](API.md)** | Complete API Reference |
 
 ---
@@ -41,6 +42,9 @@ Reference these guidelines when:
 - Implementing transactions, soft deletes, events  [ADVANCED.md](ADVANCED.md)
 - Using TypeScript with typed models  [TYPESCRIPT.md](TYPESCRIPT.md)
 - Securing your backend application  [SECURITY.md](SECURITY.md)
+- Scheduling or encrypting database backups  [BACKUP.md](BACKUP.md)
+- Restoring a database from a backup file  [BACKUP.md](BACKUP.md)
+- Running a long-lived backup daemon over TCP  [BACKUP.md](BACKUP.md)
 
 ---
 
