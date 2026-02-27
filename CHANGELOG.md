@@ -4,6 +4,56 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [6.0.0] - 2026-02-26
+
+### ✨ New Feature — Backup Module
+
+#### BackupManager
+- Added `BackupManager` class with three backup strategies:
+  - `full()` — complete schema (CREATE TABLE) + data (INSERT) dump for every table
+  - `partial(tables)` — schema + data for selected tables only
+  - `journal()` — transaction-log replay from the DatabaseConnection query log (INSERT / UPDATE / DELETE)
+- `restore(filePath, options?)` — replay a SQL backup file inside a transaction; auto-detects and decrypts encrypted files transparently
+- Supports `sql` and `json` output formats
+- Compatible with MySQL, PostgreSQL, and SQLite drivers
+
+#### BackupScheduler
+- Added `BackupScheduler` class for recurring (timer-based) backup jobs:
+  - `schedule(type, config)` — register a named repeating backup job
+  - `stop(name)` — cancel a job by name
+  - `stopAll()` — cancel all active jobs
+  - `activeJobs()` — list currently scheduled job names
+- Supports `runNow: true` option to trigger an immediate first run on scheduling
+
+#### BackupEncryption — AES-256-GCM at rest
+- Added `BackupEncryption` module for zero-dependency file-level encryption:
+  - AES-256-GCM with scrypt key derivation (N=16384, r=8, p=1)
+  - **Grain de sable** — configurable random alphanumeric salt of 4–6 characters generated per encryption operation and stored in the file header for key reconstruction
+  - Encrypted file format: `OUTLET_ENC_V1` magic header, salt, IV hex, GCM auth tag hex, base64 ciphertext
+  - `encrypt(plaintext, password, saltLength?)` / `decrypt(encryptedContent, password)` / `isEncrypted(content)` / `generateSalt(length?)`
+- `BackupManager` accepts `{ encrypt, encryptionPassword, saltLength }` constructor options; encrypted files get `.enc` extension automatically
+
+#### BackupSocketServer — TCP daemon
+- Added `BackupSocketServer` — long-running TCP daemon (default port 9119) for remote backup management:
+  - NDJSON (newline-delimited JSON) protocol over Node.js `net`
+  - Commands: `ping`, `status`, `jobs`, `schedule`, `stop`, `stopAll`, `run`, `restore`
+  - Push events broadcast to all connected clients: `jobStart`, `jobDone`, `jobError`
+  - Per-job encryption options override server defaults
+  - Zero external dependencies (Node.js built-ins only)
+
+#### BackupSocketClient — Promise-based client
+- Added `BackupSocketClient` — EventEmitter TCP client with full Promise API:
+  - `connect()` / `disconnect()`
+  - `ping()`, `status()`, `jobs()`
+  - `schedule(type, config)`, `stop(name)`, `stopAll()`
+  - `run(type, tables?, options?)` — immediate one-shot backup
+  - `restore(filePath, options?)` — remote restore with optional decryption password
+  - Push events: `jobStart`, `jobDone`, `jobError`, `serverEvent`
+
+### 📦 API
+- Exported `BackupManager`, `BackupScheduler`, `BackupEncryption`, `BackupSocketServer`, `BackupSocketClient` from the package public API
+- Added full TypeScript declarations for all Backup module classes, interfaces, and types
+
 ## [5.5.3] - 2026-02-26
 
 ### 📐 Architecture
