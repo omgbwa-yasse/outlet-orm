@@ -665,6 +665,147 @@ class Model {
     return this.query().with(...relations);
   }
 
+  // ==================== Convenience Query Methods ====================
+
+  /**
+   * Find the first record matching conditions or create a new one
+   * @param {Object} conditions - Where conditions to search
+   * @param {Object} [values={}] - Additional attributes for creation
+   * @returns {Promise<Model>}
+   */
+  static async firstOrCreate(conditions, values = {}) {
+    const query = this.query();
+    for (const [key, val] of Object.entries(conditions)) {
+      query.where(key, val);
+    }
+    const existing = await query.first();
+    if (existing) return existing;
+    return this.create({ ...conditions, ...values });
+  }
+
+  /**
+   * Find the first record matching conditions or return a new (unsaved) instance
+   * @param {Object} conditions - Where conditions to search
+   * @param {Object} [values={}] - Additional attributes for the new instance
+   * @returns {Promise<Model>}
+   */
+  static async firstOrNew(conditions, values = {}) {
+    const query = this.query();
+    for (const [key, val] of Object.entries(conditions)) {
+      query.where(key, val);
+    }
+    const existing = await query.first();
+    if (existing) return existing;
+    const instance = new this({ ...conditions, ...values });
+    return instance;
+  }
+
+  /**
+   * Find a record matching conditions and update it, or create a new one
+   * @param {Object} conditions - Where conditions to search
+   * @param {Object} values - Attributes to update or set on creation
+   * @returns {Promise<Model>}
+   */
+  static async updateOrCreate(conditions, values = {}) {
+    const query = this.query();
+    for (const [key, val] of Object.entries(conditions)) {
+      query.where(key, val);
+    }
+    const existing = await query.first();
+    if (existing) {
+      for (const [key, val] of Object.entries(values)) {
+        existing.setAttribute(key, val);
+      }
+      await existing.save();
+      return existing;
+    }
+    return this.create({ ...conditions, ...values });
+  }
+
+  /**
+   * Insert or update multiple records in bulk.
+   * @param {Array<Object>} rows - Array of records to upsert
+   * @param {string|string[]} uniqueBy - Column(s) that determine uniqueness
+   * @param {string[]} [update] - Columns to update on conflict (default: all non-unique columns)
+   * @returns {Promise<any>}
+   */
+  static async upsert(rows, uniqueBy, update) {
+    if (!rows || rows.length === 0) return;
+    this.ensureConnection();
+    const uniqueCols = Array.isArray(uniqueBy) ? uniqueBy : [uniqueBy];
+
+    // Determine columns to update on conflict
+    const allCols = Object.keys(rows[0]);
+    const updateCols = update || allCols.filter(c => !uniqueCols.includes(c));
+
+    // Build driver-specific upsert SQL
+    const table = this.table;
+    const columns = allCols;
+    const placeholders = rows.map(() => `(${columns.map(() => '?').join(', ')})`).join(', ');
+    const values = rows.flatMap(r => columns.map(c => r[c] !== undefined ? r[c] : null));
+
+    const conn = this.connection;
+    const driver = conn.config ? conn.config.driver : 'mysql';
+
+    let sql;
+    if (driver === 'sqlite') {
+      const updateSet = updateCols.map(c => `\`${c}\` = excluded.\`${c}\``).join(', ');
+      sql = `INSERT INTO \`${table}\` (${columns.map(c => `\`${c}\``).join(', ')}) VALUES ${placeholders} ON CONFLICT (${uniqueCols.map(c => `\`${c}\``).join(', ')}) DO UPDATE SET ${updateSet}`;
+    } else if (driver === 'postgres' || driver === 'postgresql') {
+      const updateSet = updateCols.map(c => `"${c}" = EXCLUDED."${c}"`).join(', ');
+      sql = `INSERT INTO "${table}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES ${placeholders} ON CONFLICT (${uniqueCols.map(c => `"${c}"`).join(', ')}) DO UPDATE SET ${updateSet}`;
+    } else {
+      // MySQL: INSERT ... ON DUPLICATE KEY UPDATE
+      const updateSet = updateCols.map(c => `\`${c}\` = VALUES(\`${c}\`)`).join(', ');
+      sql = `INSERT INTO \`${table}\` (${columns.map(c => `\`${c}\``).join(', ')}) VALUES ${placeholders} ON DUPLICATE KEY UPDATE ${updateSet}`;
+    }
+
+    return conn.execute(sql, values);
+  }
+
+  // ==================== Observer ====================
+
+  /**
+   * Register an observer class that listens to model events.
+   * The observer may define methods: creating, created, updating, updated,
+   * saving, saved, deleting, deleted, restoring, restored.
+   * @param {Object|Function} observer - Observer instance or class
+   */
+  static observe(observer) {
+    const instance = typeof observer === 'function' ? new observer() : observer;
+    const events = [
+      'creating', 'created', 'updating', 'updated',
+      'saving', 'saved', 'deleting', 'deleted',
+      'restoring', 'restored'
+    ];
+    for (const event of events) {
+      if (typeof instance[event] === 'function') {
+        this.on(event, (model) => instance[event](model));
+      }
+    }
+  }
+
+  // ==================== Cursor / Stream ====================
+
+  /**
+   * Lazily iterate over all matching records using an async generator.
+   * Yields one model instance at a time, consuming minimal memory.
+   * @param {number} [chunkSize=100] - Number of records per internal query
+   * @returns {AsyncGenerator<Model>}
+   */
+  static async *cursor(chunkSize = 100) {
+    let offset = 0;
+    while (true) {
+      const results = await this.query().limit(chunkSize).offset(offset).get();
+      if (results.length === 0) break;
+      for (const model of results) {
+        yield model;
+      }
+      if (results.length < chunkSize) break;
+      offset += chunkSize;
+    }
+  }
+
   /**
    * Include hidden attributes in query results
    * @returns {QueryBuilder}
@@ -704,24 +845,35 @@ class Model {
   }
 
   /**
-   * Set an attribute
+   * Set an attribute (runs mutator if defined)
    * @param {string} key
    * @param {any} value
    * @returns {this}
    */
   setAttribute(key, value) {
+    // Check for mutator: set{Key}Attribute
+    const mutator = `set${key.charAt(0).toUpperCase()}${key.slice(1).replace(/_([a-z])/g, (_, c) => c.toUpperCase())}Attribute`;
+    if (typeof this[mutator] === 'function') {
+      this[mutator](value);
+      return this;
+    }
     this.attributes[key] = this.castAttribute(key, value);
     return this;
   }
 
   /**
-   * Get an attribute
+   * Get an attribute (runs accessor if defined)
    * @param {string} key
    * @returns {any}
    */
   getAttribute(key) {
     if (this.relations[key]) {
       return this.relations[key];
+    }
+    // Check for accessor: get{Key}Attribute
+    const accessor = `get${key.charAt(0).toUpperCase()}${key.slice(1).replace(/_([a-z])/g, (_, c) => c.toUpperCase())}Attribute`;
+    if (typeof this[accessor] === 'function') {
+      return this[accessor](this.attributes[key]);
     }
     return this.castAttribute(key, this.attributes[key]);
   }

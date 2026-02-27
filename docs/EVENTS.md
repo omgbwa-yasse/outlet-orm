@@ -91,6 +91,37 @@ User.addEventListener('deleting', (user) => {
 });
 ```
 
+## Observer Pattern (v6.5.0+)
+
+Instead of registering individual event listeners, you can group all lifecycle hooks into a dedicated **Observer** class:
+
+```javascript
+class UserObserver {
+  creating(user) {
+    console.log('About to create user');
+  }
+  created(user) {
+    console.log('User created:', user.getAttribute('id'));
+  }
+  updating(user) { /* ... */ }
+  updated(user)  { /* ... */ }
+  saving(user)   { /* ... */ }
+  saved(user)    { /* ... */ }
+  deleting(user) { /* ... */ }
+  deleted(user)  { /* ... */ }
+  restoring(user){ /* ... */ }
+  restored(user) { /* ... */ }
+}
+
+// Register from class (instantiated automatically)
+User.observe(UserObserver);
+
+// Or register from an existing instance
+User.observe(new UserObserver());
+```
+
+Each method on the observer that matches a lifecycle event name will be registered automatically. Methods are optional — only define the ones you need.
+
 ## Cancel an operation
 
 Return`false`in a "before" event to cancel the operation:

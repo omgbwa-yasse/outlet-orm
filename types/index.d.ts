@@ -153,6 +153,20 @@ declare module 'outlet-orm' {
     to: number;
   }
 
+  /** Observer interface for model lifecycle events */
+  export interface ModelObserver<T extends Model = Model> {
+    creating?(model: T): boolean | void | Promise<boolean | void>;
+    created?(model: T): void | Promise<void>;
+    updating?(model: T): boolean | void | Promise<boolean | void>;
+    updated?(model: T): void | Promise<void>;
+    saving?(model: T): boolean | void | Promise<boolean | void>;
+    saved?(model: T): void | Promise<void>;
+    deleting?(model: T): boolean | void | Promise<boolean | void>;
+    deleted?(model: T): void | Promise<void>;
+    restoring?(model: T): boolean | void | Promise<boolean | void>;
+    restored?(model: T): void | Promise<void>;
+  }
+
   export class QueryBuilder<T extends Model> {
     constructor(model: typeof Model);
 
@@ -204,6 +218,12 @@ declare module 'outlet-orm' {
     get(): Promise<T[]>;
     first(): Promise<T | null>;
     firstOrFail(): Promise<T>;
+    /** Get the first record matching current wheres or create a new one */
+    firstOrCreate(values?: Record<string, any>): Promise<T>;
+    /** Get the first record matching current wheres or return a new unsaved instance */
+    firstOrNew(values?: Record<string, any>): Promise<T>;
+    /** Find a record matching current wheres and update it, or create a new one */
+    updateOrCreate(values?: Record<string, any>): Promise<T>;
     paginate(page?: number, perPage?: number): Promise<PaginationResult<T>>;
     count(): Promise<number>;
     exists(): Promise<boolean>;
@@ -214,6 +234,8 @@ declare module 'outlet-orm' {
     delete(): Promise<any>;
     increment(column: string, amount?: number): Promise<any>;
     decrement(column: string, amount?: number): Promise<any>;
+    /** Lazily iterate over matching records using an async generator */
+    cursor(chunkSize?: number): AsyncGenerator<T, void, unknown>;
 
     clone(): QueryBuilder<T>;
   }
@@ -344,6 +366,25 @@ declare module 'outlet-orm' {
     static whereNull<T extends Model>(this: new () => T, column: string): QueryBuilder<T>;
     static whereNotNull<T extends Model>(this: new () => T, column: string): QueryBuilder<T>;
     static count(): Promise<number>;
+
+    // Convenience query methods
+    /** Find the first record matching conditions or create a new one */
+    static firstOrCreate<T extends Model>(this: new () => T, conditions: Record<string, any>, values?: Record<string, any>): Promise<T>;
+    /** Find the first record matching conditions or return a new unsaved instance */
+    static firstOrNew<T extends Model>(this: new () => T, conditions: Record<string, any>, values?: Record<string, any>): Promise<T>;
+    /** Find a record matching conditions and update it, or create a new one */
+    static updateOrCreate<T extends Model>(this: new () => T, conditions: Record<string, any>, values?: Record<string, any>): Promise<T>;
+    /** Insert or update multiple records in bulk (ON CONFLICT / ON DUPLICATE KEY) */
+    static upsert(rows: Record<string, any>[], uniqueBy: string | string[], update?: string[]): Promise<any>;
+
+    // Observer
+    /** Register an observer class that listens to model lifecycle events */
+    static observe(observer: ModelObserver | (new () => ModelObserver)): void;
+
+    // Cursor / Stream
+    /** Lazily iterate over all matching records using an async generator */
+    static cursor<T extends Model>(this: new () => T, chunkSize?: number): AsyncGenerator<T, void, unknown>;
+
     static with<T extends Model>(this: new () => T, ...relations: string[] | [Record<string, (qb: QueryBuilder<any>) => void> | string[]]): QueryBuilder<T>;
     /** Include hidden attributes in query results */
     static withHidden<T extends Model>(this: new () => T): QueryBuilder<T>;

@@ -1,6 +1,6 @@
 # 📚 Outlet ORM – Complete Documentation
 
-> **Version 6.0.0** – A JavaScript/TypeScript ORM inspired by Laravel Eloquent for Node.js
+> **Version 6.5.0** – A JavaScript/TypeScript ORM inspired by Laravel Eloquent for Node.js
 
 ## Table of Contents
 
@@ -79,7 +79,19 @@ const users = await User.with('posts').where('status', 'active').get();
 
 > 💡 **Automatic connection**: Simply create a `.env` file with your connection settings. `Model` connects automatically on first use.
 
-## What's New in v6.0.0
+## What's New in v6.5.0
+
+| Feature | Description |
+|---|---|
+| 🔮 **Accessors & Mutators** | `get{Key}Attribute` / `set{Key}Attribute` methods to transform on read/write |
+| 🔍 **firstOrCreate** | Find by conditions or create a new record |
+| 📋 **firstOrNew** | Find by conditions or return an unsaved instance |
+| 🔄 **updateOrCreate** | Find and update, or create a new record |
+| ⚡ **upsert** | Bulk `INSERT … ON CONFLICT` with driver-specific SQL |
+| 👁️ **Observer** | Register observer classes for model lifecycle events |
+| 🌊 **cursor()** | Async generator for lazy iteration over large datasets |
+
+### Previous Release – v6.0.0
 
 | Feature | Description |
 |---|---|

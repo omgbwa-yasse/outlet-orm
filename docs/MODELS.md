@@ -77,6 +77,51 @@ module.exports = User;
 |`json`/`array`| Parse JSON |
 |`date`| Convert to Date object |
 
+## Accessors & Mutators
+
+Accessors and mutators let you transform attribute values when reading or writing them on a model instance.
+
+### Accessors (read transform)
+
+Define a `get{PascalKey}Attribute(value)` method to transform a value when reading it via `getAttribute()`:
+
+```javascript
+class User extends Model {
+  // 'name' → getNameAttribute
+  getNameAttribute(value) {
+    return value ? value.toUpperCase() : value;
+  }
+
+  // Virtual/computed attribute: 'email_domain' → getEmailDomainAttribute
+  getEmailDomainAttribute() {
+    const email = this.attributes.email;
+    return email ? email.split('@')[1] : null;
+  }
+}
+
+const user = await User.find(1);
+user.getAttribute('name');         // "JOHN DOE" (uppercased)
+user.getAttribute('email_domain'); // "example.com" (computed)
+```
+
+### Mutators (write transform)
+
+Define a `set{PascalKey}Attribute(value)` method to transform a value when writing it via `setAttribute()` or `create()`:
+
+```javascript
+class User extends Model {
+  // 'password' → setPasswordAttribute
+  setPasswordAttribute(value) {
+    this.attributes.password = bcrypt.hashSync(value, 10);
+  }
+}
+
+const user = await User.create({ name: 'Alice', password: 'secret' });
+// password is automatically hashed before insert
+```
+
+> **Note**: Snake_case keys are automatically converted to PascalCase method names. For example, `email_domain` maps to `getEmailDomainAttribute`.
+
 ## CRUD operations
 
 ### Create

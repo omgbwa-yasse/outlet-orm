@@ -370,6 +370,71 @@ const results = await User
   .get();
 ```
 
+## Convenience Methods (v6.5.0+)
+
+### firstOrCreate / firstOrNew
+
+```javascript
+// Creates a new record if no match, returns existing if found
+const user = await User.firstOrCreate(
+  { email: 'john@example.com' },         // search conditions
+  { name: 'John', age: 30 }              // extra values for creation
+);
+
+// Same, but returns an unsaved instance when not found
+const user = await User.firstOrNew(
+  { email: 'john@example.com' },
+  { name: 'John', age: 30 }
+);
+if (!user.exists) await user.save();
+
+// Also available on QueryBuilder
+const user = await User.where('email', 'john@example.com')
+  .firstOrCreate({ name: 'John', age: 30 });
+```
+
+### updateOrCreate
+
+```javascript
+// Finds and updates, or creates a new record
+const user = await User.updateOrCreate(
+  { email: 'john@example.com' },         // search conditions
+  { name: 'John Updated', age: 31 }      // values to update or create with
+);
+
+// Also via QueryBuilder
+const user = await User.where('email', 'john@example.com')
+  .updateOrCreate({ age: 31 });
+```
+
+### upsert (bulk INSERT … ON CONFLICT)
+
+```javascript
+// Bulk upsert with conflict resolution
+await Product.upsert(
+  [
+    { sku: 'WIDGET-001', name: 'Widget v2', price: 12.99 },
+    { sku: 'GADGET-001', name: 'Gadget', price: 19.99 }
+  ],
+  'sku',                    // unique column(s) — string or array
+  ['name', 'price']         // columns to update on conflict
+);
+```
+
+### cursor — Lazy Iteration (Async Generator)
+
+```javascript
+// Process large datasets with minimal memory footprint
+for await (const user of User.cursor(100)) {
+  console.log(user.getAttribute('name'));
+}
+
+// With query constraints
+for await (const user of User.where('active', true).cursor(50)) {
+  await sendEmail(user);
+}
+```
+
 ## Next steps
 
 - [Relationships](RELATIONS.md) - Model associations

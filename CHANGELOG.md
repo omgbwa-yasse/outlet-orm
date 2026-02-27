@@ -4,6 +4,47 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [6.5.0] - 2026-02-27
+
+### ✨ New Features — Eloquent Parity
+
+#### Accessors & Mutators
+- Added **accessor** support: define `get{PascalKey}Attribute(value)` methods on Model subclasses to transform values on read via `getAttribute(key)`
+- Added **mutator** support: define `set{PascalKey}Attribute(value)` methods on Model subclasses to transform values on write via `setAttribute(key, value)`
+- Supports `snake_case` keys automatically converted to `PascalCase` method names (e.g., `email_domain` → `getEmailDomainAttribute`)
+- Accessors can return computed/virtual attributes not stored in the database
+
+#### firstOrCreate / firstOrNew / updateOrCreate
+- Added `Model.firstOrCreate(conditions, values)` — finds the first record matching conditions or creates a new one with the merged attributes
+- Added `Model.firstOrNew(conditions, values)` — same as `firstOrCreate` but returns an unsaved instance when not found
+- Added `Model.updateOrCreate(conditions, values)` — finds and updates or creates a new record
+- All three methods also available on QueryBuilder: `query.firstOrCreate(values)`, `query.firstOrNew(values)`, `query.updateOrCreate(values)` using current `where` clauses as conditions
+
+#### upsert (INSERT … ON CONFLICT)
+- Added `Model.upsert(rows, uniqueBy, update)` — bulk insert with conflict resolution
+- Generates driver-specific SQL:
+  - SQLite / PostgreSQL: `INSERT … ON CONFLICT (cols) DO UPDATE SET …`
+  - MySQL: `INSERT … ON DUPLICATE KEY UPDATE …`
+- Accepts string or array for `uniqueBy`; `update` defaults to all non-unique columns
+
+#### Observer Pattern
+- Added `Model.observe(ObserverClass | observerInstance)` — register an observer that listens to model lifecycle events
+- Supported events: `creating`, `created`, `updating`, `updated`, `saving`, `saved`, `deleting`, `deleted`, `restoring`, `restored`
+- Observer methods receive the model instance as argument
+
+#### cursor() — Async Generator for Lazy Iteration
+- Added `Model.cursor(chunkSize)` and `QueryBuilder.cursor(chunkSize)` — async generator that lazily fetches records in chunks
+- Yields individual model instances, ideal for processing large datasets with low memory footprint
+- Default chunk size: 100
+
+### 🧪 Tests
+- Added 28 new tests covering all v6.5.0 features (tests/NewFeatures.test.js)
+- Total test count: 216 passing across 14 test suites
+
+### 📦 TypeScript
+- Added `ModelObserver<T>` interface type
+- Added type declarations for `firstOrCreate`, `firstOrNew`, `updateOrCreate`, `upsert`, `observe`, `cursor` on both Model and QueryBuilder
+
 ## [6.0.0] - 2026-02-26
 
 ### ✨ New Feature — Backup Module

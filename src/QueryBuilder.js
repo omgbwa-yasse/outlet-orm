@@ -624,6 +624,88 @@ class QueryBuilder {
   }
 
   /**
+   * Get the first record matching current wheres or create a new one
+   * @param {Object} [values={}] - Additional attributes to merge on creation
+   * @returns {Promise<Model>}
+   */
+  async firstOrCreate(values = {}) {
+    const existing = await this.first();
+    if (existing) return existing;
+    // Build conditions from current wheres
+    const conditions = {};
+    for (const w of this.wheres) {
+      if (w.type === 'basic' && w.operator === '=') {
+        conditions[w.column] = w.value;
+      }
+    }
+    const instance = new this.model({ ...conditions, ...values });
+    return instance.save();
+  }
+
+  /**
+   * Get the first record matching current wheres or return a new (unsaved) instance
+   * @param {Object} [values={}] - Additional attributes for the instance
+   * @returns {Promise<Model>}
+   */
+  async firstOrNew(values = {}) {
+    const existing = await this.first();
+    if (existing) return existing;
+    const conditions = {};
+    for (const w of this.wheres) {
+      if (w.type === 'basic' && w.operator === '=') {
+        conditions[w.column] = w.value;
+      }
+    }
+    return new this.model({ ...conditions, ...values });
+  }
+
+  /**
+   * Find a record matching current wheres and update it, or create a new one
+   * @param {Object} values - Attributes to update or set on creation
+   * @returns {Promise<Model>}
+   */
+  async updateOrCreate(values = {}) {
+    const existing = await this.first();
+    if (existing) {
+      for (const [key, val] of Object.entries(values)) {
+        existing.setAttribute(key, val);
+      }
+      await existing.save();
+      return existing;
+    }
+    const conditions = {};
+    for (const w of this.wheres) {
+      if (w.type === 'basic' && w.operator === '=') {
+        conditions[w.column] = w.value;
+      }
+    }
+    const instance = new this.model({ ...conditions, ...values });
+    return instance.save();
+  }
+
+  /**
+   * Lazily iterate over matching records using an async generator.
+   * Yields one model instance at a time, consuming minimal memory.
+   * @param {number} [chunkSize=100] - Number of records per internal query
+   * @returns {AsyncGenerator<Model>}
+   */
+  async *cursor(chunkSize = 100) {
+    let offset = 0;
+    while (true) {
+      const cloned = this.clone();
+      cloned.limitValue = chunkSize;
+      cloned.offsetValue = offset;
+      const results = await cloned.get();
+      if (results.length === 0) break;
+      for (const model of results) {
+        yield model;
+      }
+      if (results.length < chunkSize) break;
+      offset += chunkSize;
+    }
+  }
+
+  /**
    * Paginate the results
    * @param {number} page
    * @param {number} perPage
