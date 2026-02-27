@@ -1,6 +1,6 @@
 {
   "name": "outlet-orm",
-  "version": "6.5.0",
+  "version": "7.0.0",
   "description": "A Laravel Eloquent-inspired ORM for Node.js with support for MySQL, PostgreSQL, and SQLite",
   "main": "src/index.js",
   "types": "types/index.d.ts",
@@ -8,12 +8,14 @@
     "outlet-init": "bin/init.js",
     "outlet-convert": "bin/convert.js",
     "outlet-migrate": "bin/migrate.js",
-    "outlet-reverse": "bin/reverse.js"
+    "outlet-reverse": "bin/reverse.js",
+    "outlet-mcp": "bin/mcp.js"
   },
   "files": [
     "src/**",
     "bin/**",
     "types/**",
+    "docs/skills/**",
     "README.md",
     "LICENSE"
   ],
@@ -44,7 +46,9 @@
     "postgresql",
     "sqlite",
     "query-builder",
-    "active-record"
+    "active-record",
+    "mcp",
+    "ai-agent"
   ],
   "author": "omgbwa-yasse",
   "license": "MIT",

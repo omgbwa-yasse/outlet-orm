@@ -16,7 +16,129 @@ const rl = readline.createInterface({
 
 const question = (query) => new Promise((resolve) => rl.question(query, resolve));
 
+// ─── Parse CLI flags ─────────────────────────────────────────────
+
+function parseInitFlags(argv) {
+  const flags = {};
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === '--prompt' || arg === '-P') {
+      flags.prompt = argv[++i];
+    } else if (arg === '--driver' || arg === '-d') {
+      flags.driver = argv[++i];
+    }
+  }
+  return flags;
+}
+
+// ─── Prompt-based init (v7.0.0) ─────────────────────────────────
+
+async function initFromPrompt(promptText, driverName) {
+  const PromptGenerator = require('../src/AI/PromptGenerator');
+
+  console.log('\n🤖 Outlet ORM — Prompt-based Initialization\n');
+  console.log(`  Prompt: "${promptText}"`);
+
+  const blueprint = PromptGenerator.parse(promptText);
+  console.log(`  Domain detected: ${blueprint.domain} (score: ${blueprint.score})`);
+  console.log(`  Tables: ${Object.keys(blueprint.tables).join(', ')}\n`);
+
+  // Determine the driver
+  const driver = driverName || 'sqlite';
+  const driverConfig = {
+    mysql:    { package: 'mysql2',  port: 3306 },
+    postgres: { package: 'pg',      port: 5432 },
+    sqlite:   { package: 'sqlite3', port: null }
+  };
+
+  if (!driverConfig[driver]) {
+    console.error(`❌ Unknown driver: ${driver}. Use mysql, postgres, or sqlite.`);
+    process.exit(1);
+  }
+
+  const cwd = process.cwd();
+
+  // Create directory structure
+  const directories = ['database/migrations', 'database/seeds', 'models', 'config'];
+  for (const dir of directories) {
+    const dirPath = path.join(cwd, dir);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+      console.log(`  📁 ${dir}/`);
+    }
+  }
+
+  // Generate database config
+  let config;
+  if (driver === 'sqlite') {
+    config = { driver: 'sqlite', database: './database.sqlite' };
+  } else {
+    config = {
+      driver,
+      host: 'localhost',
+      port: driverConfig[driver].port,
+      database: 'my_app',
+      user: 'root',
+      password: ''
+    };
+  }
+
+  const configContent = `const { DatabaseConnection } = require('outlet-orm');\n\nconst db = new DatabaseConnection(${JSON.stringify(config, null, 2)});\n\nmodule.exports = db;\n`;
+  const configPath = path.join(cwd, 'database', 'config.js');
+  if (!fs.existsSync(configPath)) {
+    fs.writeFileSync(configPath, configContent);
+    console.log('  ✅ database/config.js');
+  }
+
+  // Generate .env
+  const envPath = path.join(cwd, '.env');
+  if (!fs.existsSync(envPath)) {
+    const envLines = [`DB_DRIVER=${config.driver}`];
+    if (driver !== 'sqlite') {
+      envLines.push(`DB_HOST=${config.host}`, `DB_PORT=${config.port}`, `DB_USER=${config.user}`, `DB_PASSWORD=${config.password}`, `DB_DATABASE=${config.database}`);
+    } else {
+      envLines.push(`DB_FILE=${config.database}`);
+    }
+    fs.writeFileSync(envPath, envLines.join('\n') + '\n');
+    console.log('  ✅ .env');
+  }
+
+  // Generate models
+  console.log('\n📊 Generating models...');
+  const modelFiles = PromptGenerator.generateModels(blueprint, path.join(cwd, 'models'));
+  for (const f of modelFiles) {
+    console.log(`  ✅ ${path.relative(cwd, f)}`);
+  }
+
+  // Generate migrations
+  console.log('\n📦 Generating migrations...');
+  const migrationFiles = PromptGenerator.generateMigrations(blueprint, path.join(cwd, 'database', 'migrations'));
+  for (const f of migrationFiles) {
+    console.log(`  ✅ ${path.relative(cwd, f)}`);
+  }
+
+  // Generate seeder
+  console.log('\n🌱 Generating seeder...');
+  const seederFile = PromptGenerator.generateSeeder(blueprint, path.join(cwd, 'database', 'seeds'));
+  console.log(`  ✅ ${path.relative(cwd, seederFile)}`);
+
+  console.log('\n✨ Project generated from prompt!\n');
+  console.log('Next steps:');
+  console.log('  1. Review generated models in models/');
+  console.log('  2. Review migrations in database/migrations/');
+  console.log('  3. Run migrations: outlet-migrate migrate');
+  console.log(`  4. Install driver: npm install ${driverConfig[driver].package}`);
+}
+
 async function init() {
+  // Check for --prompt flag
+  const flags = parseInitFlags(process.argv.slice(2));
+  if (flags.prompt) {
+    await initFromPrompt(flags.prompt, flags.driver);
+    rl.close();
+    return;
+  }
+
   console.log('\n🚀 Bienvenue dans l\'assistant de configuration Outlet ORM!\n');
 
   try {

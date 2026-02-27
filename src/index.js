@@ -28,6 +28,11 @@ const BackupEncryption   = require('./Backup/BackupEncryption');
 const BackupSocketServer = require('./Backup/BackupSocketServer');
 const BackupSocketClient = require('./Backup/BackupSocketClient');
 
+// AI (v7.0.0)
+const MCPServer          = require('./AI/MCPServer');
+const AISafetyGuardrails = require('./AI/AISafetyGuardrails');
+const PromptGenerator    = require('./AI/PromptGenerator');
+
 module.exports = {
   // Core
   Model,
@@ -65,5 +70,10 @@ module.exports = {
   BackupScheduler,
   BackupEncryption,
   BackupSocketServer,
-  BackupSocketClient
+  BackupSocketClient,
+
+  // AI (v7.0.0)
+  MCPServer,
+  AISafetyGuardrails,
+  PromptGenerator
 };

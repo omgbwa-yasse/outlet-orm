@@ -4,6 +4,51 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [7.0.0] - 2025-02-28
+
+### 🤖 New Features — AI Integration
+
+#### MCP Server (Model Context Protocol)
+- Added **MCPServer** class — exposes ORM capabilities to AI agents via JSON-RPC 2.0 over stdio
+- Protocol version: `2024-11-05` (modelcontextprotocol.io)
+- 11 built-in tools: `migrate_status`, `migrate_run`, `migrate_rollback`, `migrate_reset`, `migrate_make`, `seed_run`, `schema_introspect`, `query_execute`, `model_list`, `backup_create`, `backup_restore`
+- Multi-driver schema introspection (SQLite PRAGMA, PostgreSQL information_schema, MySQL DESCRIBE)
+- Programmatic handler mode for testing and embedding: `server.handler()`
+- Auto-loads database config from `database/config.js` or `.env` fallback
+- CLI entry point: `npx outlet-mcp` (new bin command)
+- Options: `--project <path>`, `--no-safety`
+
+#### AI Safety Guardrails
+- Added **AISafetyGuardrails** class — detects AI agent invocations and protects against destructive operations
+- Auto-detects 10+ AI agents: Cursor, Claude Code, GitHub Copilot, Windsurf, Gemini CLI, Aider, Replit, Qwen Code, MCP clients
+- Blocks destructive commands (`reset`, `fresh`, `drop`, `truncate`, `restore`) when invoked by AI without explicit user consent
+- Consent mechanism: `OUTLET_USER_CONSENT_FOR_DANGEROUS_AI_ACTION` env var or `--consent` flag
+- Detailed blocking messages instruct AI agents to explain risks and request user approval
+- Integrated into `outlet-migrate` CLI for `reset`, `refresh`, and `fresh` commands
+
+#### Prompt-based Project Initialization
+- Added **PromptGenerator** class — parses natural language descriptions and generates complete project scaffolding
+- `outlet-init --prompt "Create a blog with posts, comments, and tags"` generates models, migrations, and seeders
+- 7 built-in domain patterns: E-commerce, Blog/CMS, Task/Project, Social Network, SaaS, Habit Tracker, API/Auth
+- Smart column type mapping with modifiers (nullable, unique, default values, foreign keys)
+- `--driver` flag to specify database driver (mysql, postgres, sqlite)
+
+#### Agent Skills
+- Added AI skill file `docs/skills/outlet-orm/AI.md` — structured documentation for AI agents
+- Updated `SKILL.md` to reference v7.0.0 features
+- Covers MCP server configuration, tool usage examples, safety guardrails, and prompt-based init
+
+### 📦 Package Changes
+- New bin entry: `outlet-mcp` → `bin/mcp.js`
+- New exports: `MCPServer`, `AISafetyGuardrails`, `PromptGenerator`
+- Skills files included in npm package (`docs/skills/**`)
+- New keywords: `mcp`, `ai-agent`
+- Full TypeScript declarations for all new classes and interfaces
+
+### 🧪 Tests
+- Added 36 tests for AI features (MCPServer, AISafetyGuardrails, PromptGenerator, module exports)
+- Total: 252 tests across 15 suites
+
 ## [6.5.0] - 2026-02-27
 
 ### ✨ New Features — Eloquent Parity

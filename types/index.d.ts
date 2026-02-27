@@ -937,4 +937,110 @@ declare module 'outlet-orm' {
     on(event: 'serverEvent', listener: (payload: Record<string, any>) => void): this;
     on(event: string,        listener: (...args: any[]) => void): this;
   }
+
+  // ==================== AI Integration (v7.0.0) ====================
+
+  /** MCP tool definition */
+  export interface MCPToolDefinition {
+    name: string;
+    description: string;
+    inputSchema: {
+      type: 'object';
+      properties: Record<string, any>;
+      required: string[];
+    };
+  }
+
+  /** MCP server options */
+  export interface MCPServerOptions {
+    /** DatabaseConnection instance (optional, auto-loaded from project) */
+    connection?: DatabaseConnection;
+    /** Project root directory (default: process.cwd()) */
+    projectDir?: string;
+    /** Enable AI safety guardrails (default: true) */
+    safetyGuardrails?: boolean;
+  }
+
+  /** JSON-RPC 2.0 message */
+  export interface JSONRPCMessage {
+    jsonrpc: '2.0';
+    id?: number | string;
+    method?: string;
+    params?: Record<string, any>;
+    result?: any;
+    error?: { code: number; message: string };
+  }
+
+  /** MCP Server — exposes ORM capabilities to AI agents via JSON-RPC 2.0 */
+  export class MCPServer {
+    constructor(options?: MCPServerOptions);
+
+    /** Project root directory */
+    projectDir: string;
+    /** Whether safety guardrails are enabled */
+    safetyGuardrails: boolean;
+
+    /** Start the MCP server on stdio */
+    start(): void;
+    /** Get a programmatic handler function (for testing/embedding) */
+    handler(): (message: JSONRPCMessage) => Promise<JSONRPCMessage | null>;
+    /** Graceful shutdown */
+    close(): Promise<void>;
+
+    on(event: 'started',     listener: () => void): this;
+    on(event: 'initialized', listener: () => void): this;
+    on(event: 'response',    listener: (response: JSONRPCMessage) => void): this;
+    on(event: 'close',       listener: () => void): this;
+    on(event: string,        listener: (...args: any[]) => void): this;
+  }
+
+  /** Agent detection result */
+  export interface AgentDetectionResult {
+    /** Whether an AI agent was detected */
+    detected: boolean;
+    /** Name of the detected agent (null if not detected) */
+    agentName: string | null;
+  }
+
+  /** Destructive action validation result */
+  export interface DestructiveActionResult {
+    /** Whether the action is allowed */
+    allowed: boolean;
+    /** Message explaining why action was blocked (empty if allowed) */
+    message: string;
+  }
+
+  /** AI Safety Guardrails — detects AI agents and protects against destructive operations */
+  export class AISafetyGuardrails {
+    /** Detect if the current process is invoked by an AI agent */
+    static detectAgent(): AgentDetectionResult;
+    /** Check if a CLI command is destructive */
+    static isDestructiveCommand(command: string): boolean;
+    /** Validate whether user consent is present for a destructive operation */
+    static validateDestructiveAction(command: string, flags?: { consent?: string; yes?: boolean; force?: boolean }): DestructiveActionResult;
+    /** The environment variable name for AI consent */
+    static readonly CONSENT_ENV_VAR: string;
+  }
+
+  /** Prompt blueprint — parsed from a natural language description */
+  export interface PromptBlueprint {
+    /** Detected domain (e.g. 'blog', 'e-commerce', 'saas') */
+    domain: string;
+    /** Table definitions */
+    tables: Record<string, { columns: string[]; pivot?: boolean }>;
+    /** Match confidence score */
+    score: number;
+  }
+
+  /** Prompt Generator — generates projects from natural language descriptions */
+  export class PromptGenerator {
+    /** Parse a natural language prompt into a project blueprint */
+    static parse(prompt: string): PromptBlueprint;
+    /** Generate model files from a blueprint */
+    static generateModels(blueprint: PromptBlueprint, outputDir: string): string[];
+    /** Generate migration files from a blueprint */
+    static generateMigrations(blueprint: PromptBlueprint, outputDir: string): string[];
+    /** Generate a seeder file from a blueprint */
+    static generateSeeder(blueprint: PromptBlueprint, outputDir: string): string;
+  }
 }

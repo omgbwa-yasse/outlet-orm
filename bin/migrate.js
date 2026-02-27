@@ -8,6 +8,7 @@
 const readline = require('readline');
 const fs = require('fs').promises;
 const path = require('path');
+const AISafetyGuardrails = require('../src/AI/AISafetyGuardrails');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -367,6 +368,14 @@ async function runNonInteractive(cmd, flags) {
     }
 
     case 'reset': {
+      // AI Safety Guardrails check (v7.0.0)
+      if (AISafetyGuardrails.isDestructiveCommand('reset')) {
+        const check = AISafetyGuardrails.validateDestructiveAction('reset', flags);
+        if (!check.allowed) {
+          console.error(check.message);
+          return;
+        }
+      }
       if (flags.yes || flags.force) {
         await manager.reset();
       } else {
@@ -376,6 +385,14 @@ async function runNonInteractive(cmd, flags) {
     }
 
     case 'refresh': {
+      // AI Safety Guardrails check (v7.0.0)
+      if (AISafetyGuardrails.isDestructiveCommand('fresh')) {
+        const check = AISafetyGuardrails.validateDestructiveAction('refresh', flags);
+        if (!check.allowed) {
+          console.error(check.message);
+          return;
+        }
+      }
       if (flags.yes || flags.force) {
         await manager.refresh();
       } else {
@@ -385,6 +402,14 @@ async function runNonInteractive(cmd, flags) {
     }
 
     case 'fresh': {
+      // AI Safety Guardrails check (v7.0.0)
+      if (AISafetyGuardrails.isDestructiveCommand('fresh')) {
+        const check = AISafetyGuardrails.validateDestructiveAction('fresh', flags);
+        if (!check.allowed) {
+          console.error(check.message);
+          return;
+        }
+      }
       if (flags.yes || flags.force) {
         await manager.fresh();
       } else {

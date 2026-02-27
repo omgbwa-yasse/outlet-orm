@@ -1,6 +1,6 @@
 # 📚 Outlet ORM – Complete Documentation
 
-> **Version 6.5.0** – A JavaScript/TypeScript ORM inspired by Laravel Eloquent for Node.js
+> **Version 7.0.0** – A JavaScript/TypeScript ORM inspired by Laravel Eloquent for Node.js
 
 ## Table of Contents
 
@@ -30,6 +30,12 @@
 ### 🗄️ Backup & Restore (v6.0.0)
 - [**Backup Guide**](BACKUP.md) – Full / partial / journal backups, scheduling, AES-256-GCM encryption, TCP daemon, remote restore
 
+### 🤖 AI Integration (v7.0.0)
+- [**MCP Server**](MCP.md) – Model Context Protocol server for AI agents (Cursor, Claude Code, Copilot, Windsurf)
+- [**AI Safety Guardrails**](MCP.md#ai-safety-guardrails) – Automatic AI agent detection and destructive operation protection
+- [**Prompt-based Init**](MCP.md#prompt-based-initialization) – Generate projects from natural language: `outlet-init --prompt "..."`
+- [**Agent Skills**](skills/outlet-orm/AI.md) – Structured documentation for AI agents
+
 ### 🔐 Security
 - [**Backend Security Guide**](SECURITY.md) – Secure structure, middleware, and best practices
 
@@ -39,7 +45,7 @@
 ### 🛠️ Tools
 - [Migrations](MIGRATIONS.md)
 - [Seeds](SEEDS.md)
-- [CLI (outlet-init, outlet-migrate, outlet-convert)](CLI.md)
+- [CLI (outlet-init, outlet-migrate, outlet-convert, outlet-mcp)](CLI.md)
 - [Backup daemon (BackupSocketServer)](BACKUP.md#4-backupsocketserver--tcp-daemon)
 
 ### 📚 Reference
