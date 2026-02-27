@@ -21,6 +21,13 @@ const MigrationManager = require('./Migrations/MigrationManager');
 const Seeder = require('./Seeders/Seeder');
 const SeederManager = require('./Seeders/SeederManager');
 
+// Backup
+const BackupManager      = require('./Backup/BackupManager');
+const BackupScheduler    = require('./Backup/BackupScheduler');
+const BackupEncryption   = require('./Backup/BackupEncryption');
+const BackupSocketServer = require('./Backup/BackupSocketServer');
+const BackupSocketClient = require('./Backup/BackupSocketClient');
+
 module.exports = {
   // Core
   Model,
@@ -51,5 +58,12 @@ module.exports = {
 
   // Seeders
   Seeder,
-  SeederManager
+  SeederManager,
+
+  // Backup
+  BackupManager,
+  BackupScheduler,
+  BackupEncryption,
+  BackupSocketServer,
+  BackupSocketClient
 };

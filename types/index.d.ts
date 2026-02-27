@@ -671,4 +671,229 @@ declare module 'outlet-orm' {
     run(target?: string | null): Promise<void>;
     runSeeder(seederRef: string): Promise<void>;
   }
+
+  // ==================== Backup ====================
+
+  export type BackupFormat = 'sql' | 'json';
+  export type BackupType   = 'full' | 'partial' | 'journal';
+  export type SaltLength   = 4 | 5 | 6;
+
+  /** Encryption options for backup files */
+  export interface EncryptionOptions {
+    /** Enable AES-256-GCM encryption (default: false) */
+    encrypt?: boolean;
+    /** Password used for key derivation (required when encrypt=true) */
+    encryptionPassword?: string;
+    /**
+     * Grain de sable (salt) length in characters.
+     * Must be 4, 5, or 6.  Default: 6.
+     */
+    saltLength?: SaltLength;
+  }
+
+  export interface BackupOptions extends EncryptionOptions {
+    /** Override the auto-generated filename */
+    filename?: string;
+    /** Output format – 'sql' (default) or 'json' */
+    format?: BackupFormat;
+  }
+
+  export interface JournalOptions extends EncryptionOptions {
+    /** Override the auto-generated filename */
+    filename?: string;
+    /** Clear the query log after writing the journal (default: false) */
+    flush?: boolean;
+  }
+
+  export interface RestoreOptions {
+    /**
+     * Password to decrypt an encrypted backup.
+     * Falls back to the BackupManager constructor password.
+     */
+    encryptionPassword?: string;
+  }
+
+  export interface RestoreResult {
+    /** Number of SQL statements executed */
+    statements: number;
+  }
+
+  export interface BackupManagerOptions extends EncryptionOptions {
+    /** Directory where backup files are written (default: './database/backups') */
+    backupPath?: string;
+  }
+
+  export interface ScheduleConfig extends EncryptionOptions {
+    /** Interval between backups in milliseconds (minimum: 1000) */
+    intervalMs: number;
+    /** Run once immediately when scheduled (default: false) */
+    runNow?: boolean;
+    /** Table names – required for 'partial' type */
+    tables?: string[];
+    /** Output format for full/partial backups */
+    format?: BackupFormat;
+    /** Auto-flush query log after each journal backup */
+    flush?: boolean;
+    /** Called with the file path after a successful backup */
+    onSuccess?: (filePath: string) => void;
+    /** Called with the error when a backup fails */
+    onError?: (error: Error) => void;
+    /** Optional unique job identifier (defaults to "<type>_<timestamp>") */
+    name?: string;
+  }
+
+  export class BackupManager {
+    constructor(connection: DatabaseConnection, options?: BackupManagerOptions);
+
+    /** Full backup – schema + data for every table. */
+    full(options?: BackupOptions): Promise<string>;
+    /** Partial backup – schema + data for the specified tables only. */
+    partial(tables: string[], options?: BackupOptions): Promise<string>;
+    /**
+     * Transaction-log backup – replayable DML statements from the query log.
+     * Requires DatabaseConnection.enableQueryLog() to be called beforehand.
+     */
+    journal(options?: JournalOptions): Promise<string>;
+    /** Restore a previously created SQL backup file (supports encrypted files). */
+    restore(filePath: string, options?: RestoreOptions): Promise<RestoreResult>;
+  }
+
+  export class BackupScheduler {
+    constructor(connection: DatabaseConnection, options?: BackupManagerOptions);
+
+    schedule(type: BackupType, config: ScheduleConfig): string;
+    stop(name: string): void;
+    stopAll(): void;
+    activeJobs(): string[];
+  }
+
+  // ==================== Backup Encryption ====================
+
+  export interface EncryptResult {
+    /** Full file content to write to disk */
+    encryptedContent: string;
+    /** The grain de sable (salt) that was generated */
+    salt: string;
+  }
+
+  export namespace BackupEncryption {
+    /**
+     * Encrypt a string payload with AES-256-GCM.
+     * @param plaintext    Content to encrypt
+     * @param password     Encryption password
+     * @param saltLength   Grain de sable length (4–6, default 6)
+     */
+    function encrypt(plaintext: string, password: string, saltLength?: SaltLength): EncryptResult;
+
+    /**
+     * Decrypt a previously encrypted backup payload.
+     * @param encryptedContent  Raw file content produced by encrypt()
+     * @param password          The same password used during encryption
+     */
+    function decrypt(encryptedContent: string, password: string): string;
+
+    /** Return true if the content looks like an outlet-orm encrypted backup. */
+    function isEncrypted(content: string): boolean;
+
+    /**
+     * Generate a random alphanumeric salt (grain de sable).
+     * @param length  4, 5, or 6 characters
+     */
+    function generateSalt(length?: SaltLength): string;
+  }
+
+  // ==================== Backup Socket Server ====================
+
+  export interface ServerOptions extends BackupManagerOptions {
+    /** TCP port to listen on (default: 9119) */
+    port?: number;
+    /** Host / IP to bind (default: '127.0.0.1') */
+    host?: string;
+  }
+
+  export interface ServerStatus {
+    uptime:  number;
+    jobs:    string[];
+    clients: number;
+  }
+
+  export interface ServerAddress {
+    host: string;
+    port: number;
+  }
+
+  export class BackupSocketServer {
+    constructor(connection: DatabaseConnection, options?: ServerOptions);
+
+    /** Start the TCP daemon. */
+    listen(): Promise<void>;
+    /** Gracefully stop the daemon and all scheduled jobs. */
+    close(): Promise<void>;
+    /** Return the bound address (null before listen). */
+    address(): ServerAddress | null;
+
+    on(event: 'listening', listener: (addr: ServerAddress) => void): this;
+    on(event: 'close',     listener: () => void): this;
+    on(event: 'error',     listener: (err: Error) => void): this;
+    on(event: 'event',     listener: (payload: Record<string, any>) => void): this;
+    on(event: string,      listener: (...args: any[]) => void): this;
+  }
+
+  // ==================== Backup Socket Client ====================
+
+  export interface ClientOptions {
+    /** TCP port of the server (default: 9119) */
+    port?: number;
+    /** Host of the server (default: '127.0.0.1') */
+    host?: string;
+    /** Timeout in ms waiting for a server reply (default: 30000) */
+    timeout?: number;
+  }
+
+  export interface RunOptions extends EncryptionOptions {
+    format?  : BackupFormat;
+    filename?: string;
+    flush?   : boolean;
+  }
+
+  export class BackupSocketClient {
+    constructor(options?: ClientOptions);
+
+    readonly connected: boolean;
+
+    connect():    Promise<void>;
+    disconnect(): Promise<void>;
+
+    ping():    Promise<'pong'>;
+    status():  Promise<ServerStatus>;
+    jobs():    Promise<string[]>;
+
+    schedule(type: BackupType, config: ScheduleConfig): Promise<string>;
+    stop(name: string):    Promise<boolean>;
+    stopAll():             Promise<boolean>;
+
+    /**
+     * Trigger a one-shot backup immediately.
+     * @param tables  Required for 'partial' type
+     */
+    run(type: BackupType, options?: RunOptions): Promise<string>;
+    run(type: 'partial', tables: string[], options?: RunOptions): Promise<string>;
+
+    /**
+     * Restore a previously created backup file on the server.
+     * Supports plain SQL and encrypted .enc files.
+     * @param filePath  Absolute path to the backup file (server-side)
+     * @param options   Supply encryptionPassword when the file is encrypted
+     */
+    restore(filePath: string, options?: RestoreOptions): Promise<RestoreResult>;
+
+    on(event: 'connect',     listener: () => void): this;
+    on(event: 'disconnect',  listener: () => void): this;
+    on(event: 'error',       listener: (err: Error) => void): this;
+    on(event: 'jobStart',    listener: (payload: { name: string; type: string }) => void): this;
+    on(event: 'jobDone',     listener: (payload: { name: string; type: string; filePath: string }) => void): this;
+    on(event: 'jobError',    listener: (payload: { name: string; type: string; error: string }) => void): this;
+    on(event: 'serverEvent', listener: (payload: Record<string, any>) => void): this;
+    on(event: string,        listener: (...args: any[]) => void): this;
+  }
 }
