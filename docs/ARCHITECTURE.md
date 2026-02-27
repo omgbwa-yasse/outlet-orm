@@ -40,7 +40,9 @@ my-project/
 │   │   └── token.js
 ├── database/
 │   ├── config.js                  # Migration config
-│   └── migrations/
+│   ├── migrations/
+│   ├── seeds/
+│   └── backups/                   # 🗄️ Backup files (full / partial / journal)
 ├── public/                        # ✅ Only publicly accessible folder
 ├── uploads/                       # ⚠️ Uploaded files
 ├── logs/                          # 📋 Not versioned
@@ -87,6 +89,7 @@ my-project/
 | **Middlewares** |`src/middlewares/`| Auth, validation, errors | 🔒 **Critical** |
 | **Config** |`src/config/`| Environment variables | 🔒 Reads .env |
 | **Utils** |`src/utils/`| Hash, tokens, helpers | 🔒 Do not expose |
+| **Backups** |`database/backups/`| Backup files (.sql, .json, .enc) | 🗄️ Encrypted at rest |
 
 ### Implementation Example
 

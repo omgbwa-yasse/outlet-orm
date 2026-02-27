@@ -1,6 +1,6 @@
 # 📚 Outlet ORM – Complete Documentation
 
-> **Version 5.0.0** – A JavaScript/TypeScript ORM inspired by Laravel Eloquent for Node.js
+> **Version 6.0.0** – A JavaScript/TypeScript ORM inspired by Laravel Eloquent for Node.js
 
 ## Table of Contents
 
@@ -79,7 +79,17 @@ const users = await User.with('posts').where('status', 'active').get();
 
 > 💡 **Automatic connection**: Simply create a `.env` file with your connection settings. `Model` connects automatically on first use.
 
-## What’s New in v5.0.0
+## What's New in v6.0.0
+
+| Feature | Description |
+|---|---|
+| 🗄️ **BackupManager** | Full / partial / journal backups, `restore()` with auto-decrypt |
+| ⏰ **BackupScheduler** | Recurring jobs (`setInterval`), `runNow`, `onSuccess`/`onError` hooks |
+| 🔐 **BackupEncryption** | AES-256-GCM, scrypt key derivation, _grain de sable_ salt (4–6 chars) |
+| 🛰️ **BackupSocketServer** | TCP daemon on port 9119, NDJSON protocol, push events |
+| 📡 **BackupSocketClient** | Promise API + EventEmitter, remote `schedule`/`run`/`restore` |
+
+### Previous Major Release – v5.0.0
 
 | Feature | Description |
 |---|---|

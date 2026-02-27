@@ -86,8 +86,9 @@ my-project/
 ├── database/
 │   ├── config.js                 # Config migrations (outlet-init)
 │   ├── migrations/               # Migration files
-│   └── seeds/                    # Test/demo data
-│       └── UserSeeder.js
+│   ├── seeds/                    # Test/demo data
+│   │   └── UserSeeder.js
+│   └── backups/                  # 🗄️ Backup files (full / partial / journal)
 │
 ├── public/                       # ✅ Public static files
 │   ├── images/
@@ -195,6 +196,7 @@ async store(req, res) {
 - **Ergonomic aliases**: `columns([...])`, `ordrer()` (typo alias for `orderBy`)
 - **Raw queries**: `executeRawQuery()` and `execute()` (native driver results)
 - **Complete Migrations** (create/alter/drop, index, foreign keys, batch tracking)
+- **Database Backup** (v6.0.0): full/partial/journal backups, recurring scheduler, AES-256-GCM encryption, TCP daemon + remote client, automatic restore
 - **Handy CLI tools**: `outlet-init`, `outlet-migrate`, `outlet-convert`
 - **`.env` configuration** (loaded automatically)
 - **Multi-database**: MySQL, PostgreSQL, and SQLite

@@ -1,10 +1,10 @@
 ---
 name: outlet-orm-best-practices
-description: Outlet ORM is a Laravel Eloquent-inspired ORM for Node.js with MySQL, PostgreSQL, and SQLite support. Use this skill when working with Outlet ORM models, queries, relationships, migrations, and database operations. v4.1.0 adds full TypeScript support with generic models and Copilot Skills integration.
+description: Outlet ORM is a Laravel Eloquent-inspired ORM for Node.js with MySQL, PostgreSQL, and SQLite support. Use this skill when working with Outlet ORM models, queries, relationships, migrations, backup, and database operations. v6.0.0 adds a full Backup module (BackupManager, BackupScheduler, AES-256-GCM encryption, TCP daemon).
 license: MIT
 metadata:
 author: omgbwa-yasse
-version: "5.0.0"
+version: "6.0.0"
 source: https://github.com/omgbwa-yasse/outlet-orm
 npm: https://www.npmjs.com/package/outlet-orm
 ---
@@ -13,7 +13,9 @@ npm: https://www.npmjs.com/package/outlet-orm
 
 Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for Node.js/TypeScript with support for MySQL, PostgreSQL, and SQLite.
 
-> 🆕 **v5.0.0**: Full TypeScript support with Generic Model, typed Schema Builder, MigrationInterface and Copilot Skills integration. Recommended layered architecture (Controllers → Services → Repositories → Models).
+> 🆕 **v6.0.0**: Full Backup module — `BackupManager`, `BackupScheduler`, AES-256-GCM `BackupEncryption`, `BackupSocketServer` TCP daemon, `BackupSocketClient` with remote restore. See [BACKUP.md](BACKUP.md).
+>
+> 🔖 **v5.0.0**: Full TypeScript support with Generic Model, typed Schema Builder, MigrationInterface and Copilot Skills integration. Recommended layered architecture (Controllers → Services → Repositories → Models).
 
 ## Documentation Index
 
@@ -97,7 +99,9 @@ my-project/
 │       └── helpers.js
 ├── database/
 │   ├── config.js                  # Migration CLI config
-│   └── migrations/
+│   ├── migrations/
+│   ├── seeds/
+│   └── backups/                   # 🗄️ Backup files (full / partial / journal)
 ├── public/                        # ✅ Static files only
 ├── logs/                          # 📋 Not versioned
 └── tests/
@@ -152,6 +156,7 @@ my-project/
 | **Middlewares** |`src/middlewares/`| Auth, validation, errors | 🔒 **Critical** |
 | **Config** |`src/config/`| Environment variables | 🔒 Reads .env |
 | **Utils** |`src/utils/`| Hash, tokens, helpers | 🔒 Never expose |
+| **Backups** |`database/backups/`| Backup files (.sql, .json, .enc) | 🗄️ Encrypted at rest |
 
 ### Quick Setup Commands
 
@@ -180,6 +185,7 @@ outlet-migrate migrate
 | 6 | Soft Deletes | MEDIUM | [ADVANCED.md](ADVANCED.md) |
 | 7 | Validation & Events | MEDIUM | [ADVANCED.md](ADVANCED.md) |
 | 8 | Migrations & CLI | LOW-MEDIUM | [MIGRATIONS.md](MIGRATIONS.md) |
+| 9 | Backup & Restore | MEDIUM | [BACKUP.md](BACKUP.md) |
 
 ---
 
