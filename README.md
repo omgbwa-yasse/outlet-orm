@@ -197,7 +197,14 @@ async store(req, res) {
 - **Raw queries**: `executeRawQuery()` and `execute()` (native driver results)
 - **Complete Migrations** (create/alter/drop, index, foreign keys, batch tracking)
 - **Database Backup** (v6.0.0): full/partial/journal backups, recurring scheduler, AES-256-GCM encryption, TCP daemon + remote client, automatic restore
-- **Handy CLI tools**: `outlet-init`, `outlet-migrate`, `outlet-convert`
+- **🤖 AiBridge** (v8.0.0): Multi-provider LLM abstraction — chat, stream, embeddings, images, TTS, STT with 9+ providers
+- **🤖 AI Query Builder** (v8.0.0): Natural language → SQL with schema introspection
+- **🤖 AI Seeder** (v8.0.0): LLM-powered realistic, domain-specific data generation
+- **🤖 AI Query Optimizer** (v8.0.0): SQL analysis, optimization, and index recommendations
+- **🤖 AI Prompt Enhancer** (v8.0.0): Schema/model/migration generation from natural language
+- **🤖 MCP Server** (v7.0.0): Model Context Protocol for AI agent integration (13 tools)
+- **🤖 AI Safety Guardrails** (v7.0.0): Automatic AI agent detection + destructive operation protection
+- **Handy CLI tools**: `outlet-init`, `outlet-migrate`, `outlet-convert`, `outlet-mcp`
 - **`.env` configuration** (loaded automatically)
 - **Multi-database**: MySQL, PostgreSQL, and SQLite
 - **Complete TypeScript types** with Generic Model and typed Schema Builder (v4.0.0+)
@@ -1220,6 +1227,126 @@ outlet-convert
 - ✅ Automatic timestamps support
 - ✅ Class names converted to PascalCase
 
+## 🤖 AI Integration
+
+Outlet ORM includes a complete AI subsystem with multi-provider LLM support and ORM-specific AI features.
+
+📚 **[Complete AI documentation available in `/docs`](./docs/AI_BRIDGE.md)**
+
+### AiBridge — Multi-Provider LLM Abstraction
+
+```javascript
+const { AiBridgeManager } = require('outlet-orm');
+
+const ai = new AiBridgeManager({
+  providers: {
+    openai: { api_key: process.env.OPENAI_API_KEY, model: 'gpt-4o' },
+    claude: { api_key: process.env.ANTHROPIC_API_KEY, model: 'claude-sonnet-4-20250514' },
+    ollama: { endpoint: 'http://localhost:11434', model: 'llama3' }
+  }
+});
+
+// Chat with any provider
+const response = await ai.chat('openai', [
+  { role: 'user', content: 'What is Node.js?' }
+]);
+
+// Fluent TextBuilder
+const { text } = await ai.text()
+  .using('openai', 'gpt-4o')
+  .withSystemPrompt('You are a helpful assistant.')
+  .withPrompt('Explain closures in JavaScript.')
+  .asText();
+
+// Stream responses
+for await (const chunk of ai.stream('claude', messages)) {
+  process.stdout.write(chunk.text || '');
+}
+
+// Embeddings, images, TTS, STT
+const embeddings = await ai.embeddings('openai', ['Hello world']);
+const image = await ai.image('openai', 'A sunset over mountains');
+```
+
+**Supported providers**: OpenAI, Claude, Gemini, Ollama, Grok, Mistral, ONN, Custom OpenAI, OpenRouter
+
+### AI Query Builder — Natural Language → SQL
+
+```javascript
+const { AIQueryBuilder } = require('outlet-orm');
+
+const qb = new AIQueryBuilder(ai, db);
+
+// Ask in natural language, get SQL + results
+const result = await qb.query('How many users signed up last month?');
+console.log(result.sql);     // SELECT COUNT(*) FROM users WHERE ...
+console.log(result.results); // [{ count: 42 }]
+
+// Generate SQL without executing
+const { sql } = await qb.toSql('Show me the top 5 users by post count');
+```
+
+### AI Seeder — Realistic Data Generation
+
+```javascript
+const { AISeeder } = require('outlet-orm');
+
+const seeder = new AISeeder(ai, db);
+
+// Generate and insert realistic data
+await seeder.seed('products', 20, {
+  domain: 'e-commerce',
+  locale: 'fr_FR',
+  description: 'Fashion store for young adults'
+});
+```
+
+### AI Query Optimizer
+
+```javascript
+const { AIQueryOptimizer } = require('outlet-orm');
+
+const optimizer = new AIQueryOptimizer(ai, db);
+const result = await optimizer.optimize(
+  'SELECT * FROM orders WHERE user_id IN (SELECT id FROM users WHERE status = "active")'
+);
+
+console.log(result.optimized);   // Rewritten SQL
+console.log(result.suggestions); // [{ type: 'index', impact: 'high', ... }]
+console.log(result.indexes);     // ['CREATE INDEX idx_...']
+```
+
+### MCP Server — AI Agent Integration
+
+```bash
+# Start MCP server for AI editors
+npx outlet-mcp
+```
+
+Configure your AI editor:
+
+```json
+{
+  "mcpServers": {
+    "outlet-orm": {
+      "command": "npx",
+      "args": ["outlet-mcp"]
+    }
+  }
+}
+```
+
+**13 MCP tools**: migrations, schema introspection, queries, seeds, backups, AI query, query optimization
+
+📖 Full documentation:
+- [AiBridge Manager](docs/AI_BRIDGE.md) — Multi-provider LLM abstraction
+- [AI Query Builder](docs/AI_QUERY.md) — Natural language to SQL
+- [AI Seeder](docs/AI_SEEDER.md) — Realistic data generation
+- [AI Query Optimizer](docs/AI_OPTIMIZER.md) — SQL optimization
+- [AI Prompt Enhancer](docs/AI_PROMPT.md) — Schema/code generation
+- [MCP Server](docs/MCP.md) — AI agent integration
+- [AI Safety Guardrails](docs/AI_SAFETY.md) — Destructive operation protection
+
 ## 📚 Documentation
 
 - [Migrations Guide](docs/MIGRATIONS.md)
@@ -1227,7 +1354,8 @@ outlet-convert
 - [Relation Detection](docs/RELATIONS_DETECTION.md)
 - [Quick Start Guide](docs/QUICKSTART.md)
 - [Architecture](docs/ARCHITECTURE.md)
-- [**TypeScript (complet)**](docs/TYPESCRIPT.md)
+- [**TypeScript (complete)**](docs/TYPESCRIPT.md)
+- [**AI Integration (complete)**](docs/AI_BRIDGE.md)
 
 ## 📘 TypeScript Support
 

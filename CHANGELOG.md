@@ -4,6 +4,74 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [9.0.0] - 2026-02-28
+
+### 📖 Major Feature — Complete AI Documentation
+
+This major release adds comprehensive documentation for the full AI feature set introduced in v7.0.0 and v8.0.0. All AI capabilities are now thoroughly documented with API references, code examples, best practices, and integration guides.
+
+#### 6 New Documentation Pages
+
+- **[AI_BRIDGE.md](docs/AI_BRIDGE.md)** — Complete guide for AiBridge, the multi-provider LLM abstraction layer:
+  - AiBridgeManager API reference (chat, stream, embeddings, images, TTS, STT, models)
+  - TextBuilder fluent API with all chaining methods and terminal methods
+  - Tool calling / function calling with ToolContract, registration, and chatWithTools loop
+  - All 9 provider implementations with capabilities matrix
+  - 6 contract base classes documentation
+  - AiBridge Facade convenience API
+  - Support classes: Message, Document, StreamChunk, Normalizers, FileSecurity, JsonSchemaValidator
+  - Configuration reference with all environment variables
+  - Per-call overrides and custom provider setup
+
+- **[AI_QUERY.md](docs/AI_QUERY.md)** — AI Query Builder documentation:
+  - Natural language to SQL conversion API
+  - Schema introspection for MySQL, PostgreSQL, SQLite
+  - Safe mode (SELECT-only enforcement)
+  - `query()` (execute) and `toSql()` (generate only) methods
+  - Provider switching examples
+  - MCP tool integration (`ai_query`)
+
+- **[AI_SEEDER.md](docs/AI_SEEDER.md)** — AI Seeder documentation:
+  - LLM-powered realistic data generation
+  - `seed()` (generate + insert) and `generate()` (preview) methods
+  - Domain-aware context: locale, domain, description
+  - Multi-locale examples (fr_FR, ja_JP, pt_BR)
+  - E-commerce, blog, healthcare use case examples
+
+- **[AI_OPTIMIZER.md](docs/AI_OPTIMIZER.md)** — AI Query Optimizer documentation:
+  - `optimize()` method with suggestions, indexes, and rewritten SQL
+  - `explain()` method with EXPLAIN plan analysis
+  - Common optimization patterns detected
+  - Suggestion format with type/description/impact
+
+- **[AI_PROMPT.md](docs/AI_PROMPT.md)** — AI Prompt Enhancer documentation:
+  - Schema generation from natural language descriptions
+  - Model code generation with relationships
+  - Migration code generation
+  - Complete workflow example (schema → migrations → models → seeds)
+  - Comparison with regex-based PromptGenerator
+  - 7 built-in domain patterns reference
+
+- **[AI_SAFETY.md](docs/AI_SAFETY.md)** — AI Safety Guardrails documentation:
+  - Agent detection methods for 10+ AI agents
+  - Destructive command list and protection flow
+  - Consent mechanisms (env var, MCP argument, CLI flag)
+  - Blocking message format
+  - MCP tool safety matrix
+  - Best practices
+
+#### Documentation Updates
+
+- **INDEX.md** — Updated to v9.0.0 with expanded AI Integration section linking all 6 new pages
+- **README.md** — Added comprehensive AI Integration section with:
+  - AiBridge quick start (chat, stream, TextBuilder)
+  - AI Query Builder examples
+  - AI Seeder examples
+  - AI Query Optimizer examples
+  - MCP Server configuration
+  - Links to all AI documentation pages
+- Updated feature list in README with all AI capabilities
+
 ## [8.0.0] - 2025-06-28
 
 ### 🤖 New Features — AiBridge: Multi-Provider LLM Abstraction

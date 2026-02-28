@@ -1,6 +1,6 @@
 # 📚 Outlet ORM – Complete Documentation
 
-> **Version 7.0.0** – A JavaScript/TypeScript ORM inspired by Laravel Eloquent for Node.js
+> **Version 9.0.0** – A JavaScript/TypeScript ORM inspired by Laravel Eloquent for Node.js
 
 ## Table of Contents
 
@@ -30,10 +30,24 @@
 ### 🗄️ Backup & Restore (v6.0.0)
 - [**Backup Guide**](BACKUP.md) – Full / partial / journal backups, scheduling, AES-256-GCM encryption, TCP daemon, remote restore
 
-### 🤖 AI Integration (v7.0.0)
-- [**MCP Server**](MCP.md) – Model Context Protocol server for AI agents (Cursor, Claude Code, Copilot, Windsurf)
-- [**AI Safety Guardrails**](MCP.md#ai-safety-guardrails) – Automatic AI agent detection and destructive operation protection
-- [**Prompt-based Init**](MCP.md#prompt-based-initialization) – Generate projects from natural language: `outlet-init --prompt "..."`
+### 🤖 AI Integration (v7.0.0 – v9.0.0)
+
+#### AiBridge — Multi-Provider LLM Abstraction (v8.0.0+)
+- [**AiBridge Manager**](AI_BRIDGE.md) – Unified API for 9+ LLM providers (OpenAI, Claude, Gemini, Ollama, Grok, Mistral, ONN, OpenRouter)
+- [**TextBuilder Fluent API**](AI_BRIDGE.md#textbuilder-fluent-api) – Chain `.using().withPrompt().asText()` for text generation
+- [**Tool Calling**](AI_BRIDGE.md#tool-calling-function-calling) – LLM function calling with automatic orchestration loop
+- [**Providers & Contracts**](AI_BRIDGE.md#providers) – 9 provider implementations with 6 base contracts
+
+#### ORM AI Features (v8.0.0+)
+- [**AI Query Builder**](AI_QUERY.md) – Natural language → SQL conversion with schema introspection
+- [**AI Seeder**](AI_SEEDER.md) – LLM-powered realistic, domain-specific seed data generation
+- [**AI Query Optimizer**](AI_OPTIMIZER.md) – SQL analysis, optimization suggestions, and index recommendations
+- [**AI Prompt Enhancer**](AI_PROMPT.md) – Schema, model code, and migration code generation from natural language
+
+#### AI Agent Integration (v7.0.0+)
+- [**MCP Server**](MCP.md) – Model Context Protocol server for AI agents (Cursor, Claude Code, Copilot, Windsurf) — 13 tools
+- [**AI Safety Guardrails**](AI_SAFETY.md) – Automatic AI agent detection and destructive operation protection
+- [**Prompt-based Init**](AI_PROMPT.md#promptgenerator-regex-based-alternative) – Generate projects from natural language: `outlet-init --prompt "..."`
 - [**Agent Skills**](skills/outlet-orm/AI.md) – Structured documentation for AI agents
 
 ### 🔐 Security
@@ -84,6 +98,32 @@ const users = await User.with('posts').where('status', 'active').get();
 ```
 
 > 💡 **Automatic connection**: Simply create a `.env` file with your connection settings. `Model` connects automatically on first use.
+
+## What's New in v9.0.0
+
+| Feature | Description |
+|---|---|
+| 📖 **Complete AI Documentation** | 6 new dedicated documentation pages covering the full AiBridge + ORM AI feature set |
+| 🤖 **AiBridge Guide** | Comprehensive guide for the multi-provider LLM abstraction layer |
+| 🔍 **AI Query Builder Guide** | Natural language to SQL conversion documentation |
+| 🌱 **AI Seeder Guide** | LLM-powered realistic data generation documentation |
+| ⚡ **AI Optimizer Guide** | SQL optimization and EXPLAIN analysis documentation |
+| 🏗️ **AI Prompt Enhancer Guide** | Schema/model/migration generation from descriptions |
+| 🛡️ **AI Safety Guide** | Dedicated safety guardrails documentation |
+
+### Previous Release — v8.0.0
+
+| Feature | Description |
+|---|---|
+| 🤖 **AiBridge Manager** | Central orchestrator for 9+ LLM providers (chat, stream, embeddings, images, TTS, STT) |
+| 📝 **TextBuilder** | Fluent builder API for text generation |
+| 🔍 **AIQueryBuilder** | Natural language to SQL conversion |
+| 🌱 **AISeeder** | LLM-powered realistic seed data |
+| ⚡ **AIQueryOptimizer** | AI-powered SQL optimization |
+| 🏗️ **AIPromptEnhancer** | LLM-powered schema/model/migration generation |
+| 🔧 **Tool Calling** | Function calling with ToolContract, ToolRegistry, ToolChatRunner |
+| 🔌 **9 Providers** | OpenAI, Ollama, Claude, Gemini, Grok, Mistral, ONN, Custom OpenAI, OpenRouter |
+| 🛠️ **MCP ai_query + query_optimize** | 2 new MCP tools (total: 13) |
 
 ## What's New in v6.5.0
 

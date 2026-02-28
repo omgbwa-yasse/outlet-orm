@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const DocumentAttachmentMapper = require('../Support/DocumentAttachmentMapper');
 const FileSecurity = require('../Support/FileSecurity');
-const ProviderError = require('../Support/ProviderError');
+const ProviderError = require('../Support/Exceptions/ProviderError');
 
 /**
  * OllamaProvider

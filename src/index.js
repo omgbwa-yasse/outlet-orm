@@ -34,30 +34,31 @@ const AISafetyGuardrails = require('./AI/AISafetyGuardrails');
 const PromptGenerator    = require('./AI/PromptGenerator');
 
 // AI Bridge (v8.0.0) — Multi-provider LLM abstraction
-const AiBridgeManager       = require('./AI/Bridge/AiBridgeManager');
-const TextBuilder           = require('./AI/Bridge/Builders/TextBuilder');
-const ChatProviderContract  = require('./AI/Bridge/Contracts/ChatProviderContract');
-const EmbeddingsProviderContract = require('./AI/Bridge/Contracts/EmbeddingsProviderContract');
-const ImageProviderContract = require('./AI/Bridge/Contracts/ImageProviderContract');
-const AudioProviderContract = require('./AI/Bridge/Contracts/AudioProviderContract');
-const ModelsProviderContract = require('./AI/Bridge/Contracts/ModelsProviderContract');
-const ToolContract          = require('./AI/Bridge/Contracts/ToolContract');
-const OpenAIProvider        = require('./AI/Bridge/Providers/OpenAIProvider');
-const OllamaProvider        = require('./AI/Bridge/Providers/OllamaProvider');
-const OllamaTurboProvider   = require('./AI/Bridge/Providers/OllamaTurboProvider');
-const ClaudeProvider        = require('./AI/Bridge/Providers/ClaudeProvider');
-const GeminiProvider        = require('./AI/Bridge/Providers/GeminiProvider');
-const GrokProvider          = require('./AI/Bridge/Providers/GrokProvider');
-const MistralProvider       = require('./AI/Bridge/Providers/MistralProvider');
-const OnnProvider           = require('./AI/Bridge/Providers/OnnProvider');
-const CustomOpenAIProvider  = require('./AI/Bridge/Providers/CustomOpenAIProvider');
-const StreamChunk           = require('./AI/Bridge/Support/StreamChunk');
-const Message               = require('./AI/Bridge/Support/Message');
-const Document              = require('./AI/Bridge/Support/Document');
-const ProviderError         = require('./AI/Bridge/Support/ProviderError');
-const ToolRegistry          = require('./AI/Bridge/Support/ToolRegistry');
-const ToolChatRunner        = require('./AI/Bridge/Support/ToolChatRunner');
-const SystemInfoTool        = require('./AI/Bridge/Tools/SystemInfoTool');
+const AiBridgeManager       = require('./AI/AiBridgeManager');
+const AiBridgeFacade        = require('./AI/Facades/AiBridge');
+const TextBuilder           = require('./AI/Builders/TextBuilder');
+const ChatProviderContract  = require('./AI/Contracts/ChatProviderContract');
+const EmbeddingsProviderContract = require('./AI/Contracts/EmbeddingsProviderContract');
+const ImageProviderContract = require('./AI/Contracts/ImageProviderContract');
+const AudioProviderContract = require('./AI/Contracts/AudioProviderContract');
+const ModelsProviderContract = require('./AI/Contracts/ModelsProviderContract');
+const ToolContract          = require('./AI/Contracts/ToolContract');
+const OpenAIProvider        = require('./AI/Providers/OpenAIProvider');
+const OllamaProvider        = require('./AI/Providers/OllamaProvider');
+const OllamaTurboProvider   = require('./AI/Providers/OllamaTurboProvider');
+const ClaudeProvider        = require('./AI/Providers/ClaudeProvider');
+const GeminiProvider        = require('./AI/Providers/GeminiProvider');
+const GrokProvider          = require('./AI/Providers/GrokProvider');
+const MistralProvider       = require('./AI/Providers/MistralProvider');
+const OnnProvider           = require('./AI/Providers/OnnProvider');
+const CustomOpenAIProvider  = require('./AI/Providers/CustomOpenAIProvider');
+const StreamChunk           = require('./AI/Support/StreamChunk');
+const Message               = require('./AI/Support/Message');
+const Document              = require('./AI/Support/Document');
+const ProviderError         = require('./AI/Support/Exceptions/ProviderError');
+const ToolRegistry          = require('./AI/Support/ToolRegistry');
+const ToolChatRunner        = require('./AI/Support/ToolChatRunner');
+const SystemInfoTool        = require('./AI/Tools/SystemInfoTool');
 
 // AI ORM Features (v8.0.0) — NL→SQL, AI Seeding, Optimization
 const AIQueryBuilder        = require('./AI/AIQueryBuilder');
@@ -111,6 +112,7 @@ module.exports = {
 
   // AI Bridge (v8.0.0)
   AiBridgeManager,
+  AiBridgeFacade,
   TextBuilder,
   ChatProviderContract,
   EmbeddingsProviderContract,

@@ -9,7 +9,7 @@ const GrokProvider = require('./Providers/GrokProvider');
 const ClaudeProvider = require('./Providers/ClaudeProvider');
 const MistralProvider = require('./Providers/MistralProvider');
 const CustomOpenAIProvider = require('./Providers/CustomOpenAIProvider');
-const ProviderError = require('./Support/ProviderError');
+const ProviderError = require('./Support/Exceptions/ProviderError');
 const ToolRegistry = require('./Support/ToolRegistry');
 const ToolChatRunner = require('./Support/ToolChatRunner');
 

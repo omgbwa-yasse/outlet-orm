@@ -10,7 +10,7 @@
  */
 class AIQueryBuilder {
   /**
-   * @param {import('./Bridge/AiBridgeManager')} manager - AiBridge manager instance
+   * @param {import('./AiBridgeManager')} manager - AiBridge manager instance
    * @param {Object} connection - DatabaseConnection instance (outlet-orm)
    */
   constructor(manager, connection) {

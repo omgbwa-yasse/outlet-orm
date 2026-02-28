@@ -702,7 +702,7 @@ class MCPServer extends EventEmitter {
     if (this._aiBridgeManager) return this._aiBridgeManager;
 
     try {
-      const AiBridgeManager = require('./Bridge/AiBridgeManager');
+      const AiBridgeManager = require('./AiBridgeManager');
       const config = {};
 
       // Auto-detect providers from env
