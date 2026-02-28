@@ -48,7 +48,7 @@
 - [**MCP Server**](MCP.md) – Model Context Protocol server for AI agents (Cursor, Claude Code, Copilot, Windsurf) — 13 tools
 - [**AI Safety Guardrails**](AI_SAFETY.md) – Automatic AI agent detection and destructive operation protection
 - [**Prompt-based Init**](AI_PROMPT.md#promptgenerator-regex-based-alternative) – Generate projects from natural language: `outlet-init --prompt "..."`
-- [**Agent Skills**](skills/outlet-orm/AI.md) – Structured documentation for AI agents
+- [**Agent Skills**](../skills/outlet-orm/AI.md) – Structured documentation for AI agents
 
 ### 🔐 Security
 - [**Backend Security Guide**](SECURITY.md) – Secure structure, middleware, and best practices

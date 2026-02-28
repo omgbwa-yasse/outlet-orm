@@ -1,6 +1,6 @@
 {
   "name": "outlet-orm",
-  "version": "9.0.1",
+  "version": "9.0.2",
   "description": "A Laravel Eloquent-inspired ORM for Node.js with support for MySQL, PostgreSQL, and SQLite",
   "main": "src/index.js",
   "types": "types/index.d.ts",
@@ -15,7 +15,7 @@
     "src/**",
     "bin/**",
     "types/**",
-    "docs/skills/**",
+    "skills/**",
     "README.md",
     "LICENSE"
   ],

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [9.0.2] - 2026-02-28
+
+### ♻️ Refactor — Move Skills to project root
+
+- Moved `docs/skills/` → `skills/` at the project root for clearer separation of concerns
+- `docs/` now contains only human documentation
+- `skills/` contains AI agent / Copilot Skills documentation (published to npm)
+- Updated `package.json` files field: `"docs/skills/**"` → `"skills/**"`
+- Updated cross-references in `docs/INDEX.md`
+
 ## [9.0.1] - 2026-02-28
 
 ### 📖 Documentation — Enrich Copilot Skills (`docs/skills/`)
