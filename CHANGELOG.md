@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [9.0.1] - 2026-02-28
+
+### 📖 Documentation — Enrich Copilot Skills (`docs/skills/`)
+
+The AI Copilot Skills documentation (published to npm) is now fully aligned with v9.0.0.
+
+- **SKILL.md** — Bumped to v9.0.0, expanded AI section with AiBridge references
+- **AI.md** — Complete rewrite with AiBridge (9 providers, chat, stream, embeddings, images, TTS, STT, tool calling), AI Query Builder, AI Seeder, AI Query Optimizer, AI Prompt Enhancer, MCP Server (13 tools), AI Safety Guardrails, support classes, and quick reference
+- **API.md** — Added AiBridgeManager, TextBuilder, AIQueryBuilder, AISeeder, AIQueryOptimizer, AIPromptEnhancer, AISafetyGuardrails API tables
+- **QUERIES.md** — Added AI Query Builder and AI Query Optimizer sections
+- **SEEDS.md** — Added AI Seeder section with API reference and context options
+
 ## [9.0.0] - 2026-02-28
 
 ### 📖 Major Feature — Complete AI Documentation

@@ -1,10 +1,10 @@
 ---
 name: outlet-orm-best-practices
-description: Outlet ORM is a Laravel Eloquent-inspired ORM for Node.js with MySQL, PostgreSQL, and SQLite support. Use this skill when working with Outlet ORM models, queries, relationships, migrations, backup, and database operations. v6.0.0 adds a full Backup module (BackupManager, BackupScheduler, AES-256-GCM encryption, TCP daemon).
+description: Outlet ORM is a Laravel Eloquent-inspired ORM for Node.js with MySQL, PostgreSQL, and SQLite support. Use this skill when working with Outlet ORM models, queries, relationships, migrations, backup, AI integration (AiBridge multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, MCP Server) and database operations.
 license: MIT
 metadata:
 author: omgbwa-yasse
-version: "6.0.0"
+version: "9.0.0"
 source: https://github.com/omgbwa-yasse/outlet-orm
 npm: https://www.npmjs.com/package/outlet-orm
 ---
@@ -13,11 +13,15 @@ npm: https://www.npmjs.com/package/outlet-orm
 
 Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for Node.js/TypeScript with support for MySQL, PostgreSQL, and SQLite.
 
-> 🆕 **v7.0.0**: AI Integration — MCP Server (Model Context Protocol), AI Safety Guardrails, Prompt-based project initialization. See [AI.md](AI.md).
+> 🆕 **v9.0.0**: Complete AI documentation — AiBridge multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, AI Prompt Enhancer, AI Safety Guardrails. See [AI.md](AI.md).
+>
+> 🔖 **v8.0.0**: AiBridge multi-provider LLM abstraction (9 providers), AI Query Builder, AI Seeder, AI Query Optimizer, AI Prompt Enhancer.
+>
+> 🔖 **v7.0.0**: AI Integration — MCP Server (Model Context Protocol), AI Safety Guardrails, Prompt-based project initialization.
 >
 > 🔖 **v6.5.0**: Accessors & Mutators, firstOrCreate/firstOrNew/updateOrCreate, upsert, Observer pattern, cursor/stream.
 >
-> 🔖 **v6.0.0**: Full Backup module — `BackupManager`, `BackupScheduler`, AES-256-GCM `BackupEncryption`, `BackupSocketServer` TCP daemon, `BackupSocketClient` with remote restore. See [BACKUP.md](BACKUP.md).
+> 🔖 **v6.0.0**: Full Backup module — `BackupManager`, `BackupScheduler`, AES-256-GCM `BackupEncryption`, `BackupSocketServer` TCP daemon. See [BACKUP.md](BACKUP.md).
 >
 > 🔖 **v5.0.0**: Full TypeScript support with Generic Model, typed Schema Builder, MigrationInterface and Copilot Skills integration.
 
@@ -33,7 +37,7 @@ Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for N
 | **[TYPESCRIPT.md](TYPESCRIPT.md)** | TypeScript types, generics, typed models, migrations |
 | **[SECURITY.md](SECURITY.md)** | 🔐 Security best practices, authentication, authorisation |
 | **[BACKUP.md](BACKUP.md)** | 🗄️ Backups, scheduling, AES-256-GCM encryption, TCP daemon, restore |
-| **[AI.md](AI.md)** | 🤖 MCP Server, AI Safety Guardrails, Prompt-based Init |
+| **[AI.md](AI.md)** | 🤖 AiBridge (9 LLM providers), AI Query Builder, AI Seeder, AI Optimizer, AI Prompt Enhancer, MCP Server, AI Safety Guardrails |
 | **[API.md](API.md)** | Complete API Reference |
 
 ---
@@ -52,8 +56,12 @@ Reference these guidelines when:
 - Scheduling or encrypting database backups  [BACKUP.md](BACKUP.md)
 - Restoring a database from a backup file  [BACKUP.md](BACKUP.md)
 - Running a long-lived backup daemon over TCP  [BACKUP.md](BACKUP.md)
+- Configuring LLM providers (AiBridge)  [AI.md](AI.md)
+- Converting natural language to SQL (AI Query Builder)  [AI.md](AI.md)
+- Generating realistic seed data with AI  [AI.md](AI.md)
+- Optimizing SQL queries with AI  [AI.md](AI.md)
+- Generating schemas/models/migrations from descriptions  [AI.md](AI.md)
 - Exposing the ORM to AI agents via MCP  [AI.md](AI.md)
-- Generating projects from natural language prompts  [AI.md](AI.md)
 - Protecting against AI-initiated destructive operations  [AI.md](AI.md)
 
 ---
@@ -194,7 +202,7 @@ outlet-migrate migrate
 | 7 | Validation & Events | MEDIUM | [ADVANCED.md](ADVANCED.md) |
 | 8 | Migrations & CLI | LOW-MEDIUM | [MIGRATIONS.md](MIGRATIONS.md) |
 | 9 | Backup & Restore | MEDIUM | [BACKUP.md](BACKUP.md) |
-| 10 | AI / MCP Integration | MEDIUM | [AI.md](AI.md) |
+| 10 | AI / MCP Integration | MEDIUM-HIGH | [AI.md](AI.md) |
 
 ---
 

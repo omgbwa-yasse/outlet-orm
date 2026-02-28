@@ -515,6 +515,114 @@ const db = new DatabaseConnection({
 
 ---
 
+## AiBridgeManager
+
+> Since v8.0.0
+
+### Constructor
+
+```javascript
+const { AiBridgeManager } = require('outlet-orm');
+const ai = new AiBridgeManager(config); // From config/aibridge.js or inline
+```
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+|`chat(provider, messages, opts?)`| `{ text, tool_calls, raw }` | Send chat request |
+|`stream(provider, messages, opts?)`| `AsyncGenerator<StreamChunk>` | SSE/NDJSON stream |
+|`streamEvents(provider, messages, opts?)`| `AsyncGenerator<{type, data}>` | Structured stream events |
+|`embeddings(provider, inputs, opts?)`| `{ vectors, usage, raw }` | Generate embeddings |
+|`image(provider, prompt, opts?)`| `{ url, b64_json, raw }` | Generate image |
+|`tts(provider, text, opts?)`| `{ audio, mime }` | Text-to-speech |
+|`stt(provider, filePath, opts?)`| `{ text }` | Speech-to-text |
+|`models(provider)`| `Array<{id, ...}>` | List available models |
+|`model(provider, id)`| `Object` | Get single model info |
+|`text()`| `TextBuilder` | Fluent text builder |
+|`chatWithTools(provider, messages, opts?)`| `{ text, raw }` | Chat with tool calling loop |
+|`registerTool(tool)`| `void` | Register a custom tool |
+|`registerProvider(name, provider)`| `void` | Register a custom provider |
+|`provider(name)`| `Provider` | Get registered provider |
+|`tool(name)`| `ToolContract` | Get registered tool |
+|`tools()`| `Array<ToolContract>` | Get all tools |
+
+---
+
+## TextBuilder
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+|`.using(provider, model)`| `this` | Set provider and model |
+|`.withPrompt(text, attachments?)`| `this` | Add user message |
+|`.withSystemPrompt(text)`| `this` | Set system prompt |
+|`.withMaxTokens(n)`| `this` | Max tokens limit |
+|`.usingTemperature(t)`| `this` | Temperature (0–2) |
+|`.usingTopP(p)`| `this` | Top-p sampling |
+|`.withApiKey(key)`| `this` | Override API key |
+|`.withEndpoint(url)`| `this` | Override endpoint |
+|`.withBaseUrl(url)`| `this` | Override base URL |
+|`.withAuthHeader(header, prefix?)`| `this` | Override auth header |
+|`.withExtraHeaders(headers)`| `this` | Extra HTTP headers |
+|`.asText()`| `{ text, raw, usage, finish_reason }` | Text response |
+|`.asStream()`| `AsyncGenerator<StreamChunk>` | Streaming response |
+|`.asRaw()`| `Object` | Raw provider response |
+
+---
+
+## AIQueryBuilder
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+|`using(provider, model)`| `this` | Set LLM provider |
+|`safeMode(bool)`| `this` | Restrict to SELECT/WITH |
+|`query(question)`| `{ sql, params, results, explanation }` | NL → SQL + execute |
+|`toSql(question)`| `{ sql, params, explanation }` | NL → SQL only |
+
+---
+
+## AISeeder
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+|`using(provider, model)`| `this` | Set LLM provider |
+|`seed(table, count, ctx)`| `{ records, inserted }` | Generate + insert |
+|`generate(table, count, ctx)`| `Array<Object>` | Preview only |
+
+---
+
+## AIQueryOptimizer
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+|`using(provider, model)`| `this` | Set LLM provider |
+|`optimize(sql)`| `{ original, optimized, suggestions, indexes, explanation }` | Analyze + rewrite |
+|`explain(sql)`| `{ plan, analysis }` | EXPLAIN + LLM analysis |
+
+---
+
+## AIPromptEnhancer
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+|`using(provider, model)`| `this` | Set LLM provider |
+|`generateSchema(description)`| `{ tables, relations, seedHints }` | Schema from description |
+|`generateModelCode(table, schema, rels)`| `string` | Model class code |
+|`generateMigrationCode(table, schema)`| `string` | Migration class code |
+
+---
+
+## AISafetyGuardrails (Static)
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+|`detectAgent()`| `{ detected, agentName }` | Detect AI agent |
+|`isDestructiveCommand(cmd)`| `boolean` | Check if destructive |
+|`validateDestructiveAction(cmd, flags)`| `{ allowed, message }` | Validate with consent |
+|`CONSENT_ENV_VAR`| `string` | Consent env var name |
+
+---
+
 ## References
 
 - <https://github.com/omgbwa-yasse/outlet-orm>

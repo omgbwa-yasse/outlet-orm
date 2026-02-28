@@ -300,6 +300,70 @@ const native = await db.execute(
 
 ---
 
+## AI Query Builder — Natural Language to SQL
+
+> Since v8.0.0
+
+Convert natural language into SQL queries using any LLM provider via AiBridge.
+
+```javascript
+const { AiBridgeManager, AIQueryBuilder, DatabaseConnection } = require('outlet-orm');
+
+const ai = new AiBridgeManager({ providers: { openai: { api_key: process.env.OPENAI_API_KEY, model: 'gpt-4o-mini' } } });
+const db = new DatabaseConnection();
+const qb = new AIQueryBuilder(ai, db);
+
+// Convert and execute
+const result = await qb.query('How many users signed up last month?');
+console.log(result.sql);     // SELECT COUNT(*) ...
+console.log(result.results); // [{ count: 42 }]
+
+// Generate SQL without executing
+const { sql } = await qb.toSql('Find duplicate emails');
+
+// Use a specific provider
+const r = await qb.using('claude', 'claude-sonnet-4-20250514')
+  .query('List users without orders');
+
+// Disable safe mode (allow writes)
+qb.safeMode(false);
+```
+
+### AI Query Builder Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+|`using(provider, model)`| `this` | Set LLM provider |
+|`safeMode(bool)`| `this` | Restrict to SELECT/WITH (default: `true`) |
+|`query(question)`| `{ sql, params, results, explanation }` | NL → SQL + execute |
+|`toSql(question)`| `{ sql, params, explanation }` | NL → SQL only |
+
+See [AI.md](AI.md) for full details.
+
+---
+
+## AI Query Optimizer
+
+> Since v8.0.0
+
+Analyze and optimize SQL queries with AI.
+
+```javascript
+const { AIQueryOptimizer } = require('outlet-orm');
+
+const optimizer = new AIQueryOptimizer(ai, db);
+const result = await optimizer.optimize('SELECT * FROM orders WHERE ...');
+console.log(result.optimized);   // Rewritten SQL
+console.log(result.suggestions); // [{ type, description, impact }]
+console.log(result.indexes);     // ['CREATE INDEX ...']
+
+const { plan, analysis } = await optimizer.explain('SELECT ...');
+```
+
+See [AI.md](AI.md) for full details.
+
+---
+
 ## Query Builder Methods Summary
 
 | Method | Description |

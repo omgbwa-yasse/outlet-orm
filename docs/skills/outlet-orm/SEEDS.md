@@ -96,3 +96,50 @@ outlet-migrate seed
 - Control FK order explicitly in`DatabaseSeeder`.
 - Keep heavy bulk data in dedicated import scripts.
 - Prefer unique constraints to prevent duplicate seed data.
+
+---
+
+## AI Seeder — LLM-Powered Data Generation
+
+> Since v8.0.0
+
+Generate realistic domain-specific seed data using AI instead of generic lorem ipsum.
+
+```javascript
+const { AiBridgeManager, AISeeder, DatabaseConnection } = require('outlet-orm');
+
+const ai = new AiBridgeManager({
+  providers: { openai: { api_key: process.env.OPENAI_API_KEY, model: 'gpt-4o-mini' } }
+});
+const seeder = new AISeeder(ai, new DatabaseConnection());
+
+// Generate and insert 10 realistic user records
+const { records, inserted } = await seeder.seed('users', 10, {
+  domain: 'e-commerce',
+  locale: 'fr_FR',
+  description: 'An online fashion store'
+});
+
+// Preview without inserting
+const preview = await seeder.generate('products', 5, {
+  domain: 'electronics'
+});
+```
+
+### AI Seeder API
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+|`using(provider, model)`| `this` | Set LLM provider |
+|`seed(table, count, context)`| `{ records, inserted }` | Generate + insert |
+|`generate(table, count, context)`| `Array<Object>` | Generate only (preview) |
+
+### Context Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `domain` | `string` | Business domain (`'e-commerce'`, `'healthcare'`, `'finance'`) |
+| `locale` | `string` | Locale for names/addresses (`'fr_FR'`, `'ja_JP'`, `'pt_BR'`) |
+| `description` | `string` | Detailed description for better data quality |
+
+See [AI.md](AI.md) for full details.
