@@ -112,6 +112,33 @@ const TOOL_DEFINITIONS = [
       },
       required: ['filePath', 'consent']
     }
+  },
+  {
+    name: 'ai_query',
+    description: 'Convert a natural language question into SQL and execute it. Requires an AI provider (AiBridge).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        question: { type: 'string', description: 'Natural language question, e.g. "Show me the top 5 users by order count"' },
+        provider: { type: 'string', description: 'AI provider to use (default: openai)' },
+        model: { type: 'string', description: 'AI model to use (default: gpt-4o-mini)' },
+        safe_mode: { type: 'boolean', description: 'Only allow SELECT queries (default: true)' }
+      },
+      required: ['question']
+    }
+  },
+  {
+    name: 'query_optimize',
+    description: 'Analyze a SQL query using AI and return optimization suggestions, rewritten query, and index recommendations.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sql: { type: 'string', description: 'The SQL query to optimize' },
+        provider: { type: 'string', description: 'AI provider to use (default: openai)' },
+        model: { type: 'string', description: 'AI model to use (default: gpt-4o-mini)' }
+      },
+      required: ['sql']
+    }
   }
 ];
 
@@ -313,6 +340,8 @@ class MCPServer extends EventEmitter {
     case 'model_list':        return this._toolModelList();
     case 'backup_create':     return this._toolBackupCreate(args);
     case 'backup_restore':    return this._toolBackupRestore(args);
+    case 'ai_query':          return this._toolAiQuery(args);
+    case 'query_optimize':    return this._toolQueryOptimize(args);
     default:
       throw new Error(`Unknown tool: ${name}`);
     }
@@ -608,6 +637,90 @@ class MCPServer extends EventEmitter {
     const backupManager = new BackupManager(conn);
     await backupManager.restore(args.filePath);
     return `Backup restored from: ${args.filePath}`;
+  }
+
+  // ── ai_query (NL → SQL) ───────────────────────────────────────
+
+  async _toolAiQuery(args) {
+    if (!args.question) throw new Error('A natural language question is required.');
+    const conn = await this._getConnection();
+    const manager = this._getAiBridgeManager();
+    if (!manager) throw new Error('AiBridge is not configured. Set OPENAI_API_KEY or configure a provider.');
+
+    const AIQueryBuilder = require('./AIQueryBuilder');
+    const builder = new AIQueryBuilder(manager, conn);
+
+    if (args.provider || args.model) {
+      builder.using(args.provider || 'openai', args.model || 'gpt-4o-mini');
+    }
+    if (args.safe_mode === false) {
+      builder.safeMode(false);
+    }
+
+    const result = await builder.query(args.question);
+    return {
+      sql: result.sql,
+      params: result.params,
+      explanation: result.explanation,
+      results: result.results,
+      error: result.error || null
+    };
+  }
+
+  // ── query_optimize ─────────────────────────────────────────────
+
+  async _toolQueryOptimize(args) {
+    if (!args.sql) throw new Error('SQL query is required.');
+    const conn = await this._getConnection();
+    const manager = this._getAiBridgeManager();
+    if (!manager) throw new Error('AiBridge is not configured. Set OPENAI_API_KEY or configure a provider.');
+
+    const AIQueryOptimizer = require('./AIQueryOptimizer');
+    const optimizer = new AIQueryOptimizer(manager, conn);
+
+    if (args.provider || args.model) {
+      optimizer.using(args.provider || 'openai', args.model || 'gpt-4o-mini');
+    }
+
+    const result = await optimizer.optimize(args.sql);
+    return {
+      original: result.original,
+      optimized: result.optimized,
+      suggestions: result.suggestions,
+      explanation: result.explanation,
+      indexes: result.indexes
+    };
+  }
+
+  // ── AiBridge manager helper ────────────────────────────────────
+
+  /**
+   * Lazily creates an AiBridge manager from environment variables.
+   * @returns {import('./Bridge/AiBridgeManager')|null}
+   */
+  _getAiBridgeManager() {
+    if (this._aiBridgeManager) return this._aiBridgeManager;
+
+    try {
+      const AiBridgeManager = require('./Bridge/AiBridgeManager');
+      const config = {};
+
+      // Auto-detect providers from env
+      if (process.env.OPENAI_API_KEY)   config.openai   = { api_key: process.env.OPENAI_API_KEY };
+      if (process.env.OLLAMA_ENDPOINT)  config.ollama   = { endpoint: process.env.OLLAMA_ENDPOINT };
+      if (process.env.CLAUDE_API_KEY)   config.claude   = { api_key: process.env.CLAUDE_API_KEY };
+      if (process.env.GEMINI_API_KEY)   config.gemini   = { api_key: process.env.GEMINI_API_KEY };
+      if (process.env.GROK_API_KEY)     config.grok     = { api_key: process.env.GROK_API_KEY };
+      if (process.env.MISTRAL_API_KEY)  config.mistral  = { api_key: process.env.MISTRAL_API_KEY };
+      if (process.env.ONN_API_KEY)      config.onn      = { api_key: process.env.ONN_API_KEY };
+
+      if (Object.keys(config).length === 0) return null;
+
+      this._aiBridgeManager = new AiBridgeManager(config);
+      return this._aiBridgeManager;
+    } catch {
+      return null;
+    }
   }
 
   // ─── Template helpers ──────────────────────────────────────────

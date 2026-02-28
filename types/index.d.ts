@@ -1043,4 +1043,330 @@ declare module 'outlet-orm' {
     /** Generate a seeder file from a blueprint */
     static generateSeeder(blueprint: PromptBlueprint, outputDir: string): string;
   }
+
+  // ==================== AI Bridge (v8.0.0) ====================
+
+  /** Normalized chat response */
+  export interface ChatResponse {
+    output_text?: string;
+    choices?: Array<{ message: { content: string; tool_calls?: any[] }; finish_reason?: string }>;
+    content?: Array<{ text: string }>;
+    message?: { content: string };
+    usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+    [key: string]: any;
+  }
+
+  /** Streaming chunk value object */
+  export class StreamChunk {
+    text: string;
+    usage: Record<string, any> | null;
+    finishReason: string | null;
+    chunkType: 'delta' | 'end' | 'tool_call' | 'tool_result';
+    toolCalls: any[] | null;
+    toolResults: any[] | null;
+    static delta(text: string, extra?: Partial<StreamChunk>): StreamChunk;
+    static end(usage?: Record<string, any>, finishReason?: string): StreamChunk;
+  }
+
+  /** Message value object */
+  export class Message {
+    role: string;
+    content: string;
+    static user(content: string): Message;
+    static system(content: string): Message;
+    static assistant(content: string): Message;
+    toJSON(): { role: string; content: string };
+  }
+
+  /** Document attachment */
+  export class Document {
+    kind: string;
+    data: any;
+    meta: Record<string, any>;
+    static local(filePath: string, meta?: Record<string, any>): Document;
+    static base64(data: string, mimeType: string): Document;
+    static url(url: string): Document;
+    static text(text: string): Document;
+    static raw(data: any): Document;
+  }
+
+  /** Provider error */
+  export class ProviderError extends Error {
+    statusCode: number | null;
+    providerName: string;
+    static notFound(name: string): ProviderError;
+    static unsupported(provider: string, capability: string): ProviderError;
+  }
+
+  /** Chat provider base contract */
+  export abstract class ChatProviderContract {
+    chat(messages: Array<{ role: string; content: string }>, options?: Record<string, any>): Promise<ChatResponse>;
+    stream(messages: Array<{ role: string; content: string }>, options?: Record<string, any>): AsyncGenerator<StreamChunk>;
+    supportsStreaming(): boolean;
+  }
+
+  /** Embeddings provider base contract */
+  export abstract class EmbeddingsProviderContract {
+    embeddings(inputs: string | string[], options?: Record<string, any>): Promise<number[][]>;
+  }
+
+  /** Image provider base contract */
+  export abstract class ImageProviderContract {
+    generateImage(prompt: string, options?: Record<string, any>): Promise<{ url?: string; b64_json?: string }[]>;
+  }
+
+  /** Audio provider base contract */
+  export abstract class AudioProviderContract {
+    textToSpeech(text: string, options?: Record<string, any>): Promise<{ b64: string; mime: string }>;
+    speechToText(audioSource: string | Buffer, options?: Record<string, any>): Promise<{ text: string }>;
+  }
+
+  /** Models provider base contract */
+  export abstract class ModelsProviderContract {
+    listModels(): Promise<any[]>;
+    getModel(modelId: string): Promise<any>;
+  }
+
+  /** Tool contract for function calling */
+  export abstract class ToolContract {
+    name(): string;
+    description(): string;
+    schema(): Record<string, any>;
+    execute(args: Record<string, any>): Promise<any>;
+  }
+
+  /** Built-in system info tool */
+  export class SystemInfoTool extends ToolContract {
+    name(): string;
+    description(): string;
+    schema(): Record<string, any>;
+    execute(): Promise<{ node_version: string; platform: string; arch: string; uptime: number }>;
+  }
+
+  /** Tool registry */
+  export class ToolRegistry {
+    register(tool: ToolContract): void;
+    get(name: string): ToolContract | undefined;
+    has(name: string): boolean;
+    all(): ToolContract[];
+    readonly size: number;
+  }
+
+  /** Tool chat runner — executes tool loops */
+  export class ToolChatRunner {
+    constructor(manager: AiBridgeManager, registry: ToolRegistry);
+    run(provider: string, messages: Array<{ role: string; content: string }>, options?: { maxToolIterations?: number; model?: string }): Promise<ChatResponse>;
+  }
+
+  /** OpenAI provider options */
+  export interface OpenAIProviderConfig {
+    api_key: string;
+    model?: string;
+    endpoint?: string;
+    responses_endpoint?: string;
+    embeddings_endpoint?: string;
+    images_endpoint?: string;
+    audio_tts_endpoint?: string;
+    audio_stt_endpoint?: string;
+  }
+
+  export class OpenAIProvider extends ChatProviderContract {
+    constructor(config: OpenAIProviderConfig);
+    chat(messages: Array<{ role: string; content: string }>, options?: Record<string, any>): Promise<ChatResponse>;
+    stream(messages: Array<{ role: string; content: string }>, options?: Record<string, any>): AsyncGenerator<StreamChunk>;
+    embeddings(inputs: string | string[], options?: Record<string, any>): Promise<number[][]>;
+    generateImage(prompt: string, options?: Record<string, any>): Promise<any[]>;
+    textToSpeech(text: string, options?: Record<string, any>): Promise<{ b64: string; mime: string }>;
+    speechToText(audioSource: string | Buffer, options?: Record<string, any>): Promise<{ text: string }>;
+    listModels(): Promise<any[]>;
+    getModel(modelId: string): Promise<any>;
+  }
+
+  export class OllamaProvider extends ChatProviderContract {
+    constructor(config: { endpoint?: string; model?: string });
+    chat(messages: Array<{ role: string; content: string }>, options?: Record<string, any>): Promise<ChatResponse>;
+    stream(messages: Array<{ role: string; content: string }>, options?: Record<string, any>): AsyncGenerator<StreamChunk>;
+    embeddings(inputs: string | string[], options?: Record<string, any>): Promise<number[][]>;
+    generateImage(prompt: string, options?: Record<string, any>): Promise<any[]>;
+  }
+
+  export class OllamaTurboProvider extends OllamaProvider {
+    constructor(config: { api_key: string; endpoint?: string; model?: string });
+  }
+
+  export class ClaudeProvider extends ChatProviderContract {
+    constructor(config: { api_key: string; model?: string; endpoint?: string });
+  }
+
+  export class GeminiProvider extends ChatProviderContract {
+    constructor(config: { api_key: string; model?: string; endpoint?: string });
+    embeddings(inputs: string | string[], options?: Record<string, any>): Promise<number[][]>;
+  }
+
+  export class GrokProvider extends ChatProviderContract {
+    constructor(config: { api_key: string; model?: string; endpoint?: string });
+  }
+
+  export class MistralProvider extends OpenAIProvider {
+    constructor(config: { api_key: string; model?: string });
+  }
+
+  export class OnnProvider extends ChatProviderContract {
+    constructor(config: { api_key: string; model?: string; endpoint?: string });
+  }
+
+  export interface CustomOpenAIProviderConfig {
+    api_key: string;
+    base_url: string;
+    model?: string;
+    auth_header?: string;
+    auth_prefix?: string;
+    extra_headers?: Record<string, string>;
+    paths?: {
+      chat?: string;
+      embeddings?: string;
+      models?: string;
+      images?: string;
+      audio_tts?: string;
+      audio_stt?: string;
+    };
+  }
+
+  export class CustomOpenAIProvider extends ChatProviderContract {
+    constructor(config: CustomOpenAIProviderConfig);
+    chat(messages: Array<{ role: string; content: string }>, options?: Record<string, any>): Promise<ChatResponse>;
+    stream(messages: Array<{ role: string; content: string }>, options?: Record<string, any>): AsyncGenerator<StreamChunk>;
+    embeddings(inputs: string | string[], options?: Record<string, any>): Promise<number[][]>;
+    generateImage(prompt: string, options?: Record<string, any>): Promise<any[]>;
+    textToSpeech(text: string, options?: Record<string, any>): Promise<{ b64: string; mime: string }>;
+    speechToText(audioSource: string | Buffer, options?: Record<string, any>): Promise<{ text: string }>;
+    listModels(): Promise<any[]>;
+  }
+
+  /** AiBridge manager configuration */
+  export interface AiBridgeConfig {
+    default?: string;
+    openai?: OpenAIProviderConfig;
+    ollama?: { endpoint?: string; model?: string };
+    ollama_turbo?: { api_key: string; endpoint?: string; model?: string };
+    claude?: { api_key: string; model?: string; endpoint?: string };
+    gemini?: { api_key: string; model?: string; endpoint?: string };
+    grok?: { api_key: string; model?: string; endpoint?: string };
+    mistral?: { api_key: string; model?: string };
+    onn?: { api_key: string; model?: string; endpoint?: string };
+    openai_custom?: CustomOpenAIProviderConfig;
+    openrouter?: { api_key: string; base_url?: string; model?: string };
+    [key: string]: any;
+  }
+
+  /** TextBuilder — fluent API for building AI requests */
+  export class TextBuilder {
+    constructor(manager: AiBridgeManager);
+    using(provider: string, model?: string): this;
+    withPrompt(text: string, attachments?: Document[]): this;
+    withSystemPrompt(text: string): this;
+    withMaxTokens(n: number): this;
+    usingTemperature(t: number): this;
+    usingTopP(p: number): this;
+    withApiKey(key: string): this;
+    withEndpoint(url: string): this;
+    withBaseUrl(url: string): this;
+    withChatEndpoint(url: string): this;
+    withAuthHeader(header: string): this;
+    withExtraHeaders(headers: Record<string, string>): this;
+    withPaths(paths: Record<string, string>): this;
+    asText(): Promise<string>;
+    asRaw(): Promise<ChatResponse>;
+    asStream(): AsyncGenerator<StreamChunk>;
+  }
+
+  /** AiBridge Manager — central orchestrator for multi-provider AI */
+  export class AiBridgeManager {
+    constructor(config?: AiBridgeConfig);
+    provider(name: string): ChatProviderContract;
+    registerProvider(name: string, provider: ChatProviderContract): void;
+    chat(provider: string, messages: Array<{ role: string; content: string }>, options?: Record<string, any>): Promise<ChatResponse>;
+    stream(provider: string, messages: Array<{ role: string; content: string }>, options?: Record<string, any>): AsyncGenerator<StreamChunk>;
+    streamEvents(provider: string, messages: Array<{ role: string; content: string }>, options?: Record<string, any>): AsyncGenerator<StreamChunk>;
+    embeddings(provider: string, inputs: string | string[], options?: Record<string, any>): Promise<number[][]>;
+    models(provider: string): Promise<any[]>;
+    model(provider: string, modelId: string): Promise<any>;
+    image(provider: string, prompt: string, options?: Record<string, any>): Promise<any[]>;
+    tts(provider: string, text: string, options?: Record<string, any>): Promise<{ b64: string; mime: string }>;
+    stt(provider: string, audioSource: string | Buffer, options?: Record<string, any>): Promise<{ text: string }>;
+    text(): TextBuilder;
+    registerTool(tool: ToolContract): void;
+    tool(name: string): ToolContract | undefined;
+    tools(): ToolContract[];
+    chatWithTools(provider: string, messages: Array<{ role: string; content: string }>, options?: Record<string, any>): Promise<ChatResponse>;
+  }
+
+  // ==================== AI ORM Features (v8.0.0) ====================
+
+  /** NL→SQL query result */
+  export interface AIQueryResult {
+    sql: string;
+    params: any[];
+    results: any[];
+    explanation: string;
+    error?: string;
+    raw_response: ChatResponse;
+  }
+
+  /** AIQueryBuilder — natural language to SQL conversion */
+  export class AIQueryBuilder {
+    constructor(manager: AiBridgeManager, connection: DatabaseConnection);
+    using(provider: string, model: string): this;
+    safeMode(safe: boolean): this;
+    query(question: string, options?: { model?: string; max_tokens?: number; temperature?: number }): Promise<AIQueryResult>;
+    toSql(question: string, options?: Record<string, any>): Promise<{ sql: string; params: any[]; explanation: string }>;
+  }
+
+  /** AI seed result */
+  export interface AISeedResult {
+    records: Record<string, any>[];
+    inserted: number;
+  }
+
+  /** AISeeder — AI-powered data seeding */
+  export class AISeeder {
+    constructor(manager: AiBridgeManager, connection: DatabaseConnection);
+    using(provider: string, model: string): this;
+    seed(table: string, count?: number, context?: { description?: string; locale?: string; domain?: string }): Promise<AISeedResult>;
+    generate(table: string, count?: number, context?: { description?: string; locale?: string; domain?: string }): Promise<Record<string, any>[]>;
+  }
+
+  /** Query optimization result */
+  export interface OptimizationResult {
+    original: string;
+    optimized: string;
+    suggestions: Array<{ type: string; description: string; impact: 'high' | 'medium' | 'low' }>;
+    explanation: string;
+    indexes: string[];
+    raw_response: ChatResponse;
+  }
+
+  /** AIQueryOptimizer — AI-powered SQL query optimization */
+  export class AIQueryOptimizer {
+    constructor(manager: AiBridgeManager, connection?: DatabaseConnection);
+    using(provider: string, model: string): this;
+    optimize(sql: string, options?: { schema?: string; dialect?: string; model?: string }): Promise<OptimizationResult>;
+    explain(sql: string): Promise<{ plan: any[]; analysis: string }>;
+  }
+
+  /** AI-generated schema */
+  export interface AISchema {
+    tables: Record<string, { columns: string[] }>;
+    relations: Array<{ type: string; from: string; to: string; pivot?: string }>;
+    seedHints: Record<string, string>;
+  }
+
+  /** AIPromptEnhancer — LLM-powered schema/code generation */
+  export class AIPromptEnhancer {
+    constructor(manager: AiBridgeManager);
+    using(provider: string, model: string): this;
+    generateSchema(description: string, options?: { model?: string }): Promise<AISchema>;
+    generateModelCode(tableName: string, tableSchema: { columns: string[] }, relations?: any[]): Promise<string>;
+    generateMigrationCode(tableName: string, tableSchema: { columns: string[] }): Promise<string>;
+  }
 }

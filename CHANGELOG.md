@@ -4,6 +4,89 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [8.0.0] - 2025-06-28
+
+### 🤖 New Features — AiBridge: Multi-Provider LLM Abstraction
+
+Full port of [AiBridge](https://github.com/YourOrg/AiBridge) (PHP/Laravel v2.6.0) into outlet-orm as a native Node.js module. Provides a unified API for 9+ LLM providers with zero new production dependencies (uses Node 18+ native `fetch`).
+
+#### AiBridge Manager & Configuration
+- Added **AiBridgeManager** — central orchestrator for multi-provider AI operations
+- Config-driven auto-registration: pass provider configs and they're ready to use
+- Methods: `chat()`, `stream()`, `streamEvents()`, `embeddings()`, `models()`, `model()`, `image()`, `tts()`, `stt()`
+- Dynamic provider resolution with runtime overrides (api key, endpoint, headers)
+- Tool registry integration: `registerTool()`, `tool()`, `tools()`
+- Config file: `config/aibridge.js` + env template `config/.env.aibridge.example`
+
+#### 9 LLM Providers (all standalone, no production deps)
+- **OpenAIProvider** — GPT-4o, GPT-4o-mini, o1, etc. (chat + streaming)
+- **OllamaProvider** — Local Ollama instance (chat + streaming)
+- **OllamaTurboProvider** — Ollama cloud API (extends OllamaProvider)
+- **ClaudeProvider** — Anthropic Claude (claude-sonnet-4-20250514, opus, haiku)
+- **GeminiProvider** — Google Gemini (gemini-2.0-flash, pro)
+- **GrokProvider** — xAI Grok
+- **MistralProvider** — Mistral AI (extends OpenAIProvider)
+- **OnnProvider** — Onn.ai API
+- **CustomOpenAIProvider** — Any OpenAI-compatible endpoint (LM Studio, vLLM, etc.)
+
+#### 6 Contract Base Classes
+- **ChatProviderContract** — `chat()`, `stream()`, `supportsStreaming()`
+- **EmbeddingsProviderContract** — `embeddings()`
+- **ImageProviderContract** — `generateImage()`
+- **AudioProviderContract** — `textToSpeech()`, `speechToText()`
+- **ModelsProviderContract** — `listModels()`, `getModel()`
+- **ToolContract** — `name()`, `description()`, `schema()`, `execute()`
+
+#### Support Classes
+- **ChatNormalizer** — normalizes chat responses across OpenAI, Ollama, Claude, Gemini formats
+- **EmbeddingsNormalizer** — normalizes embedding vectors (OpenAI, Gemini, raw)
+- **ImageNormalizer** — normalizes image generation responses
+- **AudioNormalizer** — normalizes TTS/STT responses
+- **StreamChunk** — structured DTO for streaming (delta, end, tool_call, tool_result)
+- **Message** — value object with `user()`, `system()`, `assistant()` factory methods
+- **Document** — multi-format document attachment (`fromText`, `fromUrl`, `fromBase64`, `fromLocalPath`, `fromChunks`, `fromFileId`)
+- **FileSecurity** — file validation with size limits
+- **JsonSchemaValidator** — recursive JSON Schema validation
+- **ProviderError** — typed errors (`notFound()`, `unsupported()`)
+- **ToolRegistry** — register and retrieve tools by name
+- **ToolChatRunner** — orchestrate tool-calling chat loops
+
+#### TextBuilder (Fluent API)
+- Added **TextBuilder** — fluent builder for text generation
+- Chain: `.using('openai', 'gpt-4o').withPrompt('...').withMaxTokens(200).asText()`
+- Override helpers: `withApiKey()`, `withEndpoint()`, `withBaseUrl()`, `withExtraHeaders()`
+- Terminal methods: `asText()`, `asRaw()`, `asStream()`
+
+#### ORM AI Features — NL→SQL, AI Seeding, Query Optimization
+- Added **AIQueryBuilder** — natural language to SQL conversion
+  - Introspects database schema (MySQL, PostgreSQL, SQLite)
+  - Safe mode: only SELECT/WITH queries by default
+  - Methods: `query()`, `toSql()`, `using()`, `safeMode()`
+- Added **AISeeder** — LLM-powered realistic seed data generation
+  - Generates contextual data instead of lorem ipsum
+  - Methods: `seed()` (generate + insert), `generate()` (generate only)
+- Added **AIQueryOptimizer** — AI-powered SQL optimization
+  - Analyzes queries and suggests indexes, rewrites, and improvements
+  - Methods: `optimize()`, `explain()` (EXPLAIN plan analysis)
+- Added **AIPromptEnhancer** — LLM-powered schema/code/migration generation
+  - Methods: `generateSchema()`, `generateModelCode()`, `generateMigrationCode()`
+
+#### MCP Server Integration
+- Added 2 new MCP tools: `ai_query` and `query_optimize` (total: 13 tools)
+- `ai_query` — natural language database queries via AI (requires AiBridge config)
+- `query_optimize` — AI-powered SQL query optimization suggestions
+
+#### Built-in Tools
+- Added **SystemInfoTool** — returns Node.js version, platform, architecture, uptime
+
+#### TypeScript Support
+- Full TypeScript declarations for all new classes, interfaces, and configs (~300 lines)
+- Typed provider configs, builder methods, and ORM AI feature return types
+
+#### Testing
+- 112 new tests across 8 sections (Contracts, Support, Providers, Manager, Builder, ORM AI, MCP, Exports)
+- Total test suite: **364 tests, 16 suites, all passing**
+
 ## [7.0.0] - 2025-02-28
 
 ### 🤖 New Features — AI Integration
