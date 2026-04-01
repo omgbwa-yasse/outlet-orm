@@ -5,7 +5,7 @@ const StreamChunk = require('../Support/StreamChunk');
 
 /**
  * TextBuilder
- * Fluent builder for text generation over AiBridge providers.
+ * Fluent builder for text generation over AI providers.
  * Keeps method names short and explicit, reducing array option errors.
  *
  * @example
@@ -19,7 +19,7 @@ class TextBuilder {
   static ERR_MISSING_USING = 'Provider and model must be set via using().';
 
   /**
-   * @param {import('../AiBridgeManager')} manager
+   * @param {import('../AIManager')} manager
    */
   constructor(manager) {
     this._manager = manager;

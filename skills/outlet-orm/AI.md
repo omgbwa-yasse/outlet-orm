@@ -1,6 +1,6 @@
 ---
 name: outlet-orm-ai-integration
-description: Guide for AI agents to use Outlet ORM's AiBridge multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, AI Prompt Enhancer, MCP Server, and AI Safety Guardrails. Use this skill when an AI agent needs to interact with LLMs, databases, run migrations, generate data, optimize queries, or create projects safely.
+description: Guide for AI agents to use Outlet ORM's AI multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, AI Prompt Enhancer, MCP Server, and AI Safety Guardrails. Use this skill when an AI agent needs to interact with LLMs, databases, run migrations, generate data, optimize queries, or create projects safely.
 license: MIT
 metadata:
   author: omgbwa-yasse
@@ -13,7 +13,7 @@ metadata:
 
 This skill covers Outlet ORM's complete AI feature set (v7.0.0 – v9.0.0):
 
-- **AiBridge** — Multi-provider LLM abstraction (9 providers, chat, stream, embeddings, images, TTS, STT, tool calling)
+- **AI** — Multi-provider LLM abstraction (9 providers, chat, stream, embeddings, images, TTS, STT, tool calling)
 - **AI Query Builder** — Natural language to SQL
 - **AI Seeder** — LLM-powered realistic data generation
 - **AI Query Optimizer** — SQL optimization and EXPLAIN analysis
@@ -23,16 +23,16 @@ This skill covers Outlet ORM's complete AI feature set (v7.0.0 – v9.0.0):
 
 ---
 
-## AiBridge — Multi-Provider LLM Abstraction
+## AI — Multi-Provider LLM Abstraction
 
 > Since v8.0.0
 
-AiBridge provides a unified API to interact with 9+ LLM providers. Zero production dependencies (Node 18+ native `fetch`).
+AI provides a unified API to interact with 9+ LLM providers. Zero production dependencies (Node 18+ native `fetch`).
 
 ### Configuration
 
 ```javascript
-// config/aibridge.js
+// config/ai.js
 module.exports = {
   default: process.env.AI_DEFAULT_PROVIDER || 'openai',
   providers: {
@@ -84,9 +84,9 @@ module.exports = {
 ### Chat
 
 ```javascript
-const { AiBridgeManager } = require('outlet-orm');
+const { AIManager } = require('outlet-orm');
 
-const ai = new AiBridgeManager(config);
+const ai = new AIManager(config);
 
 const response = await ai.chat('openai', [
   { role: 'system', content: 'You are a helpful assistant.' },
@@ -179,14 +179,14 @@ const response = await ai.chatWithTools('openai', [
 ]);
 ```
 
-### AiBridge Facade
+### AI Facade
 
 ```javascript
-const { AiBridge, AiBridgeManager } = require('outlet-orm');
+const { AI, AIManager } = require('outlet-orm');
 
-AiBridge.setManager(new AiBridgeManager(config));
+AI.setManager(new AIManager(config));
 
-const { text } = await AiBridge.text()
+const { text } = await AI.text()
   .using('openai', 'gpt-4o')
   .withPrompt('Hello!')
   .asText();
@@ -226,9 +226,9 @@ const { text } = await AiBridge.text()
 Convert natural language questions into SQL queries using any LLM.
 
 ```javascript
-const { AiBridgeManager, AIQueryBuilder, DatabaseConnection } = require('outlet-orm');
+const { AIManager, AIQueryBuilder, DatabaseConnection } = require('outlet-orm');
 
-const ai = new AiBridgeManager(config);
+const ai = new AIManager(config);
 const db = new DatabaseConnection();
 const qb = new AIQueryBuilder(ai, db);
 
@@ -267,9 +267,9 @@ const { sql } = await qb.toSql('Find duplicate emails');
 Generate realistic, domain-specific seed data using AI.
 
 ```javascript
-const { AiBridgeManager, AISeeder, DatabaseConnection } = require('outlet-orm');
+const { AIManager, AISeeder, DatabaseConnection } = require('outlet-orm');
 
-const seeder = new AISeeder(new AiBridgeManager(config), new DatabaseConnection());
+const seeder = new AISeeder(new AIManager(config), new DatabaseConnection());
 
 // Generate and insert
 const { records, inserted } = await seeder.seed('users', 10, {
@@ -309,9 +309,9 @@ const records = await seeder.generate('products', 20, {
 Analyze and optimize SQL queries using AI with index recommendations.
 
 ```javascript
-const { AiBridgeManager, AIQueryOptimizer, DatabaseConnection } = require('outlet-orm');
+const { AIManager, AIQueryOptimizer, DatabaseConnection } = require('outlet-orm');
 
-const optimizer = new AIQueryOptimizer(new AiBridgeManager(config), new DatabaseConnection());
+const optimizer = new AIQueryOptimizer(new AIManager(config), new DatabaseConnection());
 
 // Optimize
 const result = await optimizer.optimize(
@@ -352,9 +352,9 @@ const { plan, analysis } = await optimizer.explain('SELECT ...');
 Generate complete schemas, models, and migrations from natural language.
 
 ```javascript
-const { AiBridgeManager, AIPromptEnhancer } = require('outlet-orm');
+const { AIManager, AIPromptEnhancer } = require('outlet-orm');
 
-const enhancer = new AIPromptEnhancer(new AiBridgeManager(config));
+const enhancer = new AIPromptEnhancer(new AIManager(config));
 
 // Generate full schema
 const schema = await enhancer.generateSchema(
@@ -546,10 +546,10 @@ console.log(result.allowed); // true
 
 ```javascript
 const {
-  // AiBridge — Multi-Provider LLM
-  AiBridgeManager,       // Main manager (chat, stream, embeddings, images, TTS, STT, tools)
-  AiBridge,              // Static facade
-  // AiBridge Support
+  // AI — Multi-Provider LLM
+  AIManager,       // Main manager (chat, stream, embeddings, images, TTS, STT, tools)
+  AI,              // Static facade
+  // AI Support
   Message,               // Chat message value object
   Document,              // File/URL/base64 attachment
   StreamChunk,           // Streaming DTO

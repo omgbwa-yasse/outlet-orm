@@ -6,6 +6,32 @@ Scopes allow you to define reusable query constraints on your models.
 >
 > 📘 **TypeScript**: Scopes are typed with`ScopeFunction`. See [TYPESCRIPT.md](TYPESCRIPT.md)
 
+## Table of Contents
+
+- [Types of Scopes](#types-of-scopes)
+- [Global Scopes](#global-scopes)
+  - [Define a global scope](#define-a-global-scope)
+  - [Automatic use](#automatic-use)
+  - [Disable global scopes](#disable-global-scopes)
+- [Local Scopes](#local-scopes)
+  - [Define local scopes](#define-local-scopes)
+  - [Use local scopes](#use-local-scopes)
+- [Scopes with parameters](#scopes-with-parameters)
+  - [Via closures](#via-closures)
+  - [Usage](#usage)
+- [Practical examples](#practical-examples)
+  - [Blog with visibility](#blog-with-visibility)
+  - [E-commerce with order statuses](#e-commerce-with-order-statuses)
+  - [Users with roles](#users-with-roles)
+- [Soft Deletes et Scopes](#soft-deletes-et-scopes)
+- [Best practices](#best-practices)
+  - [1. Clearly name your scopes](#1-clearly-name-your-scopes)
+  - [2. A scope = a responsibility](#2-a-scope-a-responsibility)
+  - [3. Use methods for parameterised scopes](#3-use-methods-for-parameterised-scopes)
+- [Next steps](#next-steps)
+
+---
+
 ## Types of Scopes
 
 | Type | Application | Usage |

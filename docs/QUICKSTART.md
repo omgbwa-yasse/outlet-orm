@@ -2,6 +2,19 @@
 
 This guide will help you get started quickly with Eloquent JS ORM.
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Recommended Project Structure (Layered Architecture)](#recommended-project-structure-layered-architecture)
+  - [Architecture Flow](#architecture-flow)
+  - [Responsibilities by Layer](#responsibilities-by-layer)
+  - [Implementation Example](#implementation-example)
+- [Initial Configuration](#initial-configuration)
+  - [1. Create the file`.env`](#1-create-the-fileenv)
+  - [2. Create your first template](#2-create-your-first-template)
+
+---
+
 ## Installation
 
 ```bash

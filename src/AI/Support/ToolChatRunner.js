@@ -8,7 +8,7 @@
  */
 class ToolChatRunner {
   /**
-   * @param {import('../AiBridgeManager')} manager
+   * @param {import('../AIManager')} manager
    */
   constructor(manager) {
     this.manager = manager;

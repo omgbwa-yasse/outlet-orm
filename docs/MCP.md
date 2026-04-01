@@ -2,6 +2,23 @@
 
 > **Since v7.0.0** — Outlet ORM exposes a Model Context Protocol (MCP) server that AI agents can use to interact with your database.
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+  - [1. Configure your AI editor](#1-configure-your-ai-editor)
+  - [2. Database configuration](#2-database-configuration)
+  - [3. Start using natural language](#3-start-using-natural-language)
+- [Available Tools](#available-tools)
+- [AI Safety Guardrails](#ai-safety-guardrails)
+  - [Consent methods](#consent-methods)
+  - [Detected AI Agents](#detected-ai-agents)
+- [CLI Options](#cli-options)
+- [Programmatic Usage](#programmatic-usage)
+- [Protocol Details](#protocol-details)
+
+---
+
 ## Overview
 
 The MCP server provides AI agents (Cursor, Claude Code, GitHub Copilot, Windsurf, etc.) with safe, structured access to:

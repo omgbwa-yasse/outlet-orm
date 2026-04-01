@@ -1,9 +1,9 @@
 /**
- * Tests for AiBridge module (v8.0.0)
+ * Tests for AI module (v8.0.0)
  * - Contracts (base classes)
  * - Support classes (normalizers, value objects, tools)
  * - Providers (unit tests)
- * - AiBridgeManager (orchestration)
+ * - AIManager (orchestration)
  * - TextBuilder (fluent API)
  * - ORM AI features (AIQueryBuilder, AISeeder, AIQueryOptimizer, AIPromptEnhancer)
  * - MCP tools (ai_query, query_optimize)
@@ -34,7 +34,7 @@ const ToolRegistry           = require('../src/AI/Support/ToolRegistry');
 const ToolChatRunner         = require('../src/AI/Support/ToolChatRunner');
 const SystemInfoTool         = require('../src/AI/Tools/SystemInfoTool');
 
-const AiBridgeManager        = require('../src/AI/AiBridgeManager');
+const AIManager              = require('../src/AI/AIManager');
 const TextBuilder            = require('../src/AI/Builders/TextBuilder');
 
 const OpenAIProvider         = require('../src/AI/Providers/OpenAIProvider');
@@ -577,14 +577,14 @@ describe('Providers', () => {
 });
 
 // ═════════════════════════════════════════════════════════════════
-// 4. AIBRIDGE MANAGER
+// 4. AI MANAGER
 // ═════════════════════════════════════════════════════════════════
 
-describe('AiBridgeManager', () => {
+describe('AIManager', () => {
   let manager;
 
   beforeEach(() => {
-    manager = new AiBridgeManager({
+    manager = new AIManager({
       openai: { api_key: 'sk-test' },
       ollama: { endpoint: 'http://localhost:11434' },
     });
@@ -631,7 +631,7 @@ describe('AiBridgeManager', () => {
   });
 
   test('constructs with all provider types', () => {
-    const m = new AiBridgeManager({
+    const m = new AIManager({
       openai: { api_key: 'sk-test' },
       ollama: { endpoint: 'http://localhost:11434' },
       ollama_turbo: { api_key: 'tk' },
@@ -671,7 +671,7 @@ describe('TextBuilder', () => {
   let manager;
 
   beforeEach(() => {
-    manager = new AiBridgeManager({ openai: { api_key: 'sk-test' } });
+    manager = new AIManager({ openai: { api_key: 'sk-test' } });
   });
 
   test('fluent chain returns same instance', () => {
@@ -932,7 +932,7 @@ describe('ORM AI Features', () => {
 // 7. MCP SERVER — ai_query and query_optimize tools
 // ═════════════════════════════════════════════════════════════════
 
-describe('MCP Server — AI Bridge tools', () => {
+describe('MCP Server — AI tools', () => {
   test('tools/list includes ai_query and query_optimize', async () => {
     const server = new MCPServer({ safetyGuardrails: false });
     const handler = server.handler();
@@ -981,8 +981,8 @@ describe('MCP Server — AI Bridge tools', () => {
 describe('Exports', () => {
   const outlet = require('../src/index');
 
-  test('exports AiBridgeManager', () => {
-    expect(outlet.AiBridgeManager).toBe(AiBridgeManager);
+  test('exports AIManager', () => {
+    expect(outlet.AIManager).toBe(AIManager);
   });
 
   test('exports TextBuilder', () => {

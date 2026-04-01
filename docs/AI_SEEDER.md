@@ -2,6 +2,26 @@
 
 > **Since v8.0.0** — Generate realistic, domain-specific seed data using AI instead of generic lorem ipsum.
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [API Reference](#api-reference)
+  - [Constructor](#constructor)
+  - [Methods](#methods)
+- [How It Works](#how-it-works)
+  - [LLM Parameters](#llm-parameters)
+- [Examples](#examples)
+  - [E-Commerce Products](#e-commerce-products)
+  - [Multi-Locale Data](#multi-locale-data)
+  - [Blog Content](#blog-content)
+  - [Using Different Providers](#using-different-providers)
+  - [Healthcare Data](#healthcare-data)
+- [Best Practices](#best-practices)
+- [See Also](#see-also)
+
+---
+
 ## Overview
 
 The `AISeeder` uses LLM providers to generate contextual, realistic seed data for your database tables. Instead of generic faker data, you get:
@@ -14,9 +34,9 @@ The `AISeeder` uses LLM providers to generate contextual, realistic seed data fo
 ## Quick Start
 
 ```javascript
-const { AiBridgeManager, AISeeder, DatabaseConnection } = require('outlet-orm');
+const { AIManager, AISeeder, DatabaseConnection } = require('outlet-orm');
 
-const ai = new AiBridgeManager({
+const ai = new AIManager({
   providers: {
     openai: { api_key: process.env.OPENAI_API_KEY, model: 'gpt-4o-mini' }
   }
@@ -48,7 +68,7 @@ new AISeeder(manager, connection)
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `manager` | `AiBridgeManager` | Configured AiBridge manager instance |
+| `manager` | `AIManager` | Configured AI manager instance |
 | `connection` | `DatabaseConnection` | Database connection instance |
 
 ### Methods
@@ -246,7 +266,7 @@ const { records } = await seeder.seed('patients', 10, {
 
 ## See Also
 
-- [AiBridge Manager](AI_BRIDGE.md) — Multi-provider LLM configuration
+- [AI Manager](AI_BRIDGE.md) — Multi-provider LLM configuration
 - [Seeds Guide](SEEDS.md) — Traditional seeding with DatabaseSeeder
 - [AI Prompt Enhancer](AI_PROMPT.md) — AI-powered schema and code generation
 - [AI Query Builder](AI_QUERY.md) — Natural language to SQL

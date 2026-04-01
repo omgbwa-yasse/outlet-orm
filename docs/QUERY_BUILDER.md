@@ -6,6 +6,47 @@ Outlet ORM's Query Builder offers a fluid interface for building SQL queries.
 >
 > 📘 **TypeScript**: The type`WhereOperator`defines all available operators. See [TYPESCRIPT.md](TYPESCRIPT.md)
 
+## Table of Contents
+
+- [Basic Usage](#basic-usage)
+- [Column selection](#column-selection)
+- [Clauses WHERE](#clauses-where)
+  - [Where simple](#where-simple)
+  - [Where OR](#where-or)
+  - [Where IN](#where-in)
+  - [Where NULL](#where-null)
+  - [Where BETWEEN](#where-between)
+  - [Where LIKE](#where-like)
+  - [Where RAW](#where-raw)
+  - [Where grouped](#where-grouped)
+- [Try an order](#try-an-order)
+- [Limit and offset](#limit-and-offset)
+- [Aggregations](#aggregations)
+- [Group By et Having](#group-by-et-having)
+- [Distinct](#distinct)
+- [Joins](#joins)
+- [Subqueries](#subqueries)
+- [Execution](#execution)
+  - [Retrieve results](#retrieve-results)
+  - [Check for existence](#check-for-existence)
+  - [Retrieve a column](#retrieve-a-column)
+- [Update](#update)
+- [Suppression](#suppression)
+- [Transactions (see TRANSACTIONS.md)](#transactions-see-transactionsmd)
+- [Debug et logging](#debug-et-logging)
+- [Integrated pagination](#integrated-pagination)
+- [Soft Deletes in Query Builder](#soft-deletes-in-query-builder)
+- [Scopes in Query Builder](#scopes-in-query-builder)
+- [Chain methods](#chain-methods)
+- [Convenience Methods (v6.5.0+)](#convenience-methods-v650)
+  - [firstOrCreate / firstOrNew](#firstorcreate-firstornew)
+  - [updateOrCreate](#updateorcreate)
+  - [upsert (bulk INSERT … ON CONFLICT)](#upsert-bulk-insert-on-conflict)
+  - [cursor — Lazy Iteration (Async Generator)](#cursor-lazy-iteration-async-generator)
+- [Next steps](#next-steps)
+
+---
+
 ## Basic Usage
 
 ```javascript

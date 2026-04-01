@@ -9,7 +9,7 @@
  */
 class AIQueryOptimizer {
   /**
-   * @param {import('./AiBridgeManager')} manager
+   * @param {import('./AIManager')} manager
    * @param {Object} [connection] - DatabaseConnection instance (optional, for schema introspection)
    */
   constructor(manager, connection = null) {

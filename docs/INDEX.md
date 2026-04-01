@@ -2,8 +2,6 @@
 
 > **Version 9.0.0** – A JavaScript/TypeScript ORM inspired by Laravel Eloquent for Node.js
 
-## Table of Contents
-
 ### 🚀 Getting Started
 - [Quick Start Guide](QUICKSTART.md)
 - [Installation and Configuration](INSTALLATION.md)
@@ -32,8 +30,8 @@
 
 ### 🤖 AI Integration (v7.0.0 – v9.0.0)
 
-#### AiBridge — Multi-Provider LLM Abstraction (v8.0.0+)
-- [**AiBridge Manager**](AI_BRIDGE.md) – Unified API for 9+ LLM providers (OpenAI, Claude, Gemini, Ollama, Grok, Mistral, ONN, OpenRouter)
+#### AI — Multi-Provider LLM Abstraction (v8.0.0+)
+- [**AI Manager**](AI_BRIDGE.md) – Unified API for 9+ LLM providers (OpenAI, Claude, Gemini, Ollama, Grok, Mistral, ONN, OpenRouter)
 - [**TextBuilder Fluent API**](AI_BRIDGE.md#textbuilder-fluent-api) – Chain `.using().withPrompt().asText()` for text generation
 - [**Tool Calling**](AI_BRIDGE.md#tool-calling-function-calling) – LLM function calling with automatic orchestration loop
 - [**Providers & Contracts**](AI_BRIDGE.md#providers) – 9 provider implementations with 6 base contracts
@@ -103,8 +101,8 @@ const users = await User.with('posts').where('status', 'active').get();
 
 | Feature | Description |
 |---|---|
-| 📖 **Complete AI Documentation** | 6 new dedicated documentation pages covering the full AiBridge + ORM AI feature set |
-| 🤖 **AiBridge Guide** | Comprehensive guide for the multi-provider LLM abstraction layer |
+| 📖 **Complete AI Documentation** | 6 new dedicated documentation pages covering the full AI + ORM AI feature set |
+| 🤖 **AI Guide** | Comprehensive guide for the multi-provider LLM abstraction layer |
 | 🔍 **AI Query Builder Guide** | Natural language to SQL conversion documentation |
 | 🌱 **AI Seeder Guide** | LLM-powered realistic data generation documentation |
 | ⚡ **AI Optimizer Guide** | SQL optimization and EXPLAIN analysis documentation |
@@ -115,7 +113,7 @@ const users = await User.with('posts').where('status', 'active').get();
 
 | Feature | Description |
 |---|---|
-| 🤖 **AiBridge Manager** | Central orchestrator for 9+ LLM providers (chat, stream, embeddings, images, TTS, STT) |
+| 🤖 **AI Manager** | Central orchestrator for 9+ LLM providers (chat, stream, embeddings, images, TTS, STT) |
 | 📝 **TextBuilder** | Fluent builder API for text generation |
 | 🔍 **AIQueryBuilder** | Natural language to SQL conversion |
 | 🌱 **AISeeder** | LLM-powered realistic seed data |

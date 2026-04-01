@@ -115,7 +115,7 @@ const TOOL_DEFINITIONS = [
   },
   {
     name: 'ai_query',
-    description: 'Convert a natural language question into SQL and execute it. Requires an AI provider (AiBridge).',
+    description: 'Convert a natural language question into SQL and execute it. Requires an AI provider.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -644,8 +644,8 @@ class MCPServer extends EventEmitter {
   async _toolAiQuery(args) {
     if (!args.question) throw new Error('A natural language question is required.');
     const conn = await this._getConnection();
-    const manager = this._getAiBridgeManager();
-    if (!manager) throw new Error('AiBridge is not configured. Set OPENAI_API_KEY or configure a provider.');
+    const manager = this._getAIManager();
+    if (!manager) throw new Error('AI is not configured. Set OPENAI_API_KEY or configure a provider.');
 
     const AIQueryBuilder = require('./AIQueryBuilder');
     const builder = new AIQueryBuilder(manager, conn);
@@ -672,8 +672,8 @@ class MCPServer extends EventEmitter {
   async _toolQueryOptimize(args) {
     if (!args.sql) throw new Error('SQL query is required.');
     const conn = await this._getConnection();
-    const manager = this._getAiBridgeManager();
-    if (!manager) throw new Error('AiBridge is not configured. Set OPENAI_API_KEY or configure a provider.');
+    const manager = this._getAIManager();
+    if (!manager) throw new Error('AI is not configured. Set OPENAI_API_KEY or configure a provider.');
 
     const AIQueryOptimizer = require('./AIQueryOptimizer');
     const optimizer = new AIQueryOptimizer(manager, conn);
@@ -692,17 +692,17 @@ class MCPServer extends EventEmitter {
     };
   }
 
-  // ── AiBridge manager helper ────────────────────────────────────
+  // ── AI manager helper ────────────────────────────────────
 
   /**
-   * Lazily creates an AiBridge manager from environment variables.
-   * @returns {import('./Bridge/AiBridgeManager')|null}
+   * Lazily creates an AI manager from environment variables.
+   * @returns {import('./AIManager')|null}
    */
-  _getAiBridgeManager() {
-    if (this._aiBridgeManager) return this._aiBridgeManager;
+  _getAIManager() {
+    if (this._aiManager) return this._aiManager;
 
     try {
-      const AiBridgeManager = require('./AiBridgeManager');
+      const AIManager = require('./AIManager');
       const config = {};
 
       // Auto-detect providers from env
@@ -716,8 +716,8 @@ class MCPServer extends EventEmitter {
 
       if (Object.keys(config).length === 0) return null;
 
-      this._aiBridgeManager = new AiBridgeManager(config);
-      return this._aiBridgeManager;
+      this._aiManager = new AIManager(config);
+      return this._aiManager;
     } catch {
       return null;
     }

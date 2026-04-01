@@ -2,6 +2,48 @@
 
 This document describes the architecture and code structure of the Outlet ORM ORM.
 
+## Table of Contents
+
+- [Project Structure](#project-structure)
+  - [Architecture Flow](#architecture-flow)
+  - [Responsibilities by Layer](#responsibilities-by-layer)
+  - [Implementation Example](#implementation-example)
+- [Internal structure of the ORM](#internal-structure-of-the-orm)
+- [Main Components](#main-components)
+  - [Model.js](#modeljs)
+  - [QueryBuilder.js](#querybuilderjs)
+  - [DatabaseConnection.js](#databaseconnectionjs)
+  - [Relationships](#relationships)
+- [Data Flow](#data-flow)
+  - [Creating a Record](#creating-a-record)
+  - [Simple Query](#simple-query)
+  - [Eager Loading](#eager-loading)
+- [Design Patterns](#design-patterns)
+  - [Active Record](#active-record)
+  - [Builder Pattern](#builder-pattern)
+  - [Strategy Pattern](#strategy-pattern)
+  - [Lazy Loading vs Eager Loading](#lazy-loading-vs-eager-loading)
+- [Extensibility](#extensibility)
+  - [Create a New Cast Type](#create-a-new-cast-type)
+  - [Add a New Driver](#add-a-new-driver)
+  - [Create a New Relationship](#create-a-new-relationship)
+- [Optimizations](#optimizations)
+  - [Connection Pooling](#connection-pooling)
+  - [Eager Loading](#eager-loading)
+  - [Query Building](#query-building)
+- [Future Improvement Points](#future-improvement-points)
+- [Tests](#tests)
+- [Contributions](#contributions)
+- [Working Example](#working-example)
+- [Migration Guide: 4-Layer → 1-Layer](#migration-guide-4-layer-1-layer)
+  - [Migration Checklist](#migration-checklist)
+  - [Repository Method → ORM Method Mapping](#repository-method-orm-method-mapping)
+  - [Before/After: UserRepository.js → Inline ORM Calls](#beforeafter-userrepositoryjs-inline-orm-calls)
+  - [Before/After: UserService.js → Inline Controller Logic](#beforeafter-userservicejs-inline-controller-logic)
+  - [Risks and Limitations](#risks-and-limitations)
+
+---
+
 ## Project Structure
 
 Here is the recommended structure for a project using Outlet ORM, based on the **2-layer pattern** — Controllers call Models directly, no Services or Repositories needed:

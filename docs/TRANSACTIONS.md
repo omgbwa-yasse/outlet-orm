@@ -4,6 +4,35 @@ Transactions ensure data integrity by grouping multiple operations into an atomi
 
 > 📁 **Use**: In your files`controllers/`,`services/`or`src/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 
+## Table of Contents
+
+- [Principle](#principle)
+- [Basic use](#basic-use)
+  - [transaction() method (recommended)](#transaction-method-recommended)
+  - [Manual management](#manual-management)
+- [Use cases](#use-cases)
+  - [Money transfer](#money-transfer)
+  - [User creation with relationships](#user-creation-with-relationships)
+  - [Cascade deletion](#cascade-deletion)
+- [Transaction API](#transaction-api)
+  - [beginTransaction()](#begintransaction)
+  - [commit(trx)](#committrx)
+  - [rollback(trx)](#rollbacktrx)
+  - [transaction(callback)](#transactioncallback)
+- [Use with templates](#use-with-templates)
+  - [useTransaction(trx)](#usetransactiontrx)
+- [Support par driver](#support-par-driver)
+- [Best practices](#best-practices)
+  - [1. Keep trades short](#1-keep-trades-short)
+  - [2. Handle errors properly](#2-handle-errors-properly)
+  - [3. Avoid nested transactions](#3-avoid-nested-transactions)
+  - [4. Pass transaction to functions](#4-pass-transaction-to-functions)
+- [Debugging](#debugging)
+  - [Enable query logs](#enable-query-logs)
+- [Next steps](#next-steps)
+
+---
+
 ## Principle
 
 A transaction follows the ACID model:

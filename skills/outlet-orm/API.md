@@ -515,15 +515,15 @@ const db = new DatabaseConnection({
 
 ---
 
-## AiBridgeManager
+## AIManager
 
 > Since v8.0.0
 
 ### Constructor
 
 ```javascript
-const { AiBridgeManager } = require('outlet-orm');
-const ai = new AiBridgeManager(config); // From config/aibridge.js or inline
+const { AIManager } = require('outlet-orm');
+const ai = new AIManager(config); // From config/ai.js or inline
 ```
 
 ### Methods

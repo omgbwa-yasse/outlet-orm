@@ -1154,7 +1154,7 @@ declare module 'outlet-orm' {
 
   /** Tool chat runner — executes tool loops */
   export class ToolChatRunner {
-    constructor(manager: AiBridgeManager, registry: ToolRegistry);
+    constructor(manager: AIManager, registry: ToolRegistry);
     run(provider: string, messages: Array<{ role: string; content: string }>, options?: { maxToolIterations?: number; model?: string }): Promise<ChatResponse>;
   }
 
@@ -1243,8 +1243,8 @@ declare module 'outlet-orm' {
     listModels(): Promise<any[]>;
   }
 
-  /** AiBridge manager configuration */
-  export interface AiBridgeConfig {
+  /** AI manager configuration */
+  export interface AIConfig {
     default?: string;
     openai?: OpenAIProviderConfig;
     ollama?: { endpoint?: string; model?: string };
@@ -1261,7 +1261,7 @@ declare module 'outlet-orm' {
 
   /** TextBuilder — fluent API for building AI requests */
   export class TextBuilder {
-    constructor(manager: AiBridgeManager);
+    constructor(manager: AIManager);
     using(provider: string, model?: string): this;
     withPrompt(text: string, attachments?: Document[]): this;
     withSystemPrompt(text: string): this;
@@ -1280,9 +1280,9 @@ declare module 'outlet-orm' {
     asStream(): AsyncGenerator<StreamChunk>;
   }
 
-  /** AiBridge Manager — central orchestrator for multi-provider AI */
-  export class AiBridgeManager {
-    constructor(config?: AiBridgeConfig);
+  /** AIManager — central orchestrator for multi-provider AI */
+  export class AIManager {
+    constructor(config?: AIConfig);
     provider(name: string): ChatProviderContract;
     registerProvider(name: string, provider: ChatProviderContract): void;
     chat(provider: string, messages: Array<{ role: string; content: string }>, options?: Record<string, any>): Promise<ChatResponse>;
@@ -1315,7 +1315,7 @@ declare module 'outlet-orm' {
 
   /** AIQueryBuilder — natural language to SQL conversion */
   export class AIQueryBuilder {
-    constructor(manager: AiBridgeManager, connection: DatabaseConnection);
+    constructor(manager: AIManager, connection: DatabaseConnection);
     using(provider: string, model: string): this;
     safeMode(safe: boolean): this;
     query(question: string, options?: { model?: string; max_tokens?: number; temperature?: number }): Promise<AIQueryResult>;
@@ -1330,7 +1330,7 @@ declare module 'outlet-orm' {
 
   /** AISeeder — AI-powered data seeding */
   export class AISeeder {
-    constructor(manager: AiBridgeManager, connection: DatabaseConnection);
+    constructor(manager: AIManager, connection: DatabaseConnection);
     using(provider: string, model: string): this;
     seed(table: string, count?: number, context?: { description?: string; locale?: string; domain?: string }): Promise<AISeedResult>;
     generate(table: string, count?: number, context?: { description?: string; locale?: string; domain?: string }): Promise<Record<string, any>[]>;
@@ -1348,7 +1348,7 @@ declare module 'outlet-orm' {
 
   /** AIQueryOptimizer — AI-powered SQL query optimization */
   export class AIQueryOptimizer {
-    constructor(manager: AiBridgeManager, connection?: DatabaseConnection);
+    constructor(manager: AIManager, connection?: DatabaseConnection);
     using(provider: string, model: string): this;
     optimize(sql: string, options?: { schema?: string; dialect?: string; model?: string }): Promise<OptimizationResult>;
     explain(sql: string): Promise<{ plan: any[]; analysis: string }>;
@@ -1363,7 +1363,7 @@ declare module 'outlet-orm' {
 
   /** AIPromptEnhancer — LLM-powered schema/code generation */
   export class AIPromptEnhancer {
-    constructor(manager: AiBridgeManager);
+    constructor(manager: AIManager);
     using(provider: string, model: string): this;
     generateSchema(description: string, options?: { model?: string }): Promise<AISchema>;
     generateModelCode(tableName: string, tableSchema: { columns: string[] }, relations?: any[]): Promise<string>;

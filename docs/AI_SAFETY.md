@@ -2,6 +2,31 @@
 
 > **Since v7.0.0** — Automatic AI agent detection and protection against destructive database operations.
 
+## Table of Contents
+
+- [Overview](#overview)
+- [How It Works](#how-it-works)
+  - [Agent Detection](#agent-detection)
+  - [Destructive Commands](#destructive-commands)
+  - [Protection Flow](#protection-flow)
+- [API Reference](#api-reference)
+  - [`detectAgent()`](#detectagent)
+  - [`isDestructiveCommand(command)`](#isdestructivecommandcommand)
+  - [`validateDestructiveAction(command, flags)`](#validatedestructiveactioncommand-flags)
+  - [`CONSENT_ENV_VAR`](#consentenvvar)
+- [Providing Consent](#providing-consent)
+  - [1. Via Environment Variable](#1-via-environment-variable)
+  - [2. Via MCP Tool Argument](#2-via-mcp-tool-argument)
+  - [3. Via CLI Flag](#3-via-cli-flag)
+- [Blocking Message](#blocking-message)
+- [MCP Server Integration](#mcp-server-integration)
+  - [Disabling Safety Guardrails](#disabling-safety-guardrails)
+- [CLI Integration](#cli-integration)
+- [Best Practices](#best-practices)
+- [See Also](#see-also)
+
+---
+
 ## Overview
 
 When AI agents (Cursor, Claude Code, GitHub Copilot, etc.) interact with your database through outlet-orm's MCP server or CLI, the **AISafetyGuardrails** module automatically:

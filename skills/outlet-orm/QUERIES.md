@@ -304,12 +304,12 @@ const native = await db.execute(
 
 > Since v8.0.0
 
-Convert natural language into SQL queries using any LLM provider via AiBridge.
+Convert natural language into SQL queries using any LLM provider via AI.
 
 ```javascript
-const { AiBridgeManager, AIQueryBuilder, DatabaseConnection } = require('outlet-orm');
+const { AIManager, AIQueryBuilder, DatabaseConnection } = require('outlet-orm');
 
-const ai = new AiBridgeManager({ providers: { openai: { api_key: process.env.OPENAI_API_KEY, model: 'gpt-4o-mini' } } });
+const ai = new AIManager({ providers: { openai: { api_key: process.env.OPENAI_API_KEY, model: 'gpt-4o-mini' } } });
 const db = new DatabaseConnection();
 const qb = new AIQueryBuilder(ai, db);
 

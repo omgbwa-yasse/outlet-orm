@@ -6,6 +6,31 @@ Query logging allows you to trace and debug the SQL queries executed by your app
 >
 > �📘 **TypeScript**: The type`QueryLogEntry`defines the structure of log entries. See [TYPESCRIPT.md](TYPESCRIPT.md#querylogentry)
 
+## Table of Contents
+
+- [Enable logging](#enable-logging)
+- [Log structure](#log-structure)
+- [API](#api)
+  - [enableQueryLog()](#enablequerylog)
+  - [disableQueryLog()](#disablequerylog)
+  - [getQueryLog()](#getquerylog)
+  - [flushQueryLog()](#flushquerylog)
+- [Use cases](#use-cases)
+  - [Debug in development](#debug-in-development)
+  - [Profile an operation](#profile-an-operation)
+  - [Detect N+1 Problem](#detect-n1-problem)
+  - [Log to file](#log-to-file)
+  - [Middleware Express](#middleware-express)
+  - [Performance test](#performance-test)
+- [Formatted display](#formatted-display)
+- [Best practices](#best-practices)
+  - [1. Disable in production](#1-disable-in-production)
+  - [2. Clear the log regularly](#2-clear-the-log-regularly)
+  - [3. Limit in production](#3-limit-in-production)
+- [Next steps](#next-steps)
+
+---
+
 ## Enable logging
 
 ```javascript

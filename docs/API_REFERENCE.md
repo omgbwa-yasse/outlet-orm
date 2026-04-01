@@ -6,12 +6,31 @@ Full Outlet ORM API Reference v4.0.0.
 >
 > �📘 **TypeScript**: See [TYPESCRIPT.md](TYPESCRIPT.md) for interfaces and generic types.
 
-## Table of contents
+## Table of Contents
 
 - [Model](#model)
+  - [Static properties](#static-properties)
+  - [Static methods](#static-methods)
+  - [Instance methods](#instance-methods)
 - [QueryBuilder](#querybuilder)
+  - [Methods](#methods)
 - [DatabaseConnection](#databaseconnection)
+  - [Setup](#setup)
+  - [Static methods](#static-methods)
+  - [Instance methods](#instance-methods)
+  - [Types](#types)
 - [Relationships](#relationships)
+  - [HasOne](#hasone)
+  - [HasMany](#hasmany)
+  - [BelongsTo](#belongsto)
+  - [BelongsToMany](#belongstomany)
+  - [HasManyThrough](#hasmanythrough)
+  - [HasOneThrough](#hasonethrough)
+  - [MorphOne](#morphone)
+  - [MorphMany](#morphmany)
+  - [MorphTo](#morphto)
+- [Types TypeScript](#types-typescript)
+- [Exports](#exports)
 
 ---
 

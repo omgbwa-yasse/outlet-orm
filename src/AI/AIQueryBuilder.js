@@ -2,7 +2,7 @@
 
 /**
  * AIQueryBuilder
- * Natural Language → SQL conversion using any AiBridge provider.
+ * Natural Language → SQL conversion using any AI provider.
  * Introspects the database schema, sends it with the NL prompt to an LLM,
  * and returns a safe, parameterized SQL query.
  *
@@ -10,7 +10,7 @@
  */
 class AIQueryBuilder {
   /**
-   * @param {import('./AiBridgeManager')} manager - AiBridge manager instance
+   * @param {import('./AIManager')} manager - AI manager instance
    * @param {Object} connection - DatabaseConnection instance (outlet-orm)
    */
   constructor(manager, connection) {

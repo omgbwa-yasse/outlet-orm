@@ -6,6 +6,32 @@ Outlet ORM supports all Eloquent-style relationships to link your models.
 >
 > 📘 **TypeScript**: Use types`HasOneRelation<T>`,`HasManyRelation<T>`, etc. See [TYPESCRIPT.md](TYPESCRIPT.md#relationships-typedes)
 
+## Table of Contents
+
+- [Types of relationships](#types-of-relationships)
+- [Has One](#has-one)
+- [Has Many (One-to-Many)](#has-many-one-to-many)
+- [Belongs To](#belongs-to)
+- [Belongs To Many](#belongs-to-many)
+- [Has Many Through (Via intermediary)](#has-many-through-via-intermediary)
+- [Has One Through](#has-one-through)
+- [Polymorphic Relations](#polymorphic-relations)
+  - [Morph One (One-to-one polymorphic)](#morph-one-one-to-one-polymorphic)
+  - [Morph Many (One-to-many polymorphic)](#morph-many-one-to-many-polymorphic)
+- [Eager Loading](#eager-loading)
+  - [Load relationships](#load-relationships)
+  - [Load after the fact](#load-after-the-fact)
+- [Access relationships](#access-relationships)
+- [Naming conventions](#naming-conventions)
+  - [Tables](#tables)
+  - [Foreign keys](#foreign-keys)
+  - [Polymorphic columns](#polymorphic-columns)
+- [Complete examples](#complete-examples)
+  - [Blog complet](#blog-complet)
+- [Next steps](#next-steps)
+
+---
+
 ## Types of relationships
 
 | Relationship | Description | Example |

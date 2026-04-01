@@ -33,9 +33,9 @@ const MCPServer          = require('./AI/MCPServer');
 const AISafetyGuardrails = require('./AI/AISafetyGuardrails');
 const PromptGenerator    = require('./AI/PromptGenerator');
 
-// AI Bridge (v8.0.0) — Multi-provider LLM abstraction
-const AiBridgeManager       = require('./AI/AiBridgeManager');
-const AiBridgeFacade        = require('./AI/Facades/AiBridge');
+// AI (v8.0.0) — Multi-provider LLM abstraction
+const AIManager             = require('./AI/AIManager');
+const AIFacade              = require('./AI/Facades/AI');
 const TextBuilder           = require('./AI/Builders/TextBuilder');
 const ChatProviderContract  = require('./AI/Contracts/ChatProviderContract');
 const EmbeddingsProviderContract = require('./AI/Contracts/EmbeddingsProviderContract');
@@ -110,9 +110,9 @@ module.exports = {
   AISafetyGuardrails,
   PromptGenerator,
 
-  // AI Bridge (v8.0.0)
-  AiBridgeManager,
-  AiBridgeFacade,
+  // AI (v8.0.0)
+  AIManager,
+  AIFacade,
   TextBuilder,
   ChatProviderContract,
   EmbeddingsProviderContract,

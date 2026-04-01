@@ -4,6 +4,31 @@ Outlet ORM includes CLI tools for managing migrations and initializing projects.
 
 > 📁 **Generates**:`database/config.js`et`database/migrations/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Commands available](#commands-available)
+  - [init](#init)
+  - [migrate](#migrate)
+  - [convert](#convert)
+- [Migrations](#migrations)
+  - [Create a migration](#create-a-migration)
+  - [Structure of a migration](#structure-of-a-migration)
+  - [Column types](#column-types)
+  - [Column modifiers](#column-modifiers)
+  - [Indexes and constraints](#indexes-and-constraints)
+  - [Edit an existing table](#edit-an-existing-table)
+- [Basic configuration](#basic-configuration)
+  - [database/config.js](#databaseconfigjs)
+  - [Use a specific config](#use-a-specific-config)
+- [Conversion SQL](#conversion-sql)
+  - [Convert SQL file](#convert-sql-file)
+- [Complete examples](#complete-examples)
+  - [Blog migration](#blog-migration)
+- [Next steps](#next-steps)
+
+---
+
 ## Installation
 
 CLI commands are available through`npx`:

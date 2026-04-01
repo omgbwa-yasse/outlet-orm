@@ -1,5 +1,31 @@
 # Backup Guide – Outlet ORM
 
+## Table of Contents
+
+- [🗄️ Overview](#overview)
+- [📦 Available classes](#available-classes)
+- [1. BackupManager](#1-backupmanager)
+  - [Constructor](#constructor)
+  - [`full(options?)` — complete dump](#fulloptions-complete-dump)
+  - [`partial(tables, options?)` — selected tables only](#partialtables-options-selected-tables-only)
+  - [`journal(options?)` — transaction-log backup](#journaloptions-transaction-log-backup)
+  - [`restore(filePath, options?)` — replay a backup](#restorefilepath-options-replay-a-backup)
+- [2. BackupScheduler](#2-backupscheduler)
+- [3. BackupEncryption](#3-backupencryption)
+  - [Encrypted file format](#encrypted-file-format)
+- [4. BackupSocketServer – TCP Daemon](#4-backupsocketserver-tcp-daemon)
+  - [Start the daemon](#start-the-daemon)
+  - [Push events (server → all clients)](#push-events-server-all-clients)
+- [5. BackupSocketClient](#5-backupsocketclient)
+  - [Commands](#commands)
+  - [Push events (client-side)](#push-events-client-side)
+- [6. Complete example](#6-complete-example)
+- [Supported drivers](#supported-drivers)
+- [TypeScript](#typescript)
+- [See also](#see-also)
+
+---
+
 ## 🗄️ Overview
 
 Outlet ORM v6.0.0 ships a built-in **Backup module** that lets you:

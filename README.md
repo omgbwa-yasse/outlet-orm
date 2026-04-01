@@ -7,6 +7,72 @@ A JavaScript ORM inspired by Laravel Eloquent for Node.js with support for MySQL
 
 📚 **[Complete documentation available in `/docs`](./docs/INDEX.md)**
 
+## Table of Contents
+
+- [✅ Prerequisites and compatibility](#prerequisites-and-compatibility)
+- [🚀 Installation](#installation)
+  - [Install the database driver](#install-the-database-driver)
+- [📁 Recommended Project Structure](#recommended-project-structure)
+  - [🏗️ Architecture Flow](#architecture-flow)
+  - [📋 Role of each layer](#role-of-each-layer)
+  - [✅ Benefits of this architecture](#benefits-of-this-architecture)
+  - [📝 Example workflow](#example-workflow)
+- [✨ Key features](#key-features)
+- [⚡ Quick Start](#quick-start)
+  - [Project Initialisation](#project-initialisation)
+  - [🌱 Quick Seeding](#quick-seeding)
+- [📖 Usage](#usage)
+  - [Connection configuration](#connection-configuration)
+  - [Importation](#importation)
+  - [Define a model](#define-a-model)
+  - [CRUD operations](#crud-operations)
+  - [Query Builder](#query-builder)
+  - [Relationship filters](#relationship-filters)
+- [🔗 Relations](#relations)
+  - [One to One (hasOne)](#one-to-one-hasone)
+  - [One to Many (hasMany)](#one-to-many-hasmany)
+  - [Belongs To (belongsTo)](#belongs-to-belongsto)
+  - [Many to Many (belongsToMany)](#many-to-many-belongstomany)
+  - [Has Many Through (hasManyThrough)](#has-many-through-hasmanythrough)
+  - [Has One Through (hasOneThrough)](#has-one-through-hasonethrough)
+  - [Polymorphic relationships](#polymorphic-relationships)
+  - [Eager Loading](#eager-loading)
+- [🎭 Attributs](#attributs)
+  - [Casts](#casts)
+  - [Hidden attributes](#hidden-attributes)
+  - [Timestamps](#timestamps)
+- [🔄 Transactions](#transactions)
+- [🗑️ Soft Deletes](#soft-deletes)
+- [🔬 Scopes](#scopes)
+  - [Scopes Globaux](#scopes-globaux)
+- [📣 Events / Hooks](#events-hooks)
+- [✅ Validation](#validation)
+  - [Available rules](#available-rules)
+- [📊 Query Logging](#query-logging)
+- [📝 API Reference](#api-reference)
+  - [DatabaseConnection](#databaseconnection)
+  - [Model (static methods)](#model-static-methods)
+  - [Model (instance methods)](#model-instance-methods)
+  - [QueryBuilder](#querybuilder)
+- [🛠️ CLI tools](#cli-tools)
+  - [outlet-init](#outlet-init)
+  - [outlet-migrate](#outlet-migrate)
+  - [outlet-convert](#outlet-convert)
+- [🤖 AI Integration](#ai-integration)
+  - [AI — Multi-Provider LLM Abstraction](#ai-multi-provider-llm-abstraction)
+  - [AI Query Builder — Natural Language → SQL](#ai-query-builder-natural-language-sql)
+  - [AI Seeder — Realistic Data Generation](#ai-seeder-realistic-data-generation)
+  - [AI Query Optimizer](#ai-query-optimizer)
+  - [MCP Server — AI Agent Integration](#mcp-server-ai-agent-integration)
+- [📚 Documentation](#documentation)
+- [📘 TypeScript Support](#typescript-support)
+  - [Typed models](#typed-models)
+  - [Migrations typedes](#migrations-typedes)
+- [🤝 Contributions](#contributions)
+- [📄 Licence](#licence)
+
+---
+
 ## ✅ Prerequisites and compatibility
 
 - Node.js >= 18 (recommended/required)
@@ -197,7 +263,7 @@ async store(req, res) {
 - **Raw queries**: `executeRawQuery()` and `execute()` (native driver results)
 - **Complete Migrations** (create/alter/drop, index, foreign keys, batch tracking)
 - **Database Backup** (v6.0.0): full/partial/journal backups, recurring scheduler, AES-256-GCM encryption, TCP daemon + remote client, automatic restore
-- **🤖 AiBridge** (v8.0.0): Multi-provider LLM abstraction — chat, stream, embeddings, images, TTS, STT with 9+ providers
+- **🤖 AI** (v8.0.0): Multi-provider LLM abstraction — chat, stream, embeddings, images, TTS, STT with 9+ providers
 - **🤖 AI Query Builder** (v8.0.0): Natural language → SQL with schema introspection
 - **🤖 AI Seeder** (v8.0.0): LLM-powered realistic, domain-specific data generation
 - **🤖 AI Query Optimizer** (v8.0.0): SQL analysis, optimization, and index recommendations
@@ -1233,12 +1299,12 @@ Outlet ORM includes a complete AI subsystem with multi-provider LLM support and 
 
 📚 **[Complete AI documentation available in `/docs`](./docs/AI_BRIDGE.md)**
 
-### AiBridge — Multi-Provider LLM Abstraction
+### AI — Multi-Provider LLM Abstraction
 
 ```javascript
-const { AiBridgeManager } = require('outlet-orm');
+const { AIManager } = require('outlet-orm');
 
-const ai = new AiBridgeManager({
+const ai = new AIManager({
   providers: {
     openai: { api_key: process.env.OPENAI_API_KEY, model: 'gpt-4o' },
     claude: { api_key: process.env.ANTHROPIC_API_KEY, model: 'claude-sonnet-4-20250514' },
@@ -1339,7 +1405,7 @@ Configure your AI editor:
 **13 MCP tools**: migrations, schema introspection, queries, seeds, backups, AI query, query optimization
 
 📖 Full documentation:
-- [AiBridge Manager](docs/AI_BRIDGE.md) — Multi-provider LLM abstraction
+- [AI Manager](docs/AI_BRIDGE.md) — Multi-provider LLM abstraction
 - [AI Query Builder](docs/AI_QUERY.md) — Natural language to SQL
 - [AI Seeder](docs/AI_SEEDER.md) — Realistic data generation
 - [AI Query Optimizer](docs/AI_OPTIMIZER.md) — SQL optimization

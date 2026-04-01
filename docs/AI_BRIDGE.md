@@ -1,10 +1,54 @@
-# AiBridge — Multi-Provider LLM Abstraction
+# AI — Multi-Provider LLM Abstraction
 
-> **Since v8.0.0** — AiBridge provides a unified API to interact with 9+ LLM providers using zero production dependencies (Node 18+ native `fetch`).
+> **Since v8.0.0** — AI provides a unified API to interact with 9+ LLM providers using zero production dependencies (Node 18+ native `fetch`).
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+  - [Configuration File](#configuration-file)
+  - [Environment Variables](#environment-variables)
+- [AIManager API](#aimanager-api)
+  - [Constructor](#constructor)
+  - [Chat](#chat)
+  - [Streaming](#streaming)
+  - [Embeddings](#embeddings)
+  - [Image Generation](#image-generation)
+  - [Text-to-Speech](#text-to-speech)
+  - [Speech-to-Text](#speech-to-text)
+  - [List Models](#list-models)
+  - [Provider Management](#provider-management)
+  - [Per-Call Overrides](#per-call-overrides)
+- [TextBuilder (Fluent API)](#textbuilder-fluent-api)
+  - [TextBuilder Methods](#textbuilder-methods)
+  - [Terminal Methods](#terminal-methods)
+  - [Examples](#examples)
+- [Tool Calling (Function Calling)](#tool-calling-function-calling)
+  - [Define a Tool](#define-a-tool)
+  - [Register and Use Tools](#register-and-use-tools)
+  - [Built-in Tools](#built-in-tools)
+  - [Tool Registry](#tool-registry)
+- [Providers](#providers)
+  - [Supported Providers](#supported-providers)
+  - [Provider Contracts](#provider-contracts)
+  - [Custom Provider](#custom-provider)
+- [AI Facade](#ai-facade)
+- [Support Classes](#support-classes)
+  - [Message](#message)
+  - [Document](#document)
+  - [StreamChunk](#streamchunk)
+  - [Normalizers](#normalizers)
+  - [FileSecurity](#filesecurity)
+  - [JsonSchemaValidator](#jsonschemavalidator)
+- [Error Handling](#error-handling)
+- [See Also](#see-also)
+
+---
 
 ## Overview
 
-AiBridge is a full port of the PHP/Laravel [AiBridge](https://github.com/YourOrg/AiBridge) v2.6.0 into outlet-orm as a native Node.js module. It lets you:
+AI provides a unified API to interact with 9+ LLM providers. It lets you:
 
 - **Chat** with any LLM provider through a single API
 - **Stream** responses in real time (SSE or simulated)
@@ -15,10 +59,10 @@ AiBridge is a full port of the PHP/Laravel [AiBridge](https://github.com/YourOrg
 ## Quick Start
 
 ```javascript
-const { AiBridgeManager } = require('outlet-orm');
+const { AIManager } = require('outlet-orm');
 
 // 1. Create manager with config
-const ai = new AiBridgeManager({
+const ai = new AIManager({
   default: 'openai',
   providers: {
     openai: {
@@ -40,12 +84,12 @@ console.log(response.text);
 
 ## Configuration
 
-AiBridge is configured via `config/aibridge.js` (auto-loaded) or a config object passed to the constructor. All values can be overridden via environment variables.
+AI is configured via `config/ai.js` (auto-loaded) or a config object passed to the constructor. All values can be overridden via environment variables.
 
 ### Configuration File
 
 ```javascript
-// config/aibridge.js
+// config/ai.js
 module.exports = {
   default: process.env.AI_DEFAULT_PROVIDER || 'openai',
 
@@ -156,12 +200,12 @@ module.exports = {
 
 ---
 
-## AiBridgeManager API
+## AIManager API
 
 ### Constructor
 
 ```javascript
-const ai = new AiBridgeManager(config);
+const ai = new AIManager(config);
 ```
 
 Providers listed in the config are auto-registered. Supported provider keys: `openai`, `ollama`, `ollama_turbo`, `onn`, `gemini`, `grok`, `claude`, `mistral`, `openai_custom`, `openrouter`.
@@ -273,7 +317,7 @@ const response = await ai.chat('openai', messages, {
 The `TextBuilder` provides a chainable interface for text generation:
 
 ```javascript
-const ai = new AiBridgeManager(config);
+const ai = new AIManager(config);
 
 // Simple text generation
 const { text } = await ai.text()
@@ -345,7 +389,7 @@ const { text } = await ai.text()
 
 ## Tool Calling (Function Calling)
 
-AiBridge supports LLM function calling with an automatic tool execution loop.
+AI supports LLM function calling with an automatic tool execution loop.
 
 ### Define a Tool
 
@@ -376,7 +420,7 @@ class WeatherTool extends ToolContract {
 ### Register and Use Tools
 
 ```javascript
-const ai = new AiBridgeManager(config);
+const ai = new AIManager(config);
 
 // Register tool
 ai.registerTool(new WeatherTool());
@@ -452,7 +496,7 @@ All providers implement one or more of these base contracts:
 Use `CustomOpenAIProvider` for any OpenAI-compatible API (LM Studio, vLLM, Azure OpenAI, etc.):
 
 ```javascript
-const { CustomOpenAIProvider, AiBridgeManager } = require('outlet-orm');
+const { CustomOpenAIProvider, AIManager } = require('outlet-orm');
 
 const provider = new CustomOpenAIProvider(
   'sk-my-key',                        // API key
@@ -467,31 +511,31 @@ const provider = new CustomOpenAIProvider(
   { 'X-Custom': 'value' }             // Extra headers
 );
 
-const ai = new AiBridgeManager({ default: 'custom' });
+const ai = new AIManager({ default: 'custom' });
 ai.registerProvider('custom', provider);
 ```
 
 ---
 
-## AiBridge Facade
+## AI Facade
 
-For convenience, `AiBridge` provides a static-like entry point:
+For convenience, `AI` provides a static-like entry point:
 
 ```javascript
-const { AiBridge, AiBridgeManager } = require('outlet-orm');
+const { AI, AIManager } = require('outlet-orm');
 
 // Set up once
-const manager = new AiBridgeManager(config);
-AiBridge.setManager(manager);
+const manager = new AIManager(config);
+AI.setManager(manager);
 
 // Use anywhere
-const { text } = await AiBridge.text()
+const { text } = await AI.text()
   .using('openai', 'gpt-4o')
   .withPrompt('Hello!')
   .asText();
 
 // Shorthand
-const response = await AiBridge.chat([
+const response = await AI.chat([
   { role: 'user', content: 'Hello' }
 ]);
 ```
@@ -560,7 +604,7 @@ for await (const chunk of ai.stream('openai', messages)) {
 
 ### Normalizers
 
-AiBridge normalizes responses across all providers:
+AI normalizes responses across all providers:
 
 | Normalizer | Purpose |
 |------------|---------|

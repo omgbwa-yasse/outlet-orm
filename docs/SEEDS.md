@@ -1,5 +1,19 @@
 # Seeds Guide - Outlet ORM
 
+## Table of Contents
+
+- [🌱 Overview](#overview)
+- [🚀 CLI commands](#cli-commands)
+- [Recommended structure](#recommended-structure)
+- [Example: simple seeder](#example-simple-seeder)
+- [Example: DatabaseSeeder (execution order)](#example-databaseseeder-execution-order)
+- [Truncate / reset tables](#truncate-reset-tables)
+- [Migration + seed workflow](#migration-seed-workflow)
+- [Best practice](#best-practice)
+- [Quick troubleshooting](#quick-troubleshooting)
+
+---
+
 ## 🌱 Overview
 
 Seeds let you inject initial data (demo, test, bootstrap data) into your database.

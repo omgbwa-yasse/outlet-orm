@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [10.0.0] - 2026-04-01
+
+### 💥 Breaking — Rename AiBridge → AI
+
+- **`AiBridgeManager`** renamed to **`AIManager`** across source, types, tests, and docs
+- **`AiBridge`** facade renamed to **`AI`** (`src/AI/Facades/AI.js`)
+- **`config/aibridge.js`** renamed to **`config/ai.js`**
+- **`config/.env.aibridge.example`** renamed to **`config/.env.ai.example`**
+- **`AiBridgeConfig`** type renamed to **`AIConfig`**
+- Updated all `require()` paths, JSDoc `@param` types, error messages, and exports
+- Updated all documentation, skills, README, and CHANGELOG references
+
+### 📖 Documentation — Table of Contents
+
+- Added `## Table of Contents` with anchor links to README.md and all 29 `docs/*.md` files
+- Added `scripts/add-toc.js` utility to regenerate TOCs
+
+### Migration from v9
+
+```js
+// Before (v9)
+const { AiBridgeManager } = require('outlet-orm');
+const ai = new AiBridgeManager({ ... });
+
+// After (v10)
+const { AIManager } = require('outlet-orm');
+const ai = new AIManager({ ... });
+```
+
 ## [9.0.2] - 2026-02-28
 
 ### ♻️ Refactor — Move Skills to project root
@@ -20,9 +49,9 @@ All notable changes to this project will be documented in this file.
 
 The AI Copilot Skills documentation (published to npm) is now fully aligned with v9.0.0.
 
-- **SKILL.md** — Bumped to v9.0.0, expanded AI section with AiBridge references
-- **AI.md** — Complete rewrite with AiBridge (9 providers, chat, stream, embeddings, images, TTS, STT, tool calling), AI Query Builder, AI Seeder, AI Query Optimizer, AI Prompt Enhancer, MCP Server (13 tools), AI Safety Guardrails, support classes, and quick reference
-- **API.md** — Added AiBridgeManager, TextBuilder, AIQueryBuilder, AISeeder, AIQueryOptimizer, AIPromptEnhancer, AISafetyGuardrails API tables
+- **SKILL.md** — Bumped to v9.0.0, expanded AI section with AI references
+- **AI.md** — Complete rewrite with AI (9 providers, chat, stream, embeddings, images, TTS, STT, tool calling), AI Query Builder, AI Seeder, AI Query Optimizer, AI Prompt Enhancer, MCP Server (13 tools), AI Safety Guardrails, support classes, and quick reference
+- **API.md** — Added AIManager, TextBuilder, AIQueryBuilder, AISeeder, AIQueryOptimizer, AIPromptEnhancer, AISafetyGuardrails API tables
 - **QUERIES.md** — Added AI Query Builder and AI Query Optimizer sections
 - **SEEDS.md** — Added AI Seeder section with API reference and context options
 
@@ -34,13 +63,13 @@ This major release adds comprehensive documentation for the full AI feature set 
 
 #### 6 New Documentation Pages
 
-- **[AI_BRIDGE.md](docs/AI_BRIDGE.md)** — Complete guide for AiBridge, the multi-provider LLM abstraction layer:
-  - AiBridgeManager API reference (chat, stream, embeddings, images, TTS, STT, models)
+- **[AI_BRIDGE.md](docs/AI_BRIDGE.md)** — Complete guide for AI, the multi-provider LLM abstraction layer:
+  - AIManager API reference (chat, stream, embeddings, images, TTS, STT, models)
   - TextBuilder fluent API with all chaining methods and terminal methods
   - Tool calling / function calling with ToolContract, registration, and chatWithTools loop
   - All 9 provider implementations with capabilities matrix
   - 6 contract base classes documentation
-  - AiBridge Facade convenience API
+  - AI Facade convenience API
   - Support classes: Message, Document, StreamChunk, Normalizers, FileSecurity, JsonSchemaValidator
   - Configuration reference with all environment variables
   - Per-call overrides and custom provider setup
@@ -86,7 +115,7 @@ This major release adds comprehensive documentation for the full AI feature set 
 
 - **INDEX.md** — Updated to v9.0.0 with expanded AI Integration section linking all 6 new pages
 - **README.md** — Added comprehensive AI Integration section with:
-  - AiBridge quick start (chat, stream, TextBuilder)
+  - AI quick start (chat, stream, TextBuilder)
   - AI Query Builder examples
   - AI Seeder examples
   - AI Query Optimizer examples
@@ -96,17 +125,17 @@ This major release adds comprehensive documentation for the full AI feature set 
 
 ## [8.0.0] - 2025-06-28
 
-### 🤖 New Features — AiBridge: Multi-Provider LLM Abstraction
+### 🤖 New Features — AI: Multi-Provider LLM Abstraction
 
-Full port of [AiBridge](https://github.com/YourOrg/AiBridge) (PHP/Laravel v2.6.0) into outlet-orm as a native Node.js module. Provides a unified API for 9+ LLM providers with zero new production dependencies (uses Node 18+ native `fetch`).
+Full port of [AI](https://github.com/YourOrg/AiBridge) (PHP/Laravel v2.6.0) into outlet-orm as a native Node.js module. Provides a unified API for 9+ LLM providers with zero new production dependencies (uses Node 18+ native `fetch`).
 
-#### AiBridge Manager & Configuration
-- Added **AiBridgeManager** — central orchestrator for multi-provider AI operations
+#### AI Manager & Configuration
+- Added **AIManager** — central orchestrator for multi-provider AI operations
 - Config-driven auto-registration: pass provider configs and they're ready to use
 - Methods: `chat()`, `stream()`, `streamEvents()`, `embeddings()`, `models()`, `model()`, `image()`, `tts()`, `stt()`
 - Dynamic provider resolution with runtime overrides (api key, endpoint, headers)
 - Tool registry integration: `registerTool()`, `tool()`, `tools()`
-- Config file: `config/aibridge.js` + env template `config/.env.aibridge.example`
+- Config file: `config/ai.js` + env template `config/.env.ai.example`
 
 #### 9 LLM Providers (all standalone, no production deps)
 - **OpenAIProvider** — GPT-4o, GPT-4o-mini, o1, etc. (chat + streaming)
@@ -163,7 +192,7 @@ Full port of [AiBridge](https://github.com/YourOrg/AiBridge) (PHP/Laravel v2.6.0
 
 #### MCP Server Integration
 - Added 2 new MCP tools: `ai_query` and `query_optimize` (total: 13 tools)
-- `ai_query` — natural language database queries via AI (requires AiBridge config)
+- `ai_query` — natural language database queries via AI (requires AI config)
 - `query_optimize` — AI-powered SQL query optimization suggestions
 
 #### Built-in Tools

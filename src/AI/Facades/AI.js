@@ -1,10 +1,10 @@
 'use strict';
 
 /**
- * AiBridge Facade
+ * AI Facade
  *
- * Convenience entry-point mirroring AiBridge\Facades\AiBridge in PHP.
- * Provides static-like helpers that delegate to an AiBridgeManager instance.
+ * Convenience entry-point for AI operations.
+ * Provides static-like helpers that delegate to an AIManager instance.
  */
 
 const ImageNormalizer      = require('../Support/ImageNormalizer');
@@ -13,10 +13,10 @@ const EmbeddingsNormalizer = require('../Support/EmbeddingsNormalizer');
 
 let _manager = null;
 
-const AiBridge = {
+const AI = {
   /**
-   * Bind an AiBridgeManager instance so all helpers delegate to it.
-   * @param {import('../AiBridgeManager')} manager
+   * Bind an AIManager instance so all helpers delegate to it.
+   * @param {import('../AIManager')} manager
    */
   setManager(manager) {
     _manager = manager;
@@ -24,7 +24,7 @@ const AiBridge = {
 
   /**
    * Return the bound manager (or null).
-   * @returns {import('../AiBridgeManager')|null}
+   * @returns {import('../AIManager')|null}
    */
   getManager() {
     return _manager;
@@ -55,7 +55,7 @@ const AiBridge = {
    * @returns {import('../Builders/TextBuilder')}
    */
   text() {
-    if (!_manager) throw new Error('AiBridge facade: no manager bound. Call AiBridge.setManager(manager) first.');
+    if (!_manager) throw new Error('AI facade: no manager bound. Call AI.setManager(manager) first.');
     return _manager.text();
   },
 
@@ -63,7 +63,7 @@ const AiBridge = {
    * Shorthand for manager.chat()
    */
   async chat(messages, opts) {
-    if (!_manager) throw new Error('AiBridge facade: no manager bound.');
+    if (!_manager) throw new Error('AI facade: no manager bound.');
     return _manager.chat(messages, opts);
   },
 
@@ -71,9 +71,9 @@ const AiBridge = {
    * Shorthand for manager.provider()
    */
   provider(name) {
-    if (!_manager) throw new Error('AiBridge facade: no manager bound.');
+    if (!_manager) throw new Error('AI facade: no manager bound.');
     return _manager.provider(name);
   },
 };
 
-module.exports = AiBridge;
+module.exports = AI;

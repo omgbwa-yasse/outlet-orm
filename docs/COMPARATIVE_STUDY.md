@@ -4,6 +4,47 @@
 
 ---
 
+## Table of Contents
+
+- [1. Vue d'ensemble](#1-vue-densemble)
+- [2. Installation & Configuration](#2-installation-configuration)
+  - [Prisma](#prisma)
+  - [Laravel Eloquent](#laravel-eloquent)
+  - [Outlet ORM](#outlet-orm)
+  - [Verdict installation](#verdict-installation)
+- [3. Définition des modèles](#3-définition-des-modèles)
+  - [Prisma — Modèle déclaratif (DSL)](#prisma-modèle-déclaratif-dsl)
+  - [Laravel Eloquent — Active Record (PHP)](#laravel-eloquent-active-record-php)
+  - [Outlet ORM — Active Record (JS/TS)](#outlet-orm-active-record-jsts)
+  - [Verdict modèles](#verdict-modèles)
+- [4. Requêtes & Query Builder](#4-requêtes-query-builder)
+  - [Prisma](#prisma)
+  - [Laravel Eloquent](#laravel-eloquent)
+  - [Outlet ORM](#outlet-orm)
+  - [Verdict Query Builder](#verdict-query-builder)
+- [5. Relations](#5-relations)
+  - [Points clés](#points-clés)
+- [6. Migrations](#6-migrations)
+  - [Prisma](#prisma)
+  - [Eloquent](#eloquent)
+  - [Outlet ORM](#outlet-orm)
+  - [Verdict migrations](#verdict-migrations)
+- [7. TypeScript & Typage](#7-typescript-typage)
+- [8. Fonctionnalités avancées](#8-fonctionnalités-avancées)
+- [9. Backup & Restore](#9-backup-restore)
+- [10. Bases de données supportées](#10-bases-de-données-supportées)
+- [11. Performances](#11-performances)
+- [12. Écosystème & Outillage](#12-écosystème-outillage)
+- [13. Courbe d'apprentissage](#13-courbe-dapprentissage)
+- [14. Cas d'usage recommandés](#14-cas-dusage-recommandés)
+  - [Choisir **Prisma** si :](#choisir-prisma-si)
+  - [Choisir **Laravel Eloquent** si :](#choisir-laravel-eloquent-si)
+  - [Choisir **Outlet ORM** si :](#choisir-outlet-orm-si)
+- [15. Tableau récapitulatif final](#15-tableau-récapitulatif-final)
+- [16. Conclusion](#16-conclusion)
+
+---
+
 ## 1. Vue d'ensemble
 
 | Critère | Prisma | Laravel Eloquent | Outlet ORM |

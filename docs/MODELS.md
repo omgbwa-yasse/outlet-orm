@@ -6,6 +6,32 @@ The models in Outlet ORM follow the Active Record pattern, inspired by Laravel E
 >
 > 📘 **TypeScript**: Use`Model<TAttributes>`for typed attributes. See [TYPESCRIPT.md](TYPESCRIPT.md#generic-model-v400)
 
+## Table of Contents
+
+- [Define a template](#define-a-template)
+- [Types of casts available](#types-of-casts-available)
+- [Accessors & Mutators](#accessors-mutators)
+  - [Accessors (read transform)](#accessors-read-transform)
+  - [Mutators (write transform)](#mutators-write-transform)
+- [CRUD operations](#crud-operations)
+  - [Create](#create)
+  - [Read (Lire)](#read-lire)
+  - [Update](#update)
+  - [Delete (Delete)](#delete-delete)
+- [Attributes](#attributes)
+  - [Access attributes](#access-attributes)
+  - [Edit attributes](#edit-attributes)
+  - [Modified attributes (dirty)](#modified-attributes-dirty)
+- [Hidden attributes](#hidden-attributes)
+- [Timestamps](#timestamps)
+- [Convert to JSON](#convert-to-json)
+- [Load relationships after the fact](#load-relationships-after-the-fact)
+- [Pagination](#pagination)
+- [Atomic Increment / Decrement](#atomic-increment-decrement)
+- [Next steps](#next-steps)
+
+---
+
 ## Define a template
 
 ```javascript

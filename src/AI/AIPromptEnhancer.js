@@ -10,7 +10,7 @@
  */
 class AIPromptEnhancer {
   /**
-   * @param {import('./AiBridgeManager')} manager
+   * @param {import('./AIManager')} manager
    */
   constructor(manager) {
     this._manager = manager;

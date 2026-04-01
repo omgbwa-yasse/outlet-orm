@@ -4,6 +4,27 @@ Outlet ORM's SQL Converter intelligently analyzes your database schema to **auto
 
 > 📁 **Generation**: The generated models go into`models/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 
+## Table of Contents
+
+- [🎯 Types of Relationships Detected](#types-of-relationships-detected)
+  - [1. **belongsTo** (Belongs To)](#1-belongsto-belongs-to)
+  - [2. **hasMany** (To many)](#2-hasmany-to-many)
+  - [3. **hasOne**](#3-hasone)
+  - [4. **belongsToMany** (Many to Many)](#4-belongstomany-many-to-many)
+- [🔍 Advanced Features](#advanced-features)
+  - [Recursive Relations (Self-Relations)](#recursive-relations-self-relations)
+  - [Multiple Relations to the Same Table](#multiple-relations-to-the-same-table)
+- [📊 Full Example](#full-example)
+  - [Automatically Generated Models](#automatically-generated-models)
+- [✨ Advantages](#advantages)
+- [🎨 Usage](#usage)
+- [🔧 Configuration](#configuration)
+  - [Personalization after generation](#personalization-after-generation)
+- [📝 Important Notes](#important-notes)
+- [🧪 Test](#test)
+
+---
+
 ## 🎯 Types of Relationships Detected
 
 ### 1. **belongsTo** (Belongs To)

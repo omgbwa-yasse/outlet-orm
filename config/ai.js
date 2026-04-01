@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * AiBridge default configuration.
+ * AI default configuration.
  *
  * All values can be overridden via environment variables.
  * Copy this file to your project and customise, or rely on .env.

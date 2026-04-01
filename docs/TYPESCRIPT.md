@@ -4,6 +4,44 @@ Outlet ORM v4.0.0 includes full TypeScript definitions with support for **generi
 
 > 📁 **Recommended location**:`models/`,`controllers/`,`services/`and`src/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 
+## Table of Contents
+
+- [What’s new v4.0.0](#whats-new-v400)
+- [Installation](#installation)
+- [TypeScript setup](#typescript-setup)
+- [Generic Model (v4.0.0+)](#generic-model-v400)
+  - [Define an attribute interface](#define-an-attribute-interface)
+  - [Create a typed model](#create-a-typed-model)
+  - [Type-safe getAttribute/setAttribute](#type-safe-getattributesetattribute)
+- [Basic Usage](#basic-usage)
+  - [Import](#import)
+  - [Define a template](#define-a-template)
+  - [Use template](#use-template)
+- [Types available](#types-available)
+  - [ValidationResult](#validationresult)
+  - [PaginationResult](#paginationresult)
+  - [QueryLogEntry](#querylogentry)
+  - [EventCallback](#eventcallback)
+- [Templates with generics](#templates-with-generics)
+- [DatabaseConnection](#databaseconnection)
+- [Transactions](#transactions)
+- [Typed relationships](#typed-relationships)
+- [Typed scopes](#typed-scopes)
+- [Typed validation](#typed-validation)
+- [Schema Builder typed (v4.0.0+)](#schema-builder-typed-v400)
+  - [Available interfaces](#available-interfaces)
+  - [Creating tables](#creating-tables)
+  - [Foreign keys](#foreign-keys)
+  - [Editing tables](#editing-tables)
+- [Typed migrations (v4.0.0+)](#typed-migrations-v400)
+  - [Structure of a migration](#structure-of-a-migration)
+  - [Full migration with relationships](#full-migration-with-relationships)
+  - [Table pivot many-to-many](#table-pivot-many-to-many)
+- [Full example](#full-example)
+- [Next steps](#next-steps)
+
+---
+
 ## What’s new v4.0.0
 
 - ✅ **Generic Model**: Type your attributes with`Model<TAttributes>`

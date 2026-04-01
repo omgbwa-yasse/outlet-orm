@@ -2,6 +2,24 @@
 
 > **Since v8.0.0** — Analyze and optimize SQL queries using AI with index recommendations and rewrite suggestions.
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [API Reference](#api-reference)
+  - [Constructor](#constructor)
+  - [Methods](#methods)
+- [Examples](#examples)
+  - [Optimizing a Slow Query](#optimizing-a-slow-query)
+  - [Analyzing an Execution Plan](#analyzing-an-execution-plan)
+  - [Using with MCP Server](#using-with-mcp-server)
+  - [Using Different Providers](#using-different-providers)
+- [Common Optimizations Detected](#common-optimizations-detected)
+- [Best Practices](#best-practices)
+- [See Also](#see-also)
+
+---
+
 ## Overview
 
 The `AIQueryOptimizer` uses LLM providers to:
@@ -14,9 +32,9 @@ The `AIQueryOptimizer` uses LLM providers to:
 ## Quick Start
 
 ```javascript
-const { AiBridgeManager, AIQueryOptimizer, DatabaseConnection } = require('outlet-orm');
+const { AIManager, AIQueryOptimizer, DatabaseConnection } = require('outlet-orm');
 
-const ai = new AiBridgeManager({
+const ai = new AIManager({
   providers: {
     openai: { api_key: process.env.OPENAI_API_KEY, model: 'gpt-4o' }
   }
@@ -46,7 +64,7 @@ new AIQueryOptimizer(manager, connection)
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `manager` | `AiBridgeManager` | Configured AiBridge manager |
+| `manager` | `AIManager` | Configured AI manager |
 | `connection` | `DatabaseConnection` | Database connection |
 
 ### Methods
@@ -261,7 +279,7 @@ const r2 = await optimizer
 
 ## See Also
 
-- [AiBridge Manager](AI_BRIDGE.md) — Multi-provider LLM configuration
+- [AI Manager](AI_BRIDGE.md) — Multi-provider LLM configuration
 - [AI Query Builder](AI_QUERY.md) — Natural language to SQL
 - [Query Builder](QUERY_BUILDER.md) — Standard query building
 - [MCP Server](MCP.md) — Expose optimizer as an MCP tool

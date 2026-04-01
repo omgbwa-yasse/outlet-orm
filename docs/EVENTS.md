@@ -6,6 +6,36 @@ Events allow you to execute code at different stages of a model's lifecycle.
 >
 > 📘 **TypeScript**: Use the type`ModelEventName`for event names. See [TYPESCRIPT.md](TYPESCRIPT.md)
 
+## Table of Contents
+
+- [Events available](#events-available)
+- [Record events](#record-events)
+  - [Via boot()](#via-boot)
+  - [Via addEventListener (dynamic)](#via-addeventlistener-dynamic)
+- [Observer Pattern (v6.5.0+)](#observer-pattern-v650)
+- [Cancel an operation](#cancel-an-operation)
+- [Use cases](#use-cases)
+  - [Auto-generation of data](#auto-generation-of-data)
+  - [Custom validation](#custom-validation)
+  - [Audit et logging](#audit-et-logging)
+  - [Cascade deletion](#cascade-deletion)
+  - [Cache cleaning](#cache-cleaning)
+  - [Notifications](#notifications)
+  - [Soft Delete Events](#soft-delete-events)
+- [Execution order](#execution-order)
+  - [Creation (save on new model)](#creation-save-on-new-model)
+  - [Update (save on existing model)](#update-save-on-existing-model)
+  - [Suppression](#suppression)
+  - [Restauration (soft delete)](#restauration-soft-delete)
+- [Best practices](#best-practices)
+  - [1. Keep events light](#1-keep-events-light)
+  - [2. Use async with caution](#2-use-async-with-caution)
+  - [3. Avoid infinite loops](#3-avoid-infinite-loops)
+  - [4. Document your events](#4-document-your-events)
+- [Next steps](#next-steps)
+
+---
+
 ## Events available
 
 | Event | Moment | Can cancel | TypeScript |

@@ -9,7 +9,7 @@
  */
 class AISeeder {
   /**
-   * @param {import('./AiBridgeManager')} manager
+   * @param {import('./AIManager')} manager
    * @param {Object} connection - DatabaseConnection instance
    */
   constructor(manager, connection) {

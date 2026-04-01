@@ -2,6 +2,22 @@
 
 > **Since v8.0.0** — Generate complete database schemas, model code, and migration code from natural language descriptions using AI.
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [API Reference](#api-reference)
+  - [Constructor](#constructor)
+  - [Methods](#methods)
+- [Complete Workflow Example](#complete-workflow-example)
+- [PromptGenerator (Regex-Based Alternative)](#promptgenerator-regex-based-alternative)
+  - [Built-in Domain Patterns](#built-in-domain-patterns)
+  - [CLI Usage](#cli-usage)
+- [AI vs Regex Comparison](#ai-vs-regex-comparison)
+- [See Also](#see-also)
+
+---
+
 ## Overview
 
 The `AIPromptEnhancer` extends the regex-based `PromptGenerator` with LLM capabilities. Given a natural language description of your application, it:
@@ -15,9 +31,9 @@ Unlike the regex-based `PromptGenerator` (which matches against 7 pre-built doma
 ## Quick Start
 
 ```javascript
-const { AiBridgeManager, AIPromptEnhancer } = require('outlet-orm');
+const { AIManager, AIPromptEnhancer } = require('outlet-orm');
 
-const ai = new AiBridgeManager({
+const ai = new AIManager({
   providers: {
     openai: { api_key: process.env.OPENAI_API_KEY, model: 'gpt-4o' }
   }
@@ -47,7 +63,7 @@ new AIPromptEnhancer(manager)
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `manager` | `AiBridgeManager` | Configured AiBridge manager instance |
+| `manager` | `AIManager` | Configured AI manager instance |
 
 ### Methods
 
@@ -227,11 +243,11 @@ module.exports = CreateBooksTable;
 Generate a full project from a description:
 
 ```javascript
-const { AiBridgeManager, AIPromptEnhancer, AISeeder } = require('outlet-orm');
+const { AIManager, AIPromptEnhancer, AISeeder } = require('outlet-orm');
 const fs = require('fs');
 const path = require('path');
 
-const ai = new AiBridgeManager({ /* config */ });
+const ai = new AIManager({ /* config */ });
 const enhancer = new AIPromptEnhancer(ai);
 const seeder = new AISeeder(ai, db);
 
@@ -326,7 +342,7 @@ outlet-init --prompt "Blog with posts and comments" --driver sqlite
 
 ## See Also
 
-- [AiBridge Manager](AI_BRIDGE.md) — Multi-provider LLM configuration
+- [AI Manager](AI_BRIDGE.md) — Multi-provider LLM configuration
 - [AI Seeder](AI_SEEDER.md) — Seed generated schemas with realistic data
 - [Migrations Guide](MIGRATIONS.md) — Run generated migrations
 - [Models Guide](MODELS.md) — Understanding generated model code

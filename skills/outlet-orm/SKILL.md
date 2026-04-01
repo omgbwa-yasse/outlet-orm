@@ -1,6 +1,6 @@
 ---
 name: outlet-orm-best-practices
-description: Outlet ORM is a Laravel Eloquent-inspired ORM for Node.js with MySQL, PostgreSQL, and SQLite support. Use this skill when working with Outlet ORM models, queries, relationships, migrations, backup, AI integration (AiBridge multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, MCP Server) and database operations.
+description: Outlet ORM is a Laravel Eloquent-inspired ORM for Node.js with MySQL, PostgreSQL, and SQLite support. Use this skill when working with Outlet ORM models, queries, relationships, migrations, backup, AI integration (AI multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, MCP Server) and database operations.
 license: MIT
 metadata:
 author: omgbwa-yasse
@@ -13,9 +13,9 @@ npm: https://www.npmjs.com/package/outlet-orm
 
 Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for Node.js/TypeScript with support for MySQL, PostgreSQL, and SQLite.
 
-> 🆕 **v9.0.0**: Complete AI documentation — AiBridge multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, AI Prompt Enhancer, AI Safety Guardrails. See [AI.md](AI.md).
+> 🆕 **v9.0.0**: Complete AI documentation — AI multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, AI Prompt Enhancer, AI Safety Guardrails. See [AI.md](AI.md).
 >
-> 🔖 **v8.0.0**: AiBridge multi-provider LLM abstraction (9 providers), AI Query Builder, AI Seeder, AI Query Optimizer, AI Prompt Enhancer.
+> 🔖 **v8.0.0**: AI multi-provider LLM abstraction (9 providers), AI Query Builder, AI Seeder, AI Query Optimizer, AI Prompt Enhancer.
 >
 > 🔖 **v7.0.0**: AI Integration — MCP Server (Model Context Protocol), AI Safety Guardrails, Prompt-based project initialization.
 >
@@ -37,7 +37,7 @@ Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for N
 | **[TYPESCRIPT.md](TYPESCRIPT.md)** | TypeScript types, generics, typed models, migrations |
 | **[SECURITY.md](SECURITY.md)** | 🔐 Security best practices, authentication, authorisation |
 | **[BACKUP.md](BACKUP.md)** | 🗄️ Backups, scheduling, AES-256-GCM encryption, TCP daemon, restore |
-| **[AI.md](AI.md)** | 🤖 AiBridge (9 LLM providers), AI Query Builder, AI Seeder, AI Optimizer, AI Prompt Enhancer, MCP Server, AI Safety Guardrails |
+| **[AI.md](AI.md)** | 🤖 AI (9 LLM providers), AI Query Builder, AI Seeder, AI Optimizer, AI Prompt Enhancer, MCP Server, AI Safety Guardrails |
 | **[API.md](API.md)** | Complete API Reference |
 
 ---
@@ -56,7 +56,7 @@ Reference these guidelines when:
 - Scheduling or encrypting database backups  [BACKUP.md](BACKUP.md)
 - Restoring a database from a backup file  [BACKUP.md](BACKUP.md)
 - Running a long-lived backup daemon over TCP  [BACKUP.md](BACKUP.md)
-- Configuring LLM providers (AiBridge)  [AI.md](AI.md)
+- Configuring LLM providers (AI)  [AI.md](AI.md)
 - Converting natural language to SQL (AI Query Builder)  [AI.md](AI.md)
 - Generating realistic seed data with AI  [AI.md](AI.md)
 - Optimizing SQL queries with AI  [AI.md](AI.md)

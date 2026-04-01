@@ -6,6 +6,37 @@ Outlet ORM v4.0.0 includes a built-in validation system to validate data before 
 
 > 📁 **Location**: Define your rules in`models/`and validate in`controllers/`or`middlewares/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 
+## Table of Contents
+
+- [Configuration](#configuration)
+  - [Set rules](#set-rules)
+- [Rules available](#rules-available)
+- [Usage](#usage)
+  - [Validate manually](#validate-manually)
+  - [Structure of the result](#structure-of-the-result)
+  - [Validate before saving](#validate-before-saving)
+  - [Automatic validation with events](#automatic-validation-with-events)
+- [Example rules](#example-rules)
+  - [Mandatory field](#mandatory-field)
+  - [Chain with length](#chain-with-length)
+  - [Email](#email)
+  - [Number with limits](#number-with-limits)
+  - [Enumerated values](#enumerated-values)
+  - [URL](#url)
+  - [Boolean](#boolean)
+- [Complete examples](#complete-examples)
+  - [Item Model](#item-model)
+  - [Model Product](#model-product)
+  - [Model Registration](#model-registration)
+- [Validation in controllers](#validation-in-controllers)
+  - [Express.js](#expressjs)
+  - [Validation middleware](#validation-middleware)
+- [Current limitations](#current-limitations)
+- [Custom error messages](#custom-error-messages)
+- [Next steps](#next-steps)
+
+---
+
 ## Configuration
 
 ### Set rules

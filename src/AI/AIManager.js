@@ -16,12 +16,12 @@ const ToolChatRunner = require('./Support/ToolChatRunner');
 const BEARER_PREFIX = 'Bearer ';
 
 /**
- * AiBridgeManager
+ * AIManager
  * Central orchestrator for all AI providers. Supports provider registration,
  * per-call overrides, capability delegation (chat, stream, embeddings, images,
  * audio, models), tool registration, and chatWithTools loop.
  */
-class AiBridgeManager {
+class AIManager {
   /**
    * @param {Object} config
    */
@@ -284,4 +284,4 @@ class AiBridgeManager {
   }
 }
 
-module.exports = AiBridgeManager;
+module.exports = AIManager;

@@ -4,6 +4,39 @@ This guide describes security best practices for applications using Outlet ORM.
 
 > ⚠️ **Important**: The folder structure alone does not guarantee security. Implementation and compliance with best practices are essential.
 
+## Table of Contents
+
+- [Secure Project Structure](#secure-project-structure)
+- [Safety Checklist](#safety-checklist)
+  - [🔴 Critical Priority](#critical-priority)
+  - [🟠 Important Priority](#important-priority)
+  - [🟡 Recommended](#recommended)
+- [Secure Configuration](#secure-configuration)
+  - [.gitignore](#gitignore)
+  - [.env.example](#envexample)
+- [Security Middleware](#security-middleware)
+  - [Installing dependencies](#installing-dependencies)
+  - [config/security.js](#configsecurityjs)
+  - [middlewares/auth.js](#middlewaresauthjs)
+  - [middlewares/validator.js](#middlewaresvalidatorjs)
+  - [middlewares/errorHandler.js](#middlewareserrorhandlerjs)
+- [Security Utilities](#security-utilities)
+  - [utils/hash.js](#utilshashjs)
+  - [utils/token.js](#utilstokenjs)
+- [Middleware application](#middleware-application)
+  - [src/index.js](#srcindexjs)
+- [Example of Secure Route](#example-of-secure-route)
+  - [routes/userRoutes.js](#routesuserroutesjs)
+- [Secure User Model](#secure-user-model)
+  - [models/User.js](#modelsuserjs)
+- [Integrated ORM Outlet Protection](#integrated-orm-outlet-protection)
+  - [✅ Protection SQL Injection](#protection-sql-injection)
+  - [✅ Mass Assignment Protection](#mass-assignment-protection)
+  - [✅ Hidden Attributes](#hidden-attributes)
+- [Next steps](#next-steps)
+
+---
+
 ## Secure Project Structure
 
 ```

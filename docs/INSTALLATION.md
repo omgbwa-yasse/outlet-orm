@@ -1,5 +1,24 @@
 # 📦 Installation and Configuration
 
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+  - [Install the database driver](#install-the-database-driver)
+- [Recommended Project Structure](#recommended-project-structure)
+- [Configuration](#configuration)
+  - [Option 1: Via file`.env`(recommended) - Automatic connection](#option-1-via-fileenvrecommended-automatic-connection)
+  - [Option 2: Manual configuration (advanced)](#option-2-manual-configuration-advanced)
+  - [Option 3 : SQLite](#option-3-sqlite)
+- [Environment variables](#environment-variables)
+- [Fast initialisation with CLI](#fast-initialisation-with-cli)
+- [Check connection](#check-connection)
+- [Quick structure reference](#quick-structure-reference)
+  - [Example of`src/models/index.js`](#example-ofsrcmodelsindexjs)
+- [Next steps](#next-steps)
+
+---
+
 ## Prerequisites
 
 - **Node.js** >= 18 (recommended)

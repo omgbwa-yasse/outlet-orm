@@ -1,6 +1,26 @@
 # AI Query Builder — Natural Language to SQL
 
-> **Since v8.0.0** — Convert natural language questions into SQL queries using any LLM provider via AiBridge.
+> **Since v8.0.0** — Convert natural language questions into SQL queries using any LLM provider via AI.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [API Reference](#api-reference)
+  - [Constructor](#constructor)
+  - [Methods](#methods)
+- [Configuration Details](#configuration-details)
+  - [Schema Introspection](#schema-introspection)
+  - [LLM Parameters](#llm-parameters)
+- [Examples](#examples)
+  - [Basic Queries](#basic-queries)
+  - [Using Different Providers](#using-different-providers)
+  - [Generate SQL Without Executing](#generate-sql-without-executing)
+  - [With MCP Server](#with-mcp-server)
+- [Safety Considerations](#safety-considerations)
+- [See Also](#see-also)
+
+---
 
 ## Overview
 
@@ -14,10 +34,10 @@ The `AIQueryBuilder` lets you ask questions about your database in plain English
 ## Quick Start
 
 ```javascript
-const { AiBridgeManager, AIQueryBuilder, DatabaseConnection } = require('outlet-orm');
+const { AIManager, AIQueryBuilder, DatabaseConnection } = require('outlet-orm');
 
 // Setup
-const ai = new AiBridgeManager({
+const ai = new AIManager({
   providers: {
     openai: { api_key: process.env.OPENAI_API_KEY, model: 'gpt-4o-mini' }
   }
@@ -46,7 +66,7 @@ new AIQueryBuilder(manager, connection)
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `manager` | `AiBridgeManager` | Configured AiBridge manager instance |
+| `manager` | `AIManager` | Configured AI manager instance |
 | `connection` | `DatabaseConnection` | Database connection instance |
 
 ### Methods
@@ -239,7 +259,7 @@ The AI Query Builder is also available as an MCP tool (`ai_query`) for AI agents
 
 ## See Also
 
-- [AiBridge Manager](AI_BRIDGE.md) — Multi-provider LLM configuration
+- [AI Manager](AI_BRIDGE.md) — Multi-provider LLM configuration
 - [AI Query Optimizer](AI_OPTIMIZER.md) — Optimize existing SQL queries
 - [AI Seeder](AI_SEEDER.md) — Generate realistic test data
 - [MCP Server](MCP.md) — Expose AI query as an MCP tool

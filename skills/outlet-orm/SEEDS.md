@@ -106,9 +106,9 @@ outlet-migrate seed
 Generate realistic domain-specific seed data using AI instead of generic lorem ipsum.
 
 ```javascript
-const { AiBridgeManager, AISeeder, DatabaseConnection } = require('outlet-orm');
+const { AIManager, AISeeder, DatabaseConnection } = require('outlet-orm');
 
-const ai = new AiBridgeManager({
+const ai = new AIManager({
   providers: { openai: { api_key: process.env.OPENAI_API_KEY, model: 'gpt-4o-mini' } }
 });
 const seeder = new AISeeder(ai, new DatabaseConnection());

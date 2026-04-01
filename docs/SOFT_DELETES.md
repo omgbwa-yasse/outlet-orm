@@ -4,6 +4,37 @@ Soft delete allows records to be marked as "deleted" without actually deleting t
 
 > 📁 **Configuration**: In`models/`+ migration in`database/migrations/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 
+## Table of Contents
+
+- [Principle](#principle)
+- [Configuration](#configuration)
+  - [1. Table migration](#1-table-migration)
+  - [2. Activate in template](#2-activate-in-template)
+- [Usage](#usage)
+  - [Delete (soft delete)](#delete-soft-delete)
+  - [Automatic queries](#automatic-queries)
+  - [Include deleted](#include-deleted)
+  - [Only deleted ones](#only-deleted-ones)
+  - [Restore a recording](#restore-a-recording)
+  - [Permanent deletion](#permanent-deletion)
+- [Check status](#check-status)
+- [Practical examples](#practical-examples)
+  - [Trash](#trash)
+  - [Cascade deletion](#cascade-deletion)
+  - [Automatic cleaning](#automatic-cleaning)
+- [With relationships](#with-relationships)
+  - [Eager loading et soft deletes](#eager-loading-et-soft-deletes)
+- [Events with Soft Deletes](#events-with-soft-deletes)
+- [Best practices](#best-practices)
+  - [1. Index the deleted_at column](#1-index-the-deletedat-column)
+  - [2. Use for important data](#2-use-for-important-data)
+  - [3. Clean regularly](#3-clean-regularly)
+  - [4. Consider foreign keys](#4-consider-foreign-keys)
+- [Full API](#full-api)
+- [Next steps](#next-steps)
+
+---
+
 ## Principle
 
 Instead of deleting a row, update a column`deleted_at`with the deletion date. Normal queries automatically exclude these records.
