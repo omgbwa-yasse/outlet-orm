@@ -109,6 +109,7 @@ class User extends Model {
 |`hidden`| array |`[]`| Hidden from JSON |
 |`casts`| object |`{}`| Type casting definitions |
 |`rules`| object |`{}`| Validation rules |
+|`appends`| array |`[]`| Computed attributes included in toJSON (v11) |
 |`connection`| object |`null`| Custom DB connection |
 
 ---
@@ -256,7 +257,10 @@ await user.forceDelete();
 ```javascript
 const user = await User.find(1);
 
-// Get single attribute
+// Property access (v11+)
+const name = user.name;
+
+// Method access
 const name = user.getAttribute('name');
 
 // Get all attributes as object
@@ -272,7 +276,10 @@ const dirty = user.getDirty(); // Get modified attributes
 ```javascript
 const user = new User();
 
-// Set single attribute
+// Property access (v11+)
+user.name = 'John';
+
+// Method access
 user.setAttribute('name', 'John');
 
 // Fill multiple attributes
@@ -308,6 +315,141 @@ const user = await User.withHidden().where('email', email).first();
 if (user && await bcrypt.compare(password, user.getAttribute('password'))) {
   // Authentication successful
 }
+```
+
+### Instance-Level Visibility (v11.0.0)
+
+```javascript
+const user = await User.find(1);
+
+// Temporarily show hidden attributes on this instance
+user.makeVisible('password', 'secret_token');
+console.log(user.toJSON()); // password & secret_token included
+
+// Temporarily hide additional attributes on this instance
+user.makeHidden('email', 'phone');
+console.log(user.toJSON()); // email & phone excluded
+```
+
+---
+
+## Property Access (v11.0.0)
+
+Access model attributes directly as properties via Proxy, in addition to `getAttribute()`/`setAttribute()`:
+
+```javascript
+const user = await User.find(1);
+
+// Before v11 - only method access
+const name = user.getAttribute('name');
+user.setAttribute('name', 'New Name');
+
+// v11+ - property-style access (equivalent)
+const name = user.name;
+user.name = 'New Name';
+await user.save();
+
+// Works with casts
+console.log(user.email_verified); // boolean (thanks to casts)
+console.log(user.metadata);       // object (JSON cast)
+
+// Check dirty state
+user.name = 'Changed';
+console.log(user.isDirty()); // true
+```
+
+> **Note**: Native Model methods and properties (`save`, `destroy`, `fill`, etc.) always take precedence over attribute names.
+
+---
+
+## Computed Appends (v11.0.0)
+
+Include computed attributes in `toJSON()` output:
+
+```javascript
+class User extends Model {
+  static table = 'users';
+  static appends = ['full_name', 'is_admin'];
+
+  // Accessor for computed attribute
+  getFullNameAttribute() {
+    return `${this.getAttribute('first_name')} ${this.getAttribute('last_name')}`;
+  }
+
+  getIsAdminAttribute() {
+    return this.getAttribute('role') === 'admin';
+  }
+}
+
+const user = await User.find(1);
+console.log(user.toJSON());
+// { id: 1, first_name: 'John', last_name: 'Doe', full_name: 'John Doe', is_admin: false, ... }
+```
+
+---
+
+## Model Utility Methods (v11.0.0)
+
+### fresh() / refresh()
+
+```javascript
+const user = await User.find(1);
+
+// fresh() returns a NEW instance reloaded from DB (original unchanged)
+const freshUser = await user.fresh();
+
+// refresh() reloads the CURRENT instance in-place
+user.name = 'temp';
+await user.refresh();
+console.log(user.name); // Back to DB value
+```
+
+### replicate()
+
+```javascript
+const user = await User.find(1);
+const clone = user.replicate();
+// clone has same attributes but NO primary key
+clone.name = 'Clone of ' + user.name;
+await clone.save(); // Inserts as new record
+```
+
+### is() / isNot()
+
+```javascript
+const user1 = await User.find(1);
+const user2 = await User.find(1);
+const user3 = await User.find(2);
+
+user1.is(user2);    // true  (same table + same PK)
+user1.isNot(user3); // true  (different PK)
+```
+
+### only() / except()
+
+```javascript
+const user = await User.find(1);
+
+// Get a subset of attributes
+const subset = user.only('name', 'email');
+// { name: 'John', email: 'john@example.com' }
+
+// Get all attributes except some
+const filtered = user.except('password', 'secret_token');
+// { id: 1, name: 'John', email: 'john@example.com', ... }
+```
+
+### wasChanged() / getChanges()
+
+```javascript
+const user = await User.find(1);
+user.name = 'Updated';
+await user.save();
+
+user.wasChanged();       // true
+user.wasChanged('name'); // true
+user.wasChanged('email'); // false
+user.getChanges();       // { name: 'Updated' }
 ```
 
 ---

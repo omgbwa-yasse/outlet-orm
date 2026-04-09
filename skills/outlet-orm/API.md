@@ -54,6 +54,7 @@ const db = new DatabaseConnection({
 |`update(table, data, query)`| Update records |
 |`delete(table, query)`| Delete records |
 |`count(table, query)`| Count records |
+|`aggregate(table, func, col, query)`| Run aggregate function (v11) |
 |`executeRawQuery(sql, params?)`| Raw query (normalised results) |
 |`execute(sql, params?)`| Raw query (native driver results) |
 |`increment(table, column, query, amount?)`| Atomic increment |
@@ -191,9 +192,26 @@ const db = new DatabaseConnection({
 |`fill(attrs)`| Fill attributes |
 |`setAttribute(key, val)`| Set single attribute |
 |`getAttribute(key)`| Get single attribute |
+|`user.key` (Proxy)| Property-style get/set (v11) |
 |`getDirty()`| Get modified attributes |
 |`isDirty()`| Check if modified |
+|`wasChanged(key?)`| Check if changed after save (v11) |
+|`getChanges()`| Get post-save changes (v11) |
+|`only(...keys)`| Subset of attributes (v11) |
+|`except(...keys)`| All attributes except keys (v11) |
+|`makeVisible(...keys)`| Show hidden attrs on instance (v11) |
+|`makeHidden(...keys)`| Hide attrs on instance (v11) |
 |`toJSON()`| Convert to plain object |
+
+### Model Utility (v11.0.0)
+
+| Method | Description |
+|--------|-------------|
+|`fresh()`| New reloaded instance from DB |
+|`refresh()`| Reload current instance in-place |
+|`replicate()`| Clone without primary key |
+|`is(model)`| Same table + same PK |
+|`isNot(model)`| Different identity |
 
 ### Persistence
 
@@ -322,6 +340,13 @@ const db = new DatabaseConnection({
 |`paginate(page, perPage)`| Paginated results |
 |`count()`| Count results |
 |`exists()`| Check existence |
+|`sum(col)`| Sum of column (v11) |
+|`avg(col)`| Average of column (v11) |
+|`min(col)`| Minimum of column (v11) |
+|`max(col)`| Maximum of column (v11) |
+|`pluck(col)`| Array of column values (v11) |
+|`value(col)`| Single value from first row (v11) |
+|`chunk(size, callback)`| Batch processing (v11) |
 
 ### Mutations
 
@@ -339,6 +364,10 @@ const db = new DatabaseConnection({
 | Method | Description |
 |--------|-------------|
 |`clone()`| Clone QueryBuilder |
+|`when(condition, callback)`| Conditional clause (v11) |
+|`tap(callback)`| Debug callback (v11) |
+|`toSQL()`| Get SQL + bindings (v11) |
+|`dd()`| Dump & die debug (v11) |
 
 ---
 
@@ -464,6 +493,7 @@ const db = new DatabaseConnection({
 |`hidden`| array |`[]`| Hidden from JSON |
 |`casts`| object |`{}`| Type casting |
 |`rules`| object |`{}`| Validation rules |
+|`appends`| array |`[]`| Computed attrs in toJSON (v11) |
 |`connection`| object |`null`| Custom connection |
 
 ---

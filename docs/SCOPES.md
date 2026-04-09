@@ -357,6 +357,33 @@ class Post extends Model {
 }
 ```
 
+## Fluent Local Scopes (v11.0.0)
+
+In addition to `static scopes = {}` + `.scope('name')`, v11 introduces **fluent local scopes** via the `static scopeXxx(query)` convention. These scopes are callable directly on the query chain:
+
+```javascript
+class User extends Model {
+  static table = 'users';
+
+  static scopeActive(query) {
+    return query.where('status', 'active');
+  }
+
+  static scopeVerified(query) {
+    return query.whereNotNull('email_verified_at');
+  }
+
+  static scopeRole(query, role) {
+    return query.where('role', role);
+  }
+}
+
+// Fluent usage — no .scope() call needed
+const admins = await User.query().active().verified().role('admin').get();
+```
+
+Both patterns (`static scopes` + `static scopeXxx`) coexist. Use whichever style fits your codebase.
+
 ## Next steps
 
 - [Events](EVENTS.md) - Hooks on the life cycle

@@ -294,6 +294,18 @@ const isEmpty = await User.where('status', 'deleted').doesntExist();
 // Email list only
 const emails = await User.pluck('email');
 // ['john@example.com', 'jane@example.com', ...]
+
+// Keyed by another column
+const emailMap = await User.pluck('email', 'id');
+// { 1: 'john@example.com', 2: 'jane@example.com', ... }
+```
+
+### Retrieve a single value (v11.0.0)
+
+```javascript
+// Get the value of a single column from the first matching row
+const email = await User.where('id', 1).value('email');
+// 'john@example.com'
 ```
 
 ## Update
@@ -412,6 +424,41 @@ const results = await User
 ```
 
 ## Convenience Methods (v6.5.0+)
+
+### Batch Processing — chunk (v11.0.0)
+
+Process large datasets in manageable batches:
+
+```javascript
+await User.where('active', true).chunk(100, (users, page) => {
+  console.log(`Processing page ${page}: ${users.length} users`);
+  // Return false to stop early
+});
+```
+
+### Conditional Queries — when / tap (v11.0.0)
+
+```javascript
+// Conditionally apply a callback
+const users = await User.query()
+  .when(role, (qb, val) => qb.where('role', val))
+  .when(minAge, (qb, val) => qb.where('age', '>=', val))
+  .get();
+
+// Inspect the query without modifying it
+const users = await User.query()
+  .where('status', 'active')
+  .tap(qb => console.log('Current query:', qb.toSQL()))
+  .get();
+```
+
+### Query Debugging — dd (v11.0.0)
+
+```javascript
+// Dump the SQL and throw (useful for debugging)
+User.where('status', 'active').dd();
+// Throws with: { table: 'users', wheres: [...], ... }
+```
 
 ### firstOrCreate / firstOrNew
 

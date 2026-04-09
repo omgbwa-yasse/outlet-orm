@@ -384,6 +384,104 @@ table.foreign('user_id')
 
 ---
 
+## v11.0.0 Type Additions
+
+### Property-Style Attribute Access
+
+Model instances are wrapped in a `Proxy`, so attributes can be read and written as direct properties:
+
+```typescript
+const user = await User.find(1);
+
+// Property access (via Proxy)
+console.log(user.name);       // equivalent to user.getAttribute('name')
+user.email = 'new@mail.com';  // equivalent to user.setAttribute('email', ...)
+
+// Both styles coexist
+user.getAttribute('name');     // still works
+```
+
+The index signature `[K: string]: any` on `Model` enables this in TypeScript.
+
+### Computed Appends
+
+```typescript
+class User extends Model<UserAttributes> {
+  static table = 'users';
+  static appends = ['full_name'] as const;
+
+  getFullNameAttribute(): string {
+    return `${this.attributes.first_name} ${this.attributes.last_name}`;
+  }
+}
+
+// full_name is included in toJSON() output
+```
+
+### New Model Instance Methods
+
+```typescript
+// Reload from DB
+const freshUser: User | null = await user.fresh('posts');
+await user.refresh(); // mutates in place
+
+// Clone without primary key
+const clone: User = user.replicate('id', 'created_at');
+
+// Identity comparison
+user.is(otherUser);    // same table + same PK
+user.isNot(otherUser);
+
+// Attribute subsets
+const partial: Partial<UserAttributes> = user.only('name', 'email');
+const rest: Partial<UserAttributes> = user.except('password');
+
+// Instance-level visibility
+user.makeVisible('password');
+user.makeHidden('email');
+
+// Change tracking (after save)
+user.wasChanged('name'); // boolean
+user.getChanges();       // { name: 'new value' }
+```
+
+### New QueryBuilder Methods
+
+```typescript
+// Single column value
+const email: any = await User.where('id', 1).value('email');
+
+// Batch processing
+await User.where('active', true).chunk(100, (users, page) => {
+  console.log(`Page ${page}:`, users.length);
+  // return false to stop
+});
+
+// Conditional query building
+User.query()
+  .when(role, (qb, val) => qb.where('role', val))
+  .tap(qb => console.log(qb.toSQL()))
+  .get();
+
+// Debug
+const sql = User.where('active', true).toSQL();
+User.where('active', true).dd(); // dumps SQL + throws
+```
+
+### withDefault on Relations
+
+```typescript
+class User extends Model<UserAttributes> {
+  profile(): HasOneRelation<Profile> {
+    return this.hasOne(Profile, 'user_id').withDefault();
+    // or .withDefault({ bio: 'N/A' })
+    // or .withDefault(() => new Profile({ bio: 'N/A' }))
+  }
+}
+```
+
+---
+
 ## Common Patterns
 
 ### Repository Pattern

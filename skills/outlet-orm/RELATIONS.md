@@ -546,6 +546,50 @@ class Category extends Model {
 |`attach(ids)`| Attach (many-to-many) |
 |`detach(ids?)`| Detach (many-to-many) |
 |`sync(ids)`| Sync (many-to-many) |
+|`withDefault(attrs?)`| Default for empty HasOne/MorphOne (v11) |
+
+---
+
+## Relation Defaults — withDefault() (v11.0.0)
+
+Return a default model instead of `null` when a `hasOne`, `morphOne` or `hasOneThrough` relationship is empty:
+
+```javascript
+class User extends Model {
+  static table = 'users';
+
+  profile() {
+    // Returns empty Profile instance instead of null
+    return this.hasOne(Profile, 'user_id').withDefault();
+  }
+
+  avatar() {
+    // Returns a Profile with default values
+    return this.morphOne(Image, 'imageable').withDefault({
+      url: '/images/default-avatar.png'
+    });
+  }
+
+  settings() {
+    // Dynamic defaults via callback
+    return this.hasOne(Settings, 'user_id').withDefault((model) => {
+      model.setAttribute('theme', 'light');
+      model.setAttribute('locale', 'en');
+    });
+  }
+}
+
+// Usage
+const user = await User.with('profile').find(1);
+console.log(user.relationships.profile); // Profile instance (never null)
+```
+
+**Signatures:**
+- `withDefault()` — empty model instance
+- `withDefault({ key: value, ... })` — model with attributes
+- `withDefault((model) => { ... })` — dynamic defaults via callback
+
+**Supported on:** `hasOne`, `morphOne`, `hasOneThrough`
 
 ---
 

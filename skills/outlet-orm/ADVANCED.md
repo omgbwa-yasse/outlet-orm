@@ -157,6 +157,35 @@ Log.addGlobalScope('recent', (q) => q.where('created_at', '>', '2024-01-01'));
 Model.addGlobalScope('tenant', (q) => q.where('tenant_id', currentTenantId));
 ```
 
+### Local Scopes (v11.0.0)
+
+Define reusable query constraints as static `scopeXxx` methods. They become fluent methods on the QueryBuilder:
+
+```javascript
+class User extends Model {
+  static table = 'users';
+
+  static scopeActive(query) {
+    return query.where('status', 'active');
+  }
+
+  static scopeRole(query, role) {
+    return query.where('role', role);
+  }
+
+  static scopeRecent(query, days = 7) {
+    const date = new Date(Date.now() - days * 86400000).toISOString();
+    return query.where('created_at', '>', date);
+  }
+}
+
+// Fluent usage — scopes become methods on the query builder
+const users = await User.query().active().role('admin').recent(30).get();
+const count = await User.query().active().count();
+```
+
+> **Note**: The legacy `static scopes = {}` and `.scope('name')` syntax still works. Fluent local scopes are the recommended approach from v11.
+
 ---
 
 ## Events / Hooks

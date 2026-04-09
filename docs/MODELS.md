@@ -271,7 +271,11 @@ await post.restore();        // Restore
 ```javascript
 const user = await User.find(1);
 
-// getAttribute method
+// Property-style access (v11.0.0+ — via Proxy)
+const name = user.name;
+const email = user.email;
+
+// getAttribute method (always available)
 const name = user.getAttribute('name');
 const email = user.getAttribute('email');
 
@@ -283,6 +287,9 @@ console.log(user.attributes);
 
 ```javascript
 const user = await User.find(1);
+
+// Property-style write (v11.0.0+)
+user.name = 'New Name';
 
 // setAttribute
 user.setAttribute('name', 'New Name');
@@ -405,6 +412,108 @@ await User.where('id', 1).increment('points', 10);
 // Decrement
 await User.where('id', 1).decrement('credits');
 await User.where('id', 1).decrement('credits', 5);
+```
+
+## Computed Appends (v11.0.0)
+
+Append computed attributes to `toJSON()` output using the `appends` static property and accessor methods:
+
+```javascript
+class User extends Model {
+  static table = 'users';
+  static appends = ['full_name'];
+
+  getFullNameAttribute() {
+    return `${this.attributes.first_name} ${this.attributes.last_name}`;
+  }
+}
+
+const user = await User.find(1);
+user.toJSON();
+// { id: 1, first_name: 'John', last_name: 'Doe', full_name: 'John Doe', ... }
+```
+
+## Instance-Level Visibility (v11.0.0)
+
+Override hidden attributes for a specific instance:
+
+```javascript
+const user = await User.find(1);
+
+// Reveal a hidden attribute
+user.makeVisible('password');
+user.toJSON(); // includes password
+
+// Hide an attribute on this instance
+user.makeHidden('email');
+user.toJSON(); // excludes email
+```
+
+## Model Utility Methods (v11.0.0)
+
+### fresh() / refresh()
+
+```javascript
+const user = await User.find(1);
+
+// Get a fresh instance from the DB (does not mutate the original)
+const freshUser = await user.fresh('posts');
+
+// Reload attributes in place
+await user.refresh();
+```
+
+### replicate()
+
+```javascript
+const user = await User.find(1);
+
+// Clone without the primary key (ready to save as a new record)
+const clone = user.replicate();
+await clone.save(); // inserts a new row
+
+// Exclude additional attributes
+const clone2 = user.replicate('email', 'created_at');
+```
+
+### is() / isNot()
+
+```javascript
+const a = await User.find(1);
+const b = await User.find(1);
+const c = await User.find(2);
+
+a.is(b);    // true  (same table + same PK)
+a.isNot(c); // true
+```
+
+### only() / except()
+
+```javascript
+const user = await User.find(1);
+
+// Get a subset of attributes
+user.only('name', 'email');
+// { name: 'John', email: 'john@example.com' }
+
+// Get all except specified keys
+user.except('password', 'secret_token');
+// { id: 1, name: 'John', email: 'john@example.com', ... }
+```
+
+### wasChanged() / getChanges()
+
+Track which attributes were changed on the last `save()`:
+
+```javascript
+const user = await User.find(1);
+user.name = 'Updated';
+await user.save();
+
+user.wasChanged();       // true
+user.wasChanged('name'); // true
+user.wasChanged('email'); // false
+user.getChanges();       // { name: 'Updated' }
 ```
 
 ## Next steps

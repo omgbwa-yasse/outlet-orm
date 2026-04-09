@@ -274,6 +274,17 @@ async store(req, res) {
 - **`.env` configuration** (loaded automatically)
 - **Multi-database**: MySQL, PostgreSQL, and SQLite
 - **Complete TypeScript types** with Generic Model and typed Schema Builder (v4.0.0+)
+- **🆕 Property-style attribute access** (v11.0.0): `user.name` instead of `user.getAttribute('name')`
+- **🆕 Computed Appends** (v11.0.0): `static appends` for virtual attributes auto-included in `toJSON()`
+- **🆕 Model Utility Methods** (v11.0.0): `fresh()`, `refresh()`, `replicate()`, `is()` / `isNot()`, `only()` / `except()`
+- **🆕 Instance-Level Visibility** (v11.0.0): `makeVisible()` / `makeHidden()` per-instance control
+- **🆕 Change Tracking** (v11.0.0): `wasChanged()` / `getChanges()` after `save()`
+- **🆕 Batch Processing** (v11.0.0): `chunk(size, callback)` for memory-efficient iteration
+- **🆕 Conditional Queries** (v11.0.0): `when(condition, callback)` and `tap(callback)`
+- **🆕 Query Debugging** (v11.0.0): `dd()` dumps SQL + bindings to console and throws
+- **🆕 Fluent Local Scopes** (v11.0.0): `static scopeActive(query)` → `User.query().active()`
+- **🆕 Relation Defaults** (v11.0.0): `withDefault()` on HasOne/MorphOne/HasOneThrough
+- **🆕 Aggregates & Pluck** (v11.0.0): `sum()`, `avg()`, `min()`, `max()`, `value()`, keyed `pluck(col, key)`
 
 ## ⚡ Quick Start
 
@@ -1100,6 +1111,7 @@ if (db.isLogging()) {
 | `execute(sql, params?)` | Raw query (native driver results) |
 | `increment(table, column, query, amount?)` | Atomic increment |
 | `decrement(table, column, query, amount?)` | Atomic decrement |
+| `aggregate(table, fn, column, query)` | Execute aggregate function (SUM/AVG/MIN/MAX) |
 | `close()` / `disconnect()` | Closes the connection |
 | **Query Logging (static)** | |
 | `enableQueryLog()` | Enables query logging |
@@ -1166,6 +1178,17 @@ if (db.isLogging()) {
 | `getDirty()` | Modified attributes |
 | `isDirty()` | Has been modified? |
 | `toJSON()` | Convert to plain object |
+| `fresh()` | Reload from DB (new instance) |
+| `refresh()` | Reload in place |
+| `replicate()` | Clone without ID/timestamps |
+| `is(model)` | Same type and primary key? |
+| `isNot(model)` | Negation of `is()` |
+| `only(...keys)` | Subset of attributes |
+| `except(...keys)` | All attributes except listed |
+| `makeVisible(...attrs)` | Unhide attributes for this instance |
+| `makeHidden(...attrs)` | Hide attributes for this instance |
+| `wasChanged(attr?)` | Changed after last `save()`? |
+| `getChanges()` | Attributes changed by last `save()` |
 | **Soft Deletes** | |
 | `trashed()` | Is deleted? |
 | `restore()` | Restore the model |
@@ -1216,6 +1239,15 @@ if (db.isLogging()) {
 | `delete()` | Delete |
 | `increment(col, amount?)` | Atomic increment |
 | `decrement(col, amount?)` | Atomic decrement |
+| `pluck(col, keyCol?)` | Array of values or keyed object |
+| `value(col)` | Single scalar value |
+| `sum(col)` / `avg(col)` | Aggregate sum / average |
+| `min(col)` / `max(col)` | Aggregate min / max |
+| `chunk(size, callback)` | Process results in batches |
+| `when(cond, cb, fallback?)` | Conditional query building |
+| `tap(callback)` | Inspect builder without modifying |
+| `toSQL()` | Returns `{ sql, bindings }` |
+| `dd()` | Dumps SQL + bindings and throws |
 | `clone()` | Clones the query builder |
 
 ## 🛠️ CLI tools

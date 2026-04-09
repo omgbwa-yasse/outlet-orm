@@ -436,6 +436,36 @@ const posts = await Post
   .get();
 ```
 
+## Default Values for Relations (v11.0.0)
+
+Use `withDefault()` on `hasOne`, `morphOne`, or `hasOneThrough` to return a default model instead of `null`:
+
+```javascript
+class User extends Model {
+  static table = 'users';
+
+  profile() {
+    // Returns an empty Profile instead of null
+    return this.hasOne(Profile, 'user_id').withDefault();
+  }
+
+  settings() {
+    // Returns a Profile with preset attributes
+    return this.hasOne(Profile, 'user_id').withDefault({ bio: 'N/A', avatar: 'default.png' });
+  }
+
+  preferences() {
+    // Returns a dynamically built default
+    return this.hasOne(Preference, 'user_id').withDefault(() => {
+      return new Preference({ theme: 'light', lang: 'en' });
+    });
+  }
+}
+
+const user = await User.with('profile').find(1);
+console.log(user.profile); // Profile instance (never null)
+```
+
 ## Next steps
 
 - [Soft Deletes](SOFT_DELETES.md) - Soft deletion

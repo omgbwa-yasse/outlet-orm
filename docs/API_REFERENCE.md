@@ -1,6 +1,6 @@
 # 📘 API Reference
 
-Full Outlet ORM API Reference v4.0.0.
+Full Outlet ORM API Reference v11.0.0.
 
 > � **Structure**: Use these APIs in`models/`,`controllers/`,`services/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 >
@@ -50,6 +50,7 @@ Base class for all models.
 |`casts`|`object`|`{}`| Cast types for attributes |
 |`softDeletes`|`boolean`|`false`| Enable soft deletion |
 |`rules`|`object`|`{}`| Validation rules |
+|`appends`|`string[]`|`[]`| Computed attributes appended to toJSON() |
 |`scopes`|`object`|`{}`| Local scopes defined |
 |`globalScopes`|`object`|`{}`| Global scopes defined |
 
@@ -208,6 +209,19 @@ validate(): ValidationResult
 
 // Serialization
 toJSON(): object
+
+// Model Utility Methods (v11.0.0)
+async fresh(...relations: string[]): Promise<Model | null>
+async refresh(): Promise<Model>
+replicate(...except: string[]): Model
+is(model: Model | null): boolean
+isNot(model: Model | null): boolean
+only(...keys: string[]): object
+except(...keys: string[]): object
+makeVisible(...attrs: string[]): this
+makeHidden(...attrs: string[]): this
+wasChanged(attr?: string): boolean
+getChanges(): object
 ```
 
 ---
@@ -273,6 +287,12 @@ async avg(column: string): Promise<number>
 async exists(): Promise<boolean>
 async doesntExist(): Promise<boolean>
 async pluck(column: string): Promise<any[]>
+async pluck(column: string, keyColumn: string): Promise<Record<string, any>>
+async value(column: string): Promise<any>
+async chunk(size: number, callback: (chunk: Model[], page: number) => void | false): Promise<void>
+when(condition: any, callback: (qb: QueryBuilder, value: any) => void, fallback?: Function): QueryBuilder
+tap(callback: (qb: QueryBuilder) => void): QueryBuilder
+dd(): never
 
 // Modification
 async insert(data: object | object[]): Promise<void>
@@ -336,6 +356,7 @@ async close(): Promise<void>
 // Queries
 async query(sql: string, params?: any[]): Promise<any>
 async raw(sql: string, params?: any[]): Promise<any>
+async aggregate(table: string, fn: 'SUM' | 'AVG' | 'MIN' | 'MAX', column: string, query: object): Promise<number>
 
 // Transactions
 async beginTransaction(): Promise<Transaction>
@@ -465,6 +486,17 @@ morphTo(
   name: string,
   types: { [key: string]: typeof Model }
 ): MorphToRelation
+```
+
+### withDefault (v11.0.0)
+
+Available on `HasOne`, `MorphOne`, and `HasOneThrough`:
+
+```javascript
+// Returns a default empty model instead of null
+relation.withDefault()
+relation.withDefault({ bio: 'N/A' })
+relation.withDefault(() => new Profile({ bio: 'N/A' }))
 ```
 
 ---

@@ -211,6 +211,30 @@ if (hasAdmins) {
 }
 ```
 
+### Sum / Avg / Min / Max (v11.0.0)
+
+```javascript
+const totalBalance = await User.query().sum('balance');
+const averageAge = await User.query().avg('age');
+const youngest = await User.query().min('age');
+const oldest = await User.query().max('age');
+
+// With conditions
+const activeTotal = await User.where('status', 'active').sum('balance');
+```
+
+### Pluck / Value (v11.0.0)
+
+```javascript
+// pluck() — get an array of values from a single column
+const emails = await User.query().pluck('email');
+// ['john@example.com', 'jane@example.com', ...]
+
+// value() — get a single value from the first row
+const name = await User.where('id', 1).value('name');
+// 'John Doe'
+```
+
 ### Group By & Having
 
 ```javascript
@@ -277,6 +301,104 @@ await User.where('id', 1).decrement('credits');
 // Decrement by N
 await User.where('id', 1).decrement('credits', 50);
 ```
+
+---
+
+## Batch Processing — chunk() (v11.0.0)
+
+Process large datasets in manageable batches:
+
+```javascript
+// Process 100 records at a time
+await User.query().chunk(100, async (users) => {
+  for (const user of users) {
+    await sendNewsletter(user);
+  }
+});
+
+// With conditions
+await User.where('status', 'active').chunk(50, async (batch) => {
+  console.log(`Processing ${batch.length} users`);
+});
+```
+
+---
+
+## Conditional Queries — when() / tap() (v11.0.0)
+
+### when()
+
+Conditionally apply query clauses:
+
+```javascript
+const status = req.query.status; // may be undefined
+
+const users = await User.query()
+  .when(status, (query, value) => query.where('status', value))
+  .when(req.query.role, (query, value) => query.where('role', value))
+  .get();
+```
+
+### tap()
+
+Execute a callback for debugging without modifying the query:
+
+```javascript
+const users = await User.query()
+  .where('status', 'active')
+  .tap((query) => console.log('Query so far:', query.toSQL()))
+  .orderBy('name')
+  .get();
+```
+
+---
+
+## Query Debugging — toSQL() / dd() (v11.0.0)
+
+```javascript
+// toSQL() — get the SQL string and bindings
+const { sql, bindings } = User.where('status', 'active').toSQL();
+console.log(sql);      // 'SELECT * FROM users WHERE status = ?'
+console.log(bindings); // ['active']
+
+// dd() — dump and die (logs to console and throws)
+User.where('status', 'active').dd();
+// Logs: { sql: '...', bindings: [...] } then throws
+```
+
+---
+
+## Fluent Local Scopes (v11.0.0)
+
+Define reusable query constraints as static methods on the model:
+
+```javascript
+class User extends Model {
+  static table = 'users';
+
+  // Define scope as static scopeXxx(query, ...params)
+  static scopeActive(query) {
+    return query.where('status', 'active');
+  }
+
+  static scopeRole(query, role) {
+    return query.where('role', role);
+  }
+
+  static scopeRecent(query, days = 7) {
+    const date = new Date(Date.now() - days * 86400000).toISOString();
+    return query.where('created_at', '>', date);
+  }
+}
+
+// Use fluently on the query builder
+const users = await User.query().active().role('admin').recent(30).get();
+
+// Combine with other query methods
+const count = await User.query().active().count();
+```
+
+> See [ADVANCED.md](ADVANCED.md) for more details on global and local scopes.
 
 ---
 
@@ -394,6 +516,17 @@ See [AI.md](AI.md) for full details.
 |`paginate(page, perPage)`| Pagination |
 |`count()`| Count results |
 |`exists()`| Check existence |
+|`sum(col)`| Sum of column (v11) |
+|`avg(col)`| Average of column (v11) |
+|`min(col)`| Minimum of column (v11) |
+|`max(col)`| Maximum of column (v11) |
+|`pluck(col)`| Array of column values (v11) |
+|`value(col)`| Single value from first row (v11) |
+|`chunk(size, callback)`| Batch processing (v11) |
+|`when(condition, callback)`| Conditional clause (v11) |
+|`tap(callback)`| Debug callback (v11) |
+|`toSQL()`| Get SQL + bindings (v11) |
+|`dd()`| Dump & die debug (v11) |
 |`insert(data)`| Insert record(s) |
 |`update(attrs)`| Update records |
 |`delete()`| Delete records |
