@@ -127,16 +127,16 @@ const user = await User.find(1);
 
 if (user) {
   // ✅ TypeScript knows types
-  const name: string = user.getAttribute('name');
-  const age: number | undefined = user.getAttribute('age');
-  const role: 'admin' | 'user' | 'moderator' = user.getAttribute('role');
+  const name: string = user.name;
+  const age: number | undefined = user.age;
+  const role: 'admin' | 'user' | 'moderator' = user.role;
 
   // ✅ Type-safe setAttribute
-  user.setAttribute('name', 'New Name');
-  user.setAttribute('age', 30);
+  user.name = 'New Name';
+  user.age = 30;
   
   // ❌ TypeScript error: Argument of type '"invalid"' is not assignable
-  // user.setAttribute('role', 'invalid');
+  // user.role = 'invalid';
   
   await user.save();
 }
@@ -248,12 +248,12 @@ async function main() {
   });
 
   // The ID is typed
-  const id: number = user.getAttribute('id');
+  const id: number = user.id;
 
   // To recover
   const foundUser = await User.find(1);
   if (foundUser) {
-    const name: string = foundUser.getAttribute('name');
+    const name: string = founduser.name;
   }
 
   // Query Builder with types
@@ -265,7 +265,7 @@ async function main() {
 
   // activeUsers is User[]
   for (const u of activeUsers) {
-    console.log(u.getAttribute('email'));
+    console.log(u.email);
   }
 }
 ```
@@ -339,7 +339,7 @@ type EventCallback = (model: Model) => void | false | Promise<void | false>;
 
 // Usage
 User.creating((user: Model): void | false => {
-  if (!user.getAttribute('email')) {
+  if (!user.email) {
     return false; // Cancel creation
   }
 });
@@ -367,19 +367,19 @@ class Post extends Model {
   
   // Strong typing with getter
   get id(): number {
-    return this.getAttribute('id') as number;
+    return this.attributes.id as number;
   }
 
   get title(): string {
-    return this.getAttribute('title') as string;
+    return this.attributes.title as string;
   }
 
   set title(value: string) {
-    this.setAttribute('title', value);
+    this.attributes.title = value;
   }
 
   get status(): PostAttributes['status'] {
-    return this.getAttribute('status') as PostAttributes['status'];
+    return this.attributes.status as PostAttributes['status'];
   }
 
   // Typed methods
@@ -388,8 +388,8 @@ class Post extends Model {
   }
 
   async publish(): Promise<void> {
-    this.setAttribute('status', 'published');
-    this.setAttribute('published_at', new Date().toISOString());
+    this.status = 'published';
+    this.published_at = new Date().toISOString();
     await this.save();
   }
 }
@@ -826,7 +826,7 @@ export class User extends Model {
 
   // Custom methods
   async getPostCount(): Promise<number> {
-    return await Post.where('user_id', this.getAttribute('id')).count();
+    return await Post.where('user_id', this.id).count();
   }
 }
 
@@ -845,7 +845,7 @@ async function main(): Promise<void> {
   await Post.create({
     title: 'Hello World',
     content: 'My first post',
-    user_id: user.getAttribute('id'),
+    user_id: user.id,
     status: 'published'
   });
 
@@ -857,7 +857,7 @@ async function main(): Promise<void> {
     .get();
 
   for (const post of publishedPosts) {
-    console.log(`${post.getAttribute('title')} by ${post.author?.getAttribute('name')}`);
+    console.log(`${post.title} by ${post.author?.name}`);
   }
 
   await db.close();

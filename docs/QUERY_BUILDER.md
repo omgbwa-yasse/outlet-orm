@@ -278,6 +278,19 @@ const user = await User.find(1);
 const all = await User.all();
 ```
 
+Once retrieved, access attributes directly as properties:
+
+```javascript
+const user = await User.find(1);
+console.log(user.name);
+console.log(user.email);
+if (user.age > 18) { ... }
+if (user.wallet < 10) { ... }
+
+const users = await User.where('status', 'active').get();
+users.forEach(u => console.log(u.name, u.email));
+```
+
 ### Check for existence
 
 ```javascript
@@ -509,18 +522,28 @@ await Product.upsert(
 );
 ```
 
+> ✨ **v11.0.0+ — Proxy shorthand for update results**:
+> ```javascript
+> const user = await User.where('email', 'john@example.com').firstOrCreate({ name: 'John' });
+> console.log(user.name);   // 'John' — property-style access
+> user.age = 31;            // property-style write
+> await user.save();
+> ```
+```
+
 ### cursor — Lazy Iteration (Async Generator)
 
 ```javascript
 // Process large datasets with minimal memory footprint
 for await (const user of User.cursor(100)) {
-  console.log(user.getAttribute('name'));
+  console.log(user.name);
 }
 
 // With query constraints
 for await (const user of User.where('active', true).cursor(50)) {
   await sendEmail(user);
 }
+```
 ```
 
 ## Next steps

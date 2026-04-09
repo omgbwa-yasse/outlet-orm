@@ -223,7 +223,7 @@ password: 'secret123'
 const users = await User.where('email', 'john@example.com').get();
 
 // To update
-user.setAttribute('name', 'Jane Doe');
+user.name = 'Jane Doe';
 await user.save();
 
 // DELETE
@@ -243,8 +243,8 @@ email: 'alice@example.com'
 
 // Method 2: With new + save()
 const user = new User();
-user.setAttribute('name', 'Bob');
-user.setAttribute('email', 'bob@example.com');
+user.name = 'Bob';
+user.email = 'bob@example.com';
 await user.save();
 
 // Method 3: Multiple Insert
@@ -283,7 +283,7 @@ const users = await User
 ```javascript
 // Instance update
 const user = await User.find(1);
-user.setAttribute('name', 'Updated Name');
+user.name = 'Updated Name';
 await user.save();
 
 // Mass update
@@ -454,9 +454,9 @@ birthday: 'date'
 }
 
 const user = await User.find(1);
-console.log(typeof user.getAttribute('age')); // number
-console.log(typeof user.getAttribute('is_active')); // boolean
-console.log(user.getAttribute('metadata')); // Object
+console.log(typeof user.age); // number
+console.log(typeof user.is_active); // boolean
+console.log(user.metadata); // Object
 ```
 
 ## Hidden Attributes
@@ -501,11 +501,11 @@ static timestamps = true; // Default
 
 // created_at and updated_at are managed automatically
 const user = await User.create({ name: 'John' });
-console.log(user.getAttribute('created_at')); // Date actuelle
+console.log(user.created_at); // Date actuelle
 
-user.setAttribute('name', 'Jane');
+user.name = 'Jane';
 await user.save();
-console.log(user.getAttribute('updated_at')); // Automatic update
+console.log(user.updated_at); // Automatic update
 ```
 
 ## Multiple Connections

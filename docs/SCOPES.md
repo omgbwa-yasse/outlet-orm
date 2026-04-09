@@ -112,13 +112,27 @@ class User extends Model {
 const activeUsers = await User.scope('active').get();
 // SQL: SELECT * FROM users WHERE status = 'active'
 
+// ✨ v11.0.0+ — Fluent scope proxy (requires static scopeActive):
+const activeUsers = await User.query().active().get();
+
 // Multiple scopes
 const activeAdmins = await User.scope('active', 'admins').get();
 // SQL: SELECT * FROM users WHERE status = 'active' AND role = 'admin'
 
+// ✨ v11.0.0+ — Fluent scope proxy:
+const activeAdmins = await User.query().active().admins().get();
+
 // Combine with other methods
 const recentVerified = await User
   .scope('recent', 'verified')
+  .orderBy('created_at', 'desc')
+  .limit(10)
+  .get();
+
+// ✨ v11.0.0+ — Fluent scope proxy:
+const recentVerified = await User.query()
+  .recent()
+  .verified()
   .orderBy('created_at', 'desc')
   .limit(10)
   .get();

@@ -139,24 +139,24 @@ password: 'required|min:8'
 // 🔒 Hash password before saving
 static boot() {
 this.creating(async (user) => {
-const password = user.getAttribute('password');
+const password = user.password;
 if (password) {
-user.setAttribute('password', await hashPassword(password));
+user.password = await hashPassword(password);
 }
 });
 
 this.updating(async (user) => {
-const password = user.getAttribute('password');
+const password = user.password;
 // Only hash if password changed
 if (password && !password.startsWith('$2b$')) {
-user.setAttribute('password', await hashPassword(password));
+user.password = await hashPassword(password);
 }
 });
 }
 
 // 🔒 Password verification method
 async checkPassword(password) {
-return verifyPassword(password, this.getAttribute('password'));
+return verifyPassword(password, this.password);
 }
 }
 
@@ -203,7 +203,7 @@ if (!req.user) {
 return res.status(401).json({ error: 'Not authenticated' });
 }
 
-const userRole = req.user.getAttribute('role');
+  const userRole = req.user.role;
 if (!roles.includes(userRole)) {
 return res.status(403).json({ error: 'Access denied' });
 }
@@ -350,7 +350,7 @@ npm install helmet express-rate-limit xss-clean hpp bcrypt jsonwebtoken express-
 
 ```javascript
 // ❌ Never store passwords in plain text
-user.setAttribute('password', req.body.password);
+user.password = req.body.password;
 
 // ❌ Never expose sensitive data
 static hidden = []; // Empty!
@@ -366,7 +366,7 @@ await db.execute(`SELECT * FROM users WHERE email = '${email}'`);
 
 ```javascript
 // ✅ Hash passwords
-user.setAttribute('password', await hashPassword(req.body.password));
+user.password = await hashPassword(req.body.password);
 
 // ✅ Hide sensitive fields
 static hidden = ['password', 'refresh_token'];

@@ -2,6 +2,8 @@
 
 This document describes the architecture and code structure of the Outlet ORM ORM.
 
+> ✨ **v11.0.0+ — Proxy shorthand**: In all examples below, `user.name` can be replaced by `user.name` and `user.name = value)` by `user.name = value`. See [Proxy Shorthand Reference](MODELS.md#proxy-shorthand-reference-v1100).
+
 ## Table of Contents
 
 - [Project Structure](#project-structure)
@@ -194,7 +196,7 @@ class UserController {
     const user = await User.where('email', req.body.email).first();
     if (!user) return res.status(401).json({ success: false, message: 'Invalid credentials' });
 
-    const ok = await bcrypt.compare(req.body.password, user.getAttribute('password'));
+    const ok = await bcrypt.compare(req.body.password, user.password);
     if (!ok) return res.status(401).json({ success: false, message: 'Invalid credentials' });
 
     res.json({ success: true, data: user, token: 'your-jwt-token-here' });
@@ -531,7 +533,7 @@ class UserService {
   async authenticate(email, password) {
     const user = await userRepository.findByEmail(email);
     if (!user) return null;
-    const valid = await bcrypt.compare(password, user.getAttribute('password'));
+    const valid = await bcrypt.compare(password, user.password);
     return valid ? user : null;
   }
 }
@@ -557,7 +559,7 @@ async login(req, res) {
   const user = await User.where('email', req.body.email).first();
   if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
-  const ok = await bcrypt.compare(req.body.password, user.getAttribute('password'));
+  const ok = await bcrypt.compare(req.body.password, user.password);
   if (!ok)  return res.status(401).json({ message: 'Invalid credentials' });
 
   res.json({ success: true, data: user, token: 'your-jwt-token-here' });

@@ -150,7 +150,7 @@ await post.forceDelete();
 const post = await Post.withTrashed().find(1);
 
 // Check if deleted
-if (post.getAttribute('deleted_at')) {
+if (post.deleted_at) {
   console.log('This post is deleted');
 }
 ```
@@ -270,7 +270,7 @@ const user = await User.with('posts').find(1);
 
 // To include deleted posts
 const user = await User.find(1);
-const allPosts = await Post.withTrashed().where('user_id', user.getAttribute('id')).get();
+const allPosts = await Post.withTrashed().where('user_id', user.id).get();
 ```
 
 ## Events with Soft Deletes
@@ -284,20 +284,20 @@ class Post extends Model {
   static boot() {
     // Triggered during soft delete
     this.deleting((post) => {
-      console.log('Post being soft deleted:', post.getAttribute('id'));
+      console.log('Post being soft deleted:', post.id);
     });
 
     this.deleted((post) => {
-      console.log('Post soft deleted:', post.getAttribute('id'));
+      console.log('Post soft deleted:', post.id);
     });
 
     // Triggered during restore
     this.restoring((post) => {
-      console.log('Post being restored:', post.getAttribute('id'));
+      console.log('Post being restored:', post.id);
     });
 
     this.restored((post) => {
-      console.log('Post restored:', post.getAttribute('id'));
+      console.log('Post restored:', post.id);
     });
   }
 }

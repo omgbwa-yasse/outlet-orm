@@ -23,6 +23,9 @@ The models in Outlet ORM follow the Active Record pattern, inspired by Laravel E
   - [Edit attributes](#edit-attributes)
   - [Modified attributes (dirty)](#modified-attributes-dirty)
 - [Hidden attributes](#hidden-attributes)
+- [Proxy Shorthand Reference (v11.0.0)](#proxy-shorthand-reference-v1100)
+  - [CRU with Proxy (v11.0.0+)](#cru-with-proxy-v1100)
+  - [Practical Examples](#practical-examples)
 - [Timestamps](#timestamps)
 - [Convert to JSON](#convert-to-json)
 - [Load relationships after the fact](#load-relationships-after-the-fact)
@@ -109,7 +112,7 @@ Accessors and mutators let you transform attribute values when reading or writin
 
 ### Accessors (read transform)
 
-Define a `get{PascalKey}Attribute(value)` method to transform a value when reading it via `getAttribute()`:
+Define a `get{PascalKey}Attribute(value)` method to transform a value when reading it. The proxy applies the accessor automatically:
 
 ```javascript
 class User extends Model {
@@ -126,13 +129,13 @@ class User extends Model {
 }
 
 const user = await User.find(1);
-user.getAttribute('name');         // "JOHN DOE" (uppercased)
-user.getAttribute('email_domain'); // "example.com" (computed)
+user.name;          // "JOHN DOE" (accessor applied automatically)
+user.email_domain;  // "example.com" (computed accessor)
 ```
 
 ### Mutators (write transform)
 
-Define a `set{PascalKey}Attribute(value)` method to transform a value when writing it via `setAttribute()` or `create()`:
+Define a `set{PascalKey}Attribute(value)` method to transform a value when writing it. The proxy triggers the mutator automatically:
 
 ```javascript
 class User extends Model {
@@ -144,6 +147,9 @@ class User extends Model {
 
 const user = await User.create({ name: 'Alice', password: 'secret' });
 // password is automatically hashed before insert
+
+const user = new User();
+user.password = 'secret';  // mutator hashes the value before storing it
 ```
 
 > **Note**: Snake_case keys are automatically converted to PascalCase method names. For example, `email_domain` maps to `getEmailDomainAttribute`.
@@ -159,14 +165,11 @@ const user = await User.create({
   email: 'john@example.com',
   password: 'hashed_password'
 });
-console.log(user.getAttribute('id')); // Self-generated ID
+console.log(user.id); // Self-generated ID
 
 // Method 2: new + save() - more control
-const user = new User({
-  name: 'Jane Doe',
-  email: 'jane@example.com'
-});
-user.setAttribute('password', 'hashed_password');
+const user = new User({ name: 'Jane Doe', email: 'jane@example.com' });
+user.password = 'hashed_password';
 await user.save();
 
 // Method 3: insert() - raw insert without instance
@@ -224,8 +227,8 @@ const exists = await User.where('email', 'test@example.com').exists();
 ```javascript
 // Method 1: Edit an instance
 const user = await User.find(1);
-user.setAttribute('name', 'John Updated');
-user.setAttribute('email', 'john.updated@example.com');
+user.name = 'John Updated';
+user.email = 'john.updated@example.com';
 await user.save();
 
 // Method 2: fill() + save()
@@ -271,15 +274,11 @@ await post.restore();        // Restore
 ```javascript
 const user = await User.find(1);
 
-// Property-style access (v11.0.0+ — via Proxy)
+// Property access via Proxy
 const name = user.name;
 const email = user.email;
 
-// getAttribute method (always available)
-const name = user.getAttribute('name');
-const email = user.getAttribute('email');
-
-// Attributes are also in user.attributes
+// All attributes as raw object
 console.log(user.attributes);
 ```
 
@@ -288,11 +287,8 @@ console.log(user.attributes);
 ```javascript
 const user = await User.find(1);
 
-// Property-style write (v11.0.0+)
+// Property write via Proxy
 user.name = 'New Name';
-
-// setAttribute
-user.setAttribute('name', 'New Name');
 
 // fill (modifies several attributes)
 user.fill({ name: 'New', email: 'new@email.com' });
@@ -307,7 +303,7 @@ await user.save();
 const user = await User.find(1);
 console.log(user.isDirty()); // false
 
-user.setAttribute('name', 'Changed');
+user.name = 'Changed';
 console.log(user.isDirty()); // true
 
 const changes = user.getDirty();
@@ -316,6 +312,13 @@ console.log(changes); // { name: 'Changed' }
 await user.save();
 console.log(user.isDirty()); // false
 ```
+
+> ✨ **v11.0.0+ — Proxy shorthand** :
+> ```javascript
+> const user = await User.find(1);
+> user.name = 'Changed';         // triggers dirty tracking automatically
+> console.log(user.isDirty());    // true
+> ```
 
 ## Hidden attributes
 
@@ -333,6 +336,294 @@ console.log(user.toJSON()); // { id: 1, name: 'John', email: '...' }
 const userWithPassword = await User.withHidden().find(1);
 console.log(userWithPassword.toJSON()); // Include password
 ```
+
+## Proxy Shorthand Reference (v11.0.0)
+
+Since v11.0.0, Model instances use a **JavaScript Proxy** that lets you read and write attributes as direct properties. This applies everywhere: accessors, mutators, casts, dirty tracking, and comparisons.
+
+### Comparison table
+
+| Classic syntax | ✨ Proxy shorthand (v11.0.0+) |
+|---|---|
+| `user.getAttribute('name')` | `user.name` |
+| `user.setAttribute('name', 'Bob')` | `user.name = 'Bob'` |
+| `user.getAttribute('age') > 18` | `user.age > 18` |
+| `user.getAttribute('wallet') < 10` | `user.wallet < 10` |
+| `user.getAttribute('email') === null` | `user.email === null` |
+| `user.setAttribute('status', 'active')` | `user.status = 'active'` |
+
+### CRU with Proxy (v11.0.0+)
+
+#### Create
+
+```javascript
+// Method 1: create() — attributes are passed as object, no proxy needed
+const user = await User.create({
+  name: 'John Doe',
+  email: 'john@example.com',
+  password: 'secret123'
+});
+// Access the created instance with proxy
+console.log(user.id);    // auto-generated ID
+console.log(user.name);  // 'John Doe'
+
+// Method 2: new + property assignment + save()
+const user = new User();
+user.name = 'Jane Doe';
+user.email = 'jane@example.com';
+user.password = 'secret456';
+await user.save();
+
+console.log(user.id);    // auto-generated ID
+console.log(user.exists); // true
+```
+
+#### Read
+
+```javascript
+// Find by ID
+const user = await User.find(1);
+console.log(user.name);   // 'John Doe'
+console.log(user.email);  // 'john@example.com'
+
+// Conditions
+if (user.age >= 18) {
+  console.log('Adult');
+}
+if (user.wallet < 10) {
+  console.log('Low balance');
+}
+if (user.email === null) {
+  console.log('No email');
+}
+
+// Loop over results
+const users = await User.where('status', 'active').get();
+for (const u of users) {
+  console.log(`${u.name} — ${u.email} — wallet: ${u.wallet}`);
+}
+
+// With relationships
+const user = await User.with('posts', 'profile').find(1);
+console.log(user.name);
+console.log(user.relationships.profile);
+
+// withCount
+const users = await User.withCount('posts').get();
+for (const u of users) {
+  console.log(`${u.name} has ${u.posts_count} posts`);
+}
+```
+
+#### Update
+
+```javascript
+// Instance update
+const user = await User.find(1);
+user.name = 'Updated Name';
+user.email = 'new@example.com';
+
+console.log(user.isDirty());  // true
+console.log(user.getDirty()); // { name: 'Updated Name', email: 'new@example.com' }
+
+await user.save();
+console.log(user.isDirty());  // false
+
+// Bulk update (query-level — no proxy)
+await User.where('status', 'pending').update({ status: 'active' });
+```
+
+#### Practical Examples
+
+**Authentication flow**
+
+```javascript
+// Register
+const user = new User();
+user.name = req.body.name;
+user.email = req.body.email.toLowerCase().trim();
+user.password = await bcrypt.hash(req.body.password, 10);
+user.role = 'user';
+await user.save();
+
+// Login — read attributes with proxy
+const user = await User.withHidden().where('email', email).first();
+if (user && await bcrypt.compare(password, user.password)) {
+  const token = generateToken({ id: user.id, role: user.role });
+  return { token, name: user.name };
+}
+```
+
+**E-commerce cart**
+
+```javascript
+// Add item and compute totals
+const item = new OrderItem();
+item.order_id = order.id;
+item.product_id = product.id;
+item.quantity = qty;
+item.unit_price = product.price;
+item.total = product.price * qty;
+await item.save();
+
+// Read order summary
+const items = await OrderItem.where('order_id', order.id).get();
+let grandTotal = 0;
+for (const item of items) {
+  console.log(`${item.product_id} × ${item.quantity} = ${item.total}€`);
+  grandTotal += item.total;
+}
+```
+
+**Profile update with dirty tracking**
+
+```javascript
+const user = await User.find(req.userId);
+
+// Only assign fields that were sent
+if (req.body.name)  user.name = req.body.name;
+if (req.body.email) user.email = req.body.email;
+if (req.body.phone) user.phone = req.body.phone;
+
+if (user.isDirty()) {
+  console.log('Modified fields:', Object.keys(user.getDirty()));
+  await user.save();
+  return { message: 'Profile updated', changed: user.getChanges() };
+}
+return { message: 'Nothing changed' };
+```
+
+**Conditional logic with comparisons**
+
+```javascript
+const users = await User.where('status', 'active').get();
+
+for (const user of users) {
+  // Direct comparison on proxy properties
+  if (user.wallet < 10) {
+    await sendLowBalanceAlert(user.email);
+  }
+  if (user.age >= 18 && user.is_verified) {
+    await grantFullAccess(user.id);
+  }
+  if (user.last_login === null) {
+    await sendReminderEmail(user.email, user.name);
+  }
+}
+```
+
+**Accessors & Mutators with proxy**
+
+```javascript
+class Product extends Model {
+  // Accessor: auto-applied when reading product.price_formatted
+  getPriceFormattedAttribute() {
+    return `${this.attributes.price.toFixed(2)} €`;
+  }
+
+  // Mutator: auto-applied when writing product.slug = '...'
+  setSlugAttribute(value) {
+    this.attributes.slug = value.toLowerCase().replace(/\s+/g, '-');
+  }
+}
+
+const product = await Product.find(1);
+console.log(product.name);             // 'Gaming Laptop'
+console.log(product.price);            // 1299.99
+console.log(product.price_formatted);  // '1299.99 €'
+
+product.slug = 'New Gaming Laptop';
+// Mutator transforms → 'new-gaming-laptop'
+await product.save();
+```
+
+**Casts with proxy**
+
+```javascript
+class Settings extends Model {
+  static casts = {
+    preferences: 'json',
+    is_dark_mode: 'boolean',
+    font_size: 'integer'
+  };
+}
+
+const settings = await Settings.where('user_id', userId).first();
+
+// Casts applied automatically through proxy
+console.log(typeof settings.font_size);    // 'number' (not string)
+console.log(typeof settings.is_dark_mode); // 'boolean' (not '0'/'1')
+console.log(settings.preferences);         // { theme: 'blue', ... } (parsed JSON)
+
+settings.font_size = 16;
+settings.is_dark_mode = true;
+settings.preferences = { theme: 'red', sidebar: 'collapsed' };
+await settings.save();
+```
+
+**Relationships + proxy**
+
+```javascript
+const user = await User.with('posts', 'profile').find(1);
+
+console.log(user.name);  // 'Alice'
+
+// Access related models
+for (const post of user.relationships.posts) {
+  console.log(`${post.title} — ${post.status}`);
+  if (post.views > 1000) {
+    post.is_popular = true;
+    await post.save();
+  }
+}
+
+// withCount
+const authors = await User.withCount('posts', 'comments').get();
+for (const author of authors) {
+  console.log(`${author.name}: ${author.posts_count} posts, ${author.comments_count} comments`);
+}
+```
+
+### Complete example
+
+```javascript
+const user = await User.find(1);
+
+// Read attributes (accessor + casts applied automatically)
+console.log(user.name);           // 'ALICE' (accessor uppercases)
+console.log(user.age);            // 28     (cast to integer)
+console.log(user.email);          // 'alice@example.com'
+
+// Direct comparisons
+if (user.age >= 18) {
+  console.log('Adult');
+}
+if (user.wallet < 10) {
+  console.log('Low balance');
+}
+
+// Write attributes (mutators + casts applied automatically)
+user.name = 'Bob';                // triggers setNameAttribute if defined
+user.age = 30;                    // cast to integer
+user.email = '  BOB@TEST.COM  '; // triggers setEmailAttribute if defined
+
+// Dirty tracking works with property writes
+console.log(user.isDirty());      // true
+console.log(user.getDirty());     // { name: 'Bob', age: 30, email: 'bob@test.com' }
+
+await user.save();
+
+// Loop over results
+const users = await User.where('status', 'active').get();
+for (const u of users) {
+  console.log(`${u.name} (age ${u.age}) — wallet: ${u.wallet}`);
+  if (u.wallet < 10) {
+    await sendLowBalanceAlert(u.email);
+  }
+}
+```
+
+> **Note**: Internal properties (`exists`, `attributes`, `original`, `relations`, etc.) and all model methods (`save()`, `destroy()`, `load()`, etc.) are **not** intercepted by the Proxy. They work exactly as before.
 
 ## Timestamps
 

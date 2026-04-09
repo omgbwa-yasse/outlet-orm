@@ -60,12 +60,12 @@ try {
     });
 
     await Profile.useTransaction(trx).create({
-      user_id: user.getAttribute('id'),
+      user_id: user.id,
       bio: 'Hello!'
     });
 
     await Account.useTransaction(trx).create({
-      user_id: user.getAttribute('id'),
+      user_id: user.id,
       balance: 0
     });
 
@@ -108,7 +108,7 @@ async function transfer(fromAccountId, toAccountId, amount) {
   await db.transaction(async (trx) => {
     // Debit the source account
     const source = await Account.useTransaction(trx).find(fromAccountId);
-    if (source.getAttribute('balance') < amount) {
+    if (source.balance < amount) {
       throw new Error('Solde insuffisant');
     }
     
@@ -149,7 +149,7 @@ async function createUserWithProfile(userData, profileData) {
       password: userData.password
     });
 
-    const userId = createdUser.getAttribute('id');
+    const userId = createduser.id;
 
     // Create profile
     await Profile.useTransaction(trx).create({
@@ -337,7 +337,7 @@ async function createOrderItems(items, orderId, trx) {
 // Usage
 await db.transaction(async (trx) => {
   const order = await createOrder({ user_id: 1 }, trx);
-  await createOrderItems(items, order.getAttribute('id'), trx);
+  await createOrderItems(items, order.id, trx);
 });
 ```
 

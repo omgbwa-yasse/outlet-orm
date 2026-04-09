@@ -22,12 +22,12 @@ const result = await db.transaction(async (connection) => {
   });
   
   await Account.create({ 
-    user_id: user.getAttribute('id'), 
+    user_id: user.id, 
     balance: 0 
   });
   
   await UserSettings.create({ 
-    user_id: user.getAttribute('id') 
+    user_id: user.id 
   });
   
   return user;
@@ -214,32 +214,32 @@ class User extends Model {
 
 // Before creation
 User.creating((user) => {
-  user.setAttribute('uuid', generateUUID());
+  user.uuid = generateUUID();
   // Return false to cancel the operation
 });
 
 // After creation
 User.created((user) => {
-  console.log(`User ${user.getAttribute('id')} created`);
+  console.log(`User ${user.id} created`);
   // Send welcome email
 });
 
 // Before update
 User.updating((user) => {
-  user.setAttribute('updated_at', new Date());
+  user.updated_at = new Date();
 });
 
 // After update
 User.updated((user) => {
   // Invalidate cache
-  cache.forget(`user:${user.getAttribute('id')}`);
+  cache.forget(`user:${user.id}`);
 });
 
 // Saving (create AND update)
 User.saving((user) => {
   // Sanitize data
-  const email = user.getAttribute('email');
-  user.setAttribute('email', email.toLowerCase().trim());
+  const email = user.email;
+  user.email = email.toLowerCase().trim();
 });
 
 User.saved((user) => {
@@ -249,7 +249,7 @@ User.saved((user) => {
 // Before delete
 User.deleting((user) => {
   // Check permissions
-  if (user.getAttribute('is_admin')) {
+  if (user.is_admin) {
     return false; // Cancel deletion
   }
 });
@@ -548,11 +548,11 @@ Post.addGlobalScope('published', (q) => q.where('status', 'published'));
 
 // Events
 User.created(async (user) => {
-  await Profile.create({ user_id: user.getAttribute('id') });
+  await Profile.create({ user_id: user.id });
 });
 
 Post.creating((post) => {
-  post.setAttribute('slug', slugify(post.getAttribute('title')));
+  post.slug = slugify(post.title);
 });
 
 // Service

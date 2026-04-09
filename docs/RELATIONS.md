@@ -372,7 +372,10 @@ console.log(user.profile);  // Objet Profile
 
 // Iterate
 for (const post of user.posts) {
-  console.log(post.getAttribute('title'));
+  console.log(post.title);
+
+  // ✨ v11.0.0+ — Proxy shorthand (equivalent)
+  console.log(post.title);
 }
 ```
 

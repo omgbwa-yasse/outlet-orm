@@ -129,14 +129,14 @@ class User extends Model<UserAttributes> {
   }
 }
 
-// Type-safe getAttribute/setAttribute
+// Type-safe property access
 const user = await User.find(1);
 if (user) {
-  const name: string = user.getAttribute('name');     // ✅ Type inferred
-  const role = user.getAttribute('role');             // ✅ Type: 'admin' | 'user' | 'moderator'
+  const name: string = user.name;                     // ✅ Type inferred
+  const role = user.role;                             // ✅ Type: 'admin' | 'user' | 'moderator'
   
-  user.setAttribute('name', 'New Name');              // ✅ Type-safe
-  // user.setAttribute('role', 'invalid');            // ❌ TypeScript error
+  user.name = 'New Name';                             // ✅ Type-safe
+  // user.role = 'invalid';                           // ❌ TypeScript error
 }
 
 export default User;
@@ -200,7 +200,7 @@ const usersWithRecentPosts = await User.with({
 // Access relationships
 users.forEach(user => {
   const posts = user.relationships.posts as Post[];
-  console.log(`${user.getAttribute('name')} has ${posts.length} posts`);
+  console.log(`${user.name} has ${posts.length} posts`);
 });
 ```
 
@@ -290,14 +290,14 @@ class User extends Model {
     // Type-safe event registration
     this.creating((model: User) => {
       // Hash password before create
-      const password = model.getAttribute('password');
-      model.setAttribute('password', hashPassword(password));
+      const password = model.password;
+      model.password = hashPassword(password);
       return true; // Continue
     });
 
     this.deleting((model: User) => {
       // Prevent admin deletion
-      if (model.getAttribute('role') === 'admin') {
+      if (model.role === 'admin') {
         return false; // Cancel deletion
       }
       return true;
@@ -394,11 +394,8 @@ Model instances are wrapped in a `Proxy`, so attributes can be read and written 
 const user = await User.find(1);
 
 // Property access (via Proxy)
-console.log(user.name);       // equivalent to user.getAttribute('name')
-user.email = 'new@mail.com';  // equivalent to user.setAttribute('email', ...)
-
-// Both styles coexist
-user.getAttribute('name');     // still works
+console.log(user.name);       // reads attribute 'name'
+user.email = 'new@mail.com';  // writes attribute 'email'
 ```
 
 The index signature `[K: string]: any` on `Model` enables this in TypeScript.
@@ -537,7 +534,7 @@ class UserService {
       
       await Profile.create({
         ...profileData,
-        user_id: user.getAttribute('id')
+        user_id: user.id
       });
       
       // Load profile relation

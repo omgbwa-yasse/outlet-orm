@@ -130,9 +130,9 @@ class User extends Model {
 }
 
 const user = await User.find(1);
-console.log(typeof user.getAttribute('age'));       // 'number'
-console.log(typeof user.getAttribute('is_active')); // 'boolean'
-console.log(user.getAttribute('metadata'));         // Object
+console.log(typeof user.age);       // 'number'
+console.log(typeof user.is_active); // 'boolean'
+console.log(user.metadata);         // Object
 ```
 
 ### Cast Types
@@ -165,7 +165,7 @@ const user = new User({
   name: 'Jane Doe',
   email: 'jane@example.com'
 });
-user.setAttribute('password', 'secret456');
+user.password = 'secret456';
 await user.save();
 
 // Method 3: Raw insert (no model instance returned)
@@ -214,7 +214,7 @@ const recentUsers = await User
 ```javascript
 // Instance update
 const user = await User.find(1);
-user.setAttribute('name', 'Updated Name');
+user.name = 'Updated Name';
 await user.save();
 
 // Bulk update
@@ -260,9 +260,6 @@ const user = await User.find(1);
 // Property access (v11+)
 const name = user.name;
 
-// Method access
-const name = user.getAttribute('name');
-
 // Get all attributes as object
 const attrs = user.toJSON();
 
@@ -278,9 +275,6 @@ const user = new User();
 
 // Property access (v11+)
 user.name = 'John';
-
-// Method access
-user.setAttribute('name', 'John');
 
 // Fill multiple attributes
 user.fill({
@@ -312,7 +306,7 @@ const user = await User.withoutHidden(false).first(); // false = hide
 
 // Use case: Authentication
 const user = await User.withHidden().where('email', email).first();
-if (user && await bcrypt.compare(password, user.getAttribute('password'))) {
+if (user && await bcrypt.compare(password, user.password)) {
   // Authentication successful
 }
 ```
@@ -335,16 +329,11 @@ console.log(user.toJSON()); // email & phone excluded
 
 ## Property Access (v11.0.0)
 
-Access model attributes directly as properties via Proxy, in addition to `getAttribute()`/`setAttribute()`:
+Access model attributes directly as properties via Proxy:
 
 ```javascript
 const user = await User.find(1);
 
-// Before v11 - only method access
-const name = user.getAttribute('name');
-user.setAttribute('name', 'New Name');
-
-// v11+ - property-style access (equivalent)
 const name = user.name;
 user.name = 'New Name';
 await user.save();
@@ -373,11 +362,11 @@ class User extends Model {
 
   // Accessor for computed attribute
   getFullNameAttribute() {
-    return `${this.getAttribute('first_name')} ${this.getAttribute('last_name')}`;
+    return `${this.attributes.first_name} ${this.attributes.last_name}`;
   }
 
   getIsAdminAttribute() {
-    return this.getAttribute('role') === 'admin';
+    return this.attributes.role === 'admin';
   }
 }
 
@@ -469,11 +458,11 @@ class Log extends Model {
 
 // Auto-managed on create/update
 const user = await User.create({ name: 'John' });
-console.log(user.getAttribute('created_at')); // Current date
+console.log(user.created_at); // Current date
 
-user.setAttribute('name', 'Jane');
+user.name = 'Jane';
 await user.save();
-console.log(user.getAttribute('updated_at')); // Updated automatically
+console.log(user.updated_at); // Updated automatically
 ```
 
 ---

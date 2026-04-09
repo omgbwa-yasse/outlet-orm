@@ -275,7 +275,7 @@ const authorize = (...roles) => {
       return res.status(401).json({ error: 'Non authentifié' });
     }
 
-    const userRole = req.user.getAttribute('role');
+    const userRole = req.user.role;
     if (!roles.includes(userRole)) {
       return res.status(403).json({ error: 'Accès non autorisé' });
     }
@@ -572,17 +572,17 @@ class User extends Model {
    */
   static boot() {
     this.creating(async (user) => {
-      const password = user.getAttribute('password');
+      const password = user.password;
       if (password) {
-        user.setAttribute('password', await hashPassword(password));
+        user.password = await hashPassword(password);
       }
     });
 
     this.updating(async (user) => {
-      const password = user.getAttribute('password');
+      const password = user.password;
       // Hash only if password has changed
       if (password && !password.startsWith('$2b$')) {
-        user.setAttribute('password', await hashPassword(password));
+        user.password = await hashPassword(password);
       }
     });
   }
@@ -591,7 +591,7 @@ class User extends Model {
    * Vérifier le mot de passe
    */
   async checkPassword(password) {
-    return verifyPassword(password, this.getAttribute('password'));
+    return verifyPassword(password, this.password);
   }
 }
 

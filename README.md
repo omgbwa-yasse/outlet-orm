@@ -439,11 +439,8 @@ const user = await User.create({
 });
 
 // Method 2: new + save()
-const user = new User({
-  name: 'Jane Doe',
-  email: 'jane@example.com'
-});
-user.setAttribute('password', 'secret456');
+const user = new User({ name: 'Jane Doe', email: 'jane@example.com' });
+user.password = 'secret456';
 await user.save();
 
 // Raw insert (without creating an instance)
@@ -486,7 +483,7 @@ const recentUsers = await User
 ```javascript
 // Instance
 const user = await User.find(1);
-user.setAttribute('name', 'Updated Name');
+user.name = 'Updated Name';
 await user.save();
 
 // Bulk update
@@ -584,7 +581,7 @@ const noPostUsers = await User.whereDoesntHave('posts').get();
 
 // withCount: Add a {relation}_count column
 const withCounts = await User.withCount('posts').get();
-// Each user will have: user.getAttribute('posts_count')
+// Each user will have: user.posts_count
 ```
 
 ## 🔗 Relations
@@ -828,7 +825,7 @@ const user = await User.withoutHidden(false).first(); // false = hide (default)
 
 // Use case: authentication
 const user = await User.withHidden().where('email', email).first();
-if (user && await bcrypt.compare(password, user.getAttribute('password'))) {
+if (user && await bcrypt.compare(password, user.password)) {
   // Authentication successful
 }
 ```
@@ -860,7 +857,7 @@ const { DatabaseConnection, Model } = require('outlet-orm');
 const db = Model.connection;
 const result = await db.transaction(async (connection) => {
   const user = await User.create({ name: 'John', email: 'john@example.com' });
-  await Account.create({ user_id: user.getAttribute('id'), balance: 0 });
+  await Account.create({ user_id: user.id, balance: 0 });
   return user;
 });
 // Automatic commit, rollback on error
@@ -955,18 +952,18 @@ class User extends Model {
 
 // Before creation
 User.creating((user) => {
-  user.setAttribute('uuid', generateUUID());
+  user.uuid = generateUUID();
   // Return false to roll back
 });
 
 // After creation
 User.created((user) => {
-  console.log(`User ${user.getAttribute('id')} created`);
+  console.log(`User ${user.id} created`);
 });
 
 // Before update
 User.updating((user) => {
-  user.setAttribute('updated_at', new Date());
+  user.updated_at = new Date();
 });
 
 // After update
@@ -1481,10 +1478,10 @@ class User extends Model<UserAttributes> {
   }
 }
 
-// Type-safe getAttribute/setAttribute
+// Type-safe property access
 const user = await User.find(1);
-const name: string = user.getAttribute('name');     // ✅ Inferred type
-const role: 'admin' | 'user' = user.getAttribute('role');
+const name: string = user.name;                     // ✅ Inferred type
+const role: 'admin' | 'user' = user.role;
 ```
 
 ### Migrations typedes

@@ -64,25 +64,25 @@ class User extends Model {
   static boot() {
     // Before creation
     this.creating((user) => {
-      console.log('Creating user:', user.getAttribute('name'));
+      console.log('Creating user:', user.name);
       // Edit attributes
-      user.setAttribute('slug', slugify(user.getAttribute('name')));
+      user.slug = slugify(user.name);
     });
 
     // After creation
     this.created((user) => {
-      console.log('User created with ID:', user.getAttribute('id'));
+      console.log('User created with ID:', user.id);
       // Send welcome email, etc.
     });
 
     // Before update
     this.updating((user) => {
-      console.log('Updating user:', user.getAttribute('id'));
+      console.log('Updating user:', user.id);
     });
 
     // After update
     this.updated((user) => {
-      console.log('User updated:', user.getAttribute('id'));
+      console.log('User updated:', user.id);
     });
 
     // Avant save (create ou update)
@@ -97,7 +97,7 @@ class User extends Model {
 
     // Avant suppression
     this.deleting((user) => {
-      console.log('Deleting user:', user.getAttribute('id'));
+      console.log('Deleting user:', user.id);
     });
 
     // After deletion
@@ -113,11 +113,11 @@ class User extends Model {
 ```javascript
 // Add listeners dynamically
 User.addEventListener('creating', (user) => {
-  user.setAttribute('api_token', generateToken());
+  user.api_token = generateToken();
 });
 
 User.addEventListener('deleting', (user) => {
-  console.log('About to delete user:', user.getAttribute('id'));
+  console.log('About to delete user:', user.id);
 });
 ```
 
@@ -131,7 +131,7 @@ class UserObserver {
     console.log('About to create user');
   }
   created(user) {
-    console.log('User created:', user.getAttribute('id'));
+    console.log('User created:', user.id);
   }
   updating(user) { /* ... */ }
   updated(user)  { /* ... */ }
@@ -163,7 +163,7 @@ class Post extends Model {
   static boot() {
     this.creating((post) => {
       // Check if user can create
-      if (post.getAttribute('user_id') === null) {
+      if (post.user_id === null) {
         console.log('Cannot create post without user');
         return false; // Cancel creation
       }
@@ -171,7 +171,7 @@ class Post extends Model {
 
     this.deleting((post) => {
       // Prevent pinned posts from being deleted
-      if (post.getAttribute('is_pinned')) {
+      if (post.is_pinned) {
         console.log('Cannot delete pinned post');
         return false; // Undo deletion
       }
@@ -179,7 +179,7 @@ class Post extends Model {
 
     this.updating((post) => {
       // Prevent editing of archived posts
-      if (post.getAttribute('status') === 'archived') {
+      if (post.status === 'archived') {
         return false;
       }
     });
@@ -198,17 +198,17 @@ class Article extends Model {
   static boot() {
     this.creating((article) => {
       // Generate a slug
-      const title = article.getAttribute('title');
-      article.setAttribute('slug', title.toLowerCase()
+      const title = article.title;
+      article.slug = title.toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, ''));
+        .replace(/(^-|-$)/g, '');
 
       // Generate a UUID
-      article.setAttribute('uuid', crypto.randomUUID());
+      article.uuid = crypto.randomUUID();
 
       // Set current author
-      if (!article.getAttribute('author_id')) {
-        article.setAttribute('author_id', getCurrentUserId());
+      if (!article.author_id) {
+        article.author_id = getCurrentUserId();
       }
     });
   }
@@ -223,7 +223,7 @@ class User extends Model {
 
   static boot() {
     this.saving((user) => {
-      const email = user.getAttribute('email');
+      const email = user.email;
       
       // Validate the email format
       if (!email || !email.includes('@')) {
@@ -231,7 +231,7 @@ class User extends Model {
       }
 
       // Normalize email
-      user.setAttribute('email', email.toLowerCase().trim());
+      user.email = email.toLowerCase().trim();
     });
   }
 }
@@ -248,7 +248,7 @@ class Order extends Model {
       AuditLog.create({
         action: 'order_created',
         model: 'Order',
-        model_id: order.getAttribute('id'),
+        model_id: order.id,
         data: JSON.stringify(order.toJSON()),
         user_id: getCurrentUserId(),
         created_at: new Date().toISOString()
@@ -259,7 +259,7 @@ class Order extends Model {
       AuditLog.create({
         action: 'order_updated',
         model: 'Order',
-        model_id: order.getAttribute('id'),
+        model_id: order.id,
         data: JSON.stringify(order.getDirty()),
         user_id: getCurrentUserId(),
         created_at: new Date().toISOString()
@@ -270,7 +270,7 @@ class Order extends Model {
       AuditLog.create({
         action: 'order_deleted',
         model: 'Order',
-        model_id: order.getAttribute('id'),
+        model_id: order.id,
         user_id: getCurrentUserId(),
         created_at: new Date().toISOString()
       });
@@ -287,7 +287,7 @@ class User extends Model {
 
   static boot() {
     this.deleting(async (user) => {
-      const userId = user.getAttribute('id');
+      const userId = user.id;
       
       // Remove relationships before user
       await Comment.where('user_id', userId).delete();
@@ -306,9 +306,9 @@ class Product extends Model {
 
   static boot() {
     const clearCache = (product) => {
-      cache.delete(`product:${product.getAttribute('id')}`);
+      cache.delete(`product:${product.id}`);
       cache.delete('products:all');
-      cache.delete(`category:${product.getAttribute('category_id')}:products`);
+      cache.delete(`category:${product.category_id}:products`);
     };
 
     this.created(clearCache);
@@ -327,19 +327,19 @@ class Order extends Model {
   static boot() {
     this.created(async (order) => {
       // Notify customer
-      const user = await User.find(order.getAttribute('user_id'));
-      await sendEmail(user.getAttribute('email'), 'order_confirmation', {
-        order_id: order.getAttribute('id'),
-        total: order.getAttribute('total')
+      const user = await User.find(order.user_id);
+      await sendEmail(user.email, 'order_confirmation', {
+        order_id: order.id,
+        total: order.total
       });
     });
 
     this.updated(async (order) => {
-      if (order.getAttribute('status') === 'shipped') {
-        const user = await User.find(order.getAttribute('user_id'));
-        await sendEmail(user.getAttribute('email'), 'order_shipped', {
-          order_id: order.getAttribute('id'),
-          tracking: order.getAttribute('tracking_number')
+      if (order.status === 'shipped') {
+        const user = await User.find(order.user_id);
+        await sendEmail(user.email, 'order_shipped', {
+          order_id: order.id,
+          tracking: order.tracking_number
         });
       }
     });
@@ -356,19 +356,19 @@ class Post extends Model {
 
   static boot() {
     this.deleting((post) => {
-      console.log('Post moving to trash:', post.getAttribute('id'));
+      console.log('Post moving to trash:', post.id);
     });
 
     this.deleted((post) => {
-      console.log('Post in trash:', post.getAttribute('id'));
+      console.log('Post in trash:', post.id);
     });
 
     this.restoring((post) => {
-      console.log('Restoring post:', post.getAttribute('id'));
+      console.log('Restoring post:', post.id);
     });
 
     this.restored((post) => {
-      console.log('Post restored:', post.getAttribute('id'));
+      console.log('Post restored:', post.id);
       // Reindex for search
       searchIndex.add(post);
     });
@@ -413,7 +413,7 @@ class Post extends Model {
 ```javascript
 // ✅ Good – Quick operation
 this.creating((user) => {
-  user.setAttribute('slug', slugify(user.getAttribute('name')));
+  user.slug = slugify(user.name);
 });
 
 // ❌ Bad - Synchronous heavy operation
@@ -429,7 +429,7 @@ this.creating(async (user) => {
 // For async operations, consider queues
 this.created((user) => {
   // Add to a queue rather than wait
-  queue.add('send-welcome-email', { userId: user.getAttribute('id') });
+  queue.add('send-welcome-email', { userId: user.id });
 });
 ```
 
@@ -438,13 +438,13 @@ this.created((user) => {
 ```javascript
 // ❌ Danger – Infinite loop!
 this.updated((user) => {
-  user.setAttribute('updated_count', user.getAttribute('updated_count') + 1);
+  user.updated_count = user.updated_count + 1;
   user.save(); // Triggers 'updated' again!
 });
 
 // ✅ Solution – Use update direct
 this.updated((user) => {
-  User.where('id', user.getAttribute('id'))
+  User.where('id', user.id)
       .increment('updated_count'); // No events
 });
 ```
@@ -456,12 +456,12 @@ class User extends Model {
   static boot() {
     // Event: Automatically generate a slug from the name
     this.creating((user) => {
-      user.setAttribute('slug', slugify(user.getAttribute('name')));
+      user.slug = slugify(user.name);
     });
 
     // Event: Sends a welcome email after registration
     this.created((user) => {
-      emailQueue.add('welcome', { userId: user.getAttribute('id') });
+      emailQueue.add('welcome', { userId: user.id });
     });
   }
 }

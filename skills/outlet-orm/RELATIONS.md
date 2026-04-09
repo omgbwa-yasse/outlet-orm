@@ -459,7 +459,7 @@ const noPublished = await User
 const users = await User.withCount('posts').get();
 
 users.forEach(user => {
-  console.log(user.getAttribute('posts_count'));
+  console.log(user.posts_count);
 });
 ```
 
@@ -573,8 +573,8 @@ class User extends Model {
   settings() {
     // Dynamic defaults via callback
     return this.hasOne(Settings, 'user_id').withDefault((model) => {
-      model.setAttribute('theme', 'light');
-      model.setAttribute('locale', 'en');
+      model.theme = 'light';
+      model.locale = 'en';
     });
   }
 }
