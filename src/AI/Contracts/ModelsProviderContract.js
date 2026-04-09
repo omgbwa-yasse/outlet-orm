@@ -18,7 +18,7 @@ class ModelsProviderContract {
    * @param {string} id
    * @returns {Promise<Object>}
    */
-  async getModel(id) {
+  async getModel(_id) {
     throw new Error('Not implemented: getModel()');
   }
 }

@@ -90,66 +90,66 @@ class AIManager {
   /** @private */
   _buildProviderFromOptions(name, options) {
     switch (name) {
-      case 'openai': {
-        const api = options.api_key;
-        if (api) return new OpenAIProvider(api, options.chat_endpoint || 'https://api.openai.com/v1/chat/completions');
-        break;
+    case 'openai': {
+      const api = options.api_key;
+      if (api) return new OpenAIProvider(api, options.chat_endpoint || 'https://api.openai.com/v1/chat/completions');
+      break;
+    }
+    case 'ollama': return new OllamaProvider(options.endpoint || 'http://localhost:11434');
+    case 'ollama_turbo': {
+      const api = options.api_key;
+      if (api) return new OllamaTurboProvider(api, options.endpoint || 'https://ollama.com');
+      break;
+    }
+    case 'onn': {
+      const api = options.api_key;
+      if (api) return new OnnProvider(api, options.endpoint || 'https://api.onn.ai/v1/chat');
+      break;
+    }
+    case 'gemini': {
+      const api = options.api_key;
+      if (api) return new GeminiProvider(api, options.endpoint);
+      break;
+    }
+    case 'grok': {
+      const api = options.api_key;
+      if (api) return new GrokProvider(api, options.endpoint);
+      break;
+    }
+    case 'claude': {
+      const api = options.api_key;
+      if (api) return new ClaudeProvider(api, options.endpoint);
+      break;
+    }
+    case 'mistral': {
+      const api = options.api_key;
+      if (api) return new MistralProvider(api, options.endpoint || 'https://api.mistral.ai/v1/chat/completions');
+      break;
+    }
+    case 'openai_custom': {
+      const api = options.api_key;
+      const base = options.base_url;
+      if (api && base) {
+        return new CustomOpenAIProvider(api, base, options.paths || {},
+          options.auth_header || 'Authorization', options.auth_prefix || BEARER_PREFIX,
+          options.extra_headers || {});
       }
-      case 'ollama': return new OllamaProvider(options.endpoint || 'http://localhost:11434');
-      case 'ollama_turbo': {
-        const api = options.api_key;
-        if (api) return new OllamaTurboProvider(api, options.endpoint || 'https://ollama.com');
-        break;
+      break;
+    }
+    case 'openrouter': {
+      const api = options.api_key;
+      if (api) {
+        const base = options.base_url || 'https://openrouter.ai/api/v1';
+        const hdrs = {};
+        if (options.referer) hdrs['HTTP-Referer'] = options.referer;
+        if (options.title) hdrs['X-Title'] = options.title;
+        return new CustomOpenAIProvider(api, base,
+          { chat: '/chat/completions', embeddings: '/embeddings', image: '/images/generations', tts: '/audio/speech', stt: '/audio/transcriptions' },
+          'Authorization', BEARER_PREFIX, hdrs
+        );
       }
-      case 'onn': {
-        const api = options.api_key;
-        if (api) return new OnnProvider(api, options.endpoint || 'https://api.onn.ai/v1/chat');
-        break;
-      }
-      case 'gemini': {
-        const api = options.api_key;
-        if (api) return new GeminiProvider(api, options.endpoint);
-        break;
-      }
-      case 'grok': {
-        const api = options.api_key;
-        if (api) return new GrokProvider(api, options.endpoint);
-        break;
-      }
-      case 'claude': {
-        const api = options.api_key;
-        if (api) return new ClaudeProvider(api, options.endpoint);
-        break;
-      }
-      case 'mistral': {
-        const api = options.api_key;
-        if (api) return new MistralProvider(api, options.endpoint || 'https://api.mistral.ai/v1/chat/completions');
-        break;
-      }
-      case 'openai_custom': {
-        const api = options.api_key;
-        const base = options.base_url;
-        if (api && base) {
-          return new CustomOpenAIProvider(api, base, options.paths || {},
-            options.auth_header || 'Authorization', options.auth_prefix || BEARER_PREFIX,
-            options.extra_headers || {});
-        }
-        break;
-      }
-      case 'openrouter': {
-        const api = options.api_key;
-        if (api) {
-          const base = options.base_url || 'https://openrouter.ai/api/v1';
-          const hdrs = {};
-          if (options.referer) hdrs['HTTP-Referer'] = options.referer;
-          if (options.title) hdrs['X-Title'] = options.title;
-          return new CustomOpenAIProvider(api, base,
-            { chat: '/chat/completions', embeddings: '/embeddings', image: '/images/generations', tts: '/audio/speech', stt: '/audio/transcriptions' },
-            'Authorization', BEARER_PREFIX, hdrs
-          );
-        }
-        break;
-      }
+      break;
+    }
     }
     return null;
   }

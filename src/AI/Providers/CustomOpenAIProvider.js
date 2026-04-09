@@ -1,7 +1,5 @@
 'use strict';
 
-const JsonSchemaValidator = require('../Support/JsonSchemaValidator');
-
 /**
  * CustomOpenAIProvider
  * Fully configurable OpenAI-compatible provider.

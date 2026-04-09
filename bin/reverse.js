@@ -82,7 +82,6 @@ function parseCreateTable(sql) {
   for (const line of splitDefinitions(body)) {
     const trimmed  = line.trim();
     if (!trimmed) continue;
-    const upperTrimmed = trimmed.toUpperCase();
 
     // ── Table-level FOREIGN KEY constraint ───────────────────────────────────
     if (/^FOREIGN\s+KEY/i.test(trimmed) || /^CONSTRAINT\s+\S+\s+FOREIGN\s+KEY/i.test(trimmed)) {

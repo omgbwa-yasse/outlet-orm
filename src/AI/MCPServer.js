@@ -442,7 +442,7 @@ class MCPServer extends EventEmitter {
 
   // ── migrate_reset ──────────────────────────────────────────────
 
-  async _toolMigrateReset(args) {
+  async _toolMigrateReset(_args) {
     // Consent already validated in _handleToolCall
     const conn = await this._getConnection();
     const { MigrationManager } = require('../../src');
@@ -517,9 +517,9 @@ class MCPServer extends EventEmitter {
       // Get all tables
       let query;
       if (driver === 'sqlite') {
-        query = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name";
+        query = 'SELECT name FROM sqlite_master WHERE type=\'table\' AND name NOT LIKE \'sqlite_%\' ORDER BY name';
       } else if (driver === 'postgres') {
-        query = "SELECT tablename AS name FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename";
+        query = 'SELECT tablename AS name FROM pg_tables WHERE schemaname = \'public\' ORDER BY tablename';
       } else {
         query = 'SHOW TABLES';
       }

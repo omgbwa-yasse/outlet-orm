@@ -271,7 +271,7 @@ class BackupSocketServer extends events.EventEmitter {
         filePath = await runManager.full(options);
       } else if (type === 'partial') {
         if (!Array.isArray(tables) || tables.length === 0) {
-          throw new Error("'tables' array is required for partial backup");
+          throw new Error('\'tables\' array is required for partial backup');
         }
         filePath = await runManager.partial(tables, options);
       } else if (type === 'journal') {
@@ -284,7 +284,7 @@ class BackupSocketServer extends events.EventEmitter {
 
     case 'restore': {
       if (!msg.filePath) {
-        throw new Error("'filePath' is required for restore");
+        throw new Error('\'filePath\' is required for restore');
       }
       // Build a restore-capable manager (needs encryptionPassword if file is encrypted)
       const restoreOpts = Object.assign({}, this._managerOptions, {

@@ -40,7 +40,7 @@ function quoteValue(val) {
   if (val === null || val === undefined) return 'NULL';
   if (typeof val === 'number' || typeof val === 'boolean') return String(val);
   // Escape single quotes
-  return `'${String(val).replace(/'/g, "''")}'`;
+  return `'${String(val).replace(/'/g, '\'\'')}'`;
 }
 
 /**
@@ -244,7 +244,7 @@ class BackupManager {
 
     for (const table of tables) {
       lines.push(`\n-- Table: ${table}`);
-      lines.push(`-- -----------------------------------------------------------`);
+      lines.push('-- -----------------------------------------------------------');
 
       // Schema
       const createSql = await this._getCreateTable(table);
@@ -302,13 +302,13 @@ class BackupManager {
     case 'postgres':
     case 'postgresql':
       rows = await this.connection.executeRawQuery(
-        "SELECT tablename AS name FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename"
+        'SELECT tablename AS name FROM pg_tables WHERE schemaname = \'public\' ORDER BY tablename'
       );
       return rows.map((r) => r.name);
 
     case 'sqlite':
       rows = await this.connection.executeRawQuery(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+        'SELECT name FROM sqlite_master WHERE type=\'table\' AND name NOT LIKE \'sqlite_%\' ORDER BY name'
       );
       return rows.map((r) => r.name);
 
@@ -382,12 +382,12 @@ class BackupManager {
    */
   _sqlHeader(type) {
     return [
-      `-- outlet-orm backup`,
+      '-- outlet-orm backup',
       `-- type      : ${type}`,
       `-- driver    : ${this.connection.driver}`,
       `-- database  : ${this.connection.config?.database || '(unknown)'}`,
       `-- generated : ${new Date().toISOString()}`,
-      `-- ---------------------------------------------------------------`,
+      '-- ---------------------------------------------------------------',
     ].join('\n');
   }
 

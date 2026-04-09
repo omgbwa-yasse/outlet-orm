@@ -18,7 +18,7 @@ class GeminiProvider {
   /** @private */
   _keyQuery() { return `?key=${this.apiKey}`; }
 
-  async chat(messages, options = {}) {
+  async chat(messages, _options = {}) {
     const userTexts = messages
       .filter(m => (m.role || '') !== 'system')
       .map(m => m.content);
@@ -46,7 +46,7 @@ class GeminiProvider {
 
   supportsStreaming() { return true; } // simulated
 
-  async embeddings(inputs, options = {}) {
+  async embeddings(inputs, _options = {}) {
     const vectors = [];
     for (const input of inputs) {
       const payload = {

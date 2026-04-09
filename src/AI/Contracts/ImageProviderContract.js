@@ -11,7 +11,7 @@ class ImageProviderContract {
    * @param {Object} [options={}]
    * @returns {Promise<{images: Array, meta?: Object, raw?: Object}>}
    */
-  async generateImage(prompt, options = {}) {
+  async generateImage(prompt, _options = {}) {
     throw new Error('Not implemented: generateImage()');
   }
 }

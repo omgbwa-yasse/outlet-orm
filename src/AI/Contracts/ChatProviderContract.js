@@ -12,7 +12,7 @@ class ChatProviderContract {
    * @param {Object} [options={}]
    * @returns {Promise<Object>}
    */
-  async chat(messages, options = {}) {
+  async chat(messages, _options = {}) {
     throw new Error('Not implemented: chat()');
   }
 
@@ -22,7 +22,8 @@ class ChatProviderContract {
    * @param {Object} [options={}]
    * @yields {string|Object}
    */
-  async *stream(messages, options = {}) {
+  // eslint-disable-next-line require-yield
+  async *stream(messages, _options = {}) {
     throw new Error('Not implemented: stream()');
   }
 

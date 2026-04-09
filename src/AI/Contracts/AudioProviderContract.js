@@ -11,7 +11,7 @@ class AudioProviderContract {
    * @param {Object} [options={}]
    * @returns {Promise<{audio: string, mime: string}>} audio is base64-encoded
    */
-  async textToSpeech(text, options = {}) {
+  async textToSpeech(text, _options = {}) {
     throw new Error('Not implemented: textToSpeech()');
   }
 
@@ -21,7 +21,7 @@ class AudioProviderContract {
    * @param {Object} [options={}]
    * @returns {Promise<{text: string, raw?: Object}>}
    */
-  async speechToText(filePath, options = {}) {
+  async speechToText(filePath, _options = {}) {
     throw new Error('Not implemented: speechToText()');
   }
 }

@@ -143,10 +143,10 @@ RULES:
       const dialect = this._connection.config?.client || 'mysql';
       let tables = [];
       if (dialect === 'pg' || dialect === 'postgresql') {
-        const res = await this._connection.raw("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
+        const res = await this._connection.raw('SELECT table_name FROM information_schema.tables WHERE table_schema = \'public\'');
         tables = (res.rows || res).map(r => r.table_name);
       } else if (dialect === 'sqlite' || dialect === 'sqlite3') {
-        const res = await this._connection.raw("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+        const res = await this._connection.raw('SELECT name FROM sqlite_master WHERE type=\'table\' AND name NOT LIKE \'sqlite_%\'');
         tables = (Array.isArray(res) ? res : []).map(r => r.name);
       } else {
         const res = await this._connection.raw('SHOW TABLES');

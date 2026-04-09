@@ -1,10 +1,5 @@
 'use strict';
 
-const ChatProviderContract = require('../Contracts/ChatProviderContract');
-const EmbeddingsProviderContract = require('../Contracts/EmbeddingsProviderContract');
-const ImageProviderContract = require('../Contracts/ImageProviderContract');
-const AudioProviderContract = require('../Contracts/AudioProviderContract');
-const ModelsProviderContract = require('../Contracts/ModelsProviderContract');
 const JsonSchemaValidator = require('../Support/JsonSchemaValidator');
 const DocumentAttachmentMapper = require('../Support/DocumentAttachmentMapper');
 const fs = require('fs');

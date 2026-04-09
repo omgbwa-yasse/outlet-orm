@@ -31,7 +31,7 @@ class FileSecurity {
    * @param {boolean} [image=false]
    * @returns {boolean}
    */
-  validateFile(filePath, image = false) {
+  validateFile(filePath, _image = false) {
     try {
       if (!fs.existsSync(filePath)) return false;
       const stats = fs.statSync(filePath);

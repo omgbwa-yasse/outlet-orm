@@ -74,7 +74,7 @@ class BackupScheduler {
       throw new Error('BackupScheduler: intervalMs must be >= 1000 (1 second)');
     }
     if (type === 'partial' && (!Array.isArray(config.tables) || config.tables.length === 0)) {
-      throw new Error("BackupScheduler: 'tables' array is required for partial backups");
+      throw new Error('BackupScheduler: \'tables\' array is required for partial backups');
     }
 
     const name = config.name || `${type}_${Date.now()}`;

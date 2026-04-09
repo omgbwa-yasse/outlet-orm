@@ -11,7 +11,7 @@ class EmbeddingsProviderContract {
    * @param {Object} [options={}]
    * @returns {Promise<{embeddings: number[][], usage?: Object, raw?: Object}>}
    */
-  async embeddings(inputs, options = {}) {
+  async embeddings(inputs, _options = {}) {
     throw new Error('Not implemented: embeddings()');
   }
 }

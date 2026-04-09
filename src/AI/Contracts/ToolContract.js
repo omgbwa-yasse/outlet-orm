@@ -19,7 +19,7 @@ class ToolContract {
    * @param {Object} args
    * @returns {Promise<string>|string}
    */
-  execute(args) { throw new Error('Not implemented: execute()'); }
+  execute(_args) { throw new Error('Not implemented: execute()'); }
 }
 
 module.exports = ToolContract;
