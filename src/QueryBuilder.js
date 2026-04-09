@@ -1047,6 +1047,7 @@ class QueryBuilder {
     let page = 1;
     let offset = 0;
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       const cloned = this.clone();
       cloned.limitValue = size;
