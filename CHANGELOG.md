@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [11.1.0] - 2026-04-08
+
+### 📚 Documentation
+
+- Updated all 7 skills files for v11 features (SKILL, MODELS, QUERIES, RELATIONS, API, ADVANCED, TYPESCRIPT)
+- Updated 5 docs files (MODELS, QUERY_BUILDER, RELATIONS, SCOPES, API_REFERENCE)
+- Updated README with v11 key features, new API reference entries for Model, QueryBuilder, and DatabaseConnection
+
 ## [11.0.0] - 2026-04-08
 
 ### ✨ New — Proxy-based Property Access
