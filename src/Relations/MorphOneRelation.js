@@ -16,10 +16,12 @@ class MorphOneRelation extends Relation {
    * @returns {Promise<Model|null>}
    */
   async get() {
-    return this.related
+    const result = await this.related
       .where(this.foreignKey, this.parent.getAttribute(this.localKey))
       .where(`${this.morphType}_type`, this.parent.constructor.table)
       .first();
+
+    return result || this._buildDefault();
   }
 
   /**
@@ -46,7 +48,7 @@ class MorphOneRelation extends Relation {
 
     for (const model of models) {
       const key = model.getAttribute(this.localKey);
-      model.relations[relationName] = relatedMap[key] || null;
+      model.relations[relationName] = relatedMap[key] || this._buildDefault();
     }
   }
 

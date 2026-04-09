@@ -30,19 +30,19 @@ class HasOneThroughRelation extends Relation {
    */
   async get() {
     const parentKeyValue = this.parent.getAttribute(this.localKey);
-    if (parentKeyValue === undefined || parentKeyValue === null) return null;
+    if (parentKeyValue === undefined || parentKeyValue === null) return this._buildDefault();
 
     const throughRow = await this.through
       .where(this.foreignKeyOnThrough, parentKeyValue)
       .first();
 
-    if (!throughRow) return null;
+    if (!throughRow) return this._buildDefault();
 
     const throughId = throughRow.getAttribute(this.throughLocalKey);
     const result = await this.related
       .where(this.throughKeyOnFinal, throughId)
       .first();
-    return result;
+    return result || this._buildDefault();
   }
 
   /**

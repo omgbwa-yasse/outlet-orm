@@ -751,6 +751,57 @@ class DatabaseConnection {
   }
 
   /**
+   * Execute an aggregate function (SUM, AVG, MIN, MAX) on a column
+   * @param {string} table
+   * @param {string} fn - Aggregate function name (SUM, AVG, MIN, MAX)
+   * @param {string} column
+   * @param {Object} query
+   * @returns {Promise<number>}
+   */
+  async aggregate(table, fn, column, query) {
+    await this.connect();
+    const allowedFns = ['SUM', 'AVG', 'MIN', 'MAX'];
+    const safeFn = fn.toUpperCase();
+    if (!allowedFns.includes(safeFn)) {
+      throw new Error(`Invalid aggregate function: ${fn}`);
+    }
+    const safeTable = sanitizeIdentifier(table);
+    const safeColumn = sanitizeIdentifier(column);
+
+    const { whereClause, params } = this.buildWhereClause(query?.wheres || []);
+    const sql = `SELECT ${safeFn}(${safeColumn}) as result FROM ${safeTable}${whereClause}`;
+    const start = Date.now();
+
+    let result;
+    switch (this.driver) {
+    case 'mysql': {
+      const conn = this._getConnection();
+      const [rows] = await conn.execute(this.convertToDriverPlaceholder(sql), params);
+      result = rows[0].result;
+      break;
+    }
+    case 'postgres':
+    case 'postgresql': {
+      const conn = this._getConnection();
+      const pgResult = await conn.query(this.convertToDriverPlaceholder(sql, 'postgres'), params);
+      result = parseFloat(pgResult.rows[0].result);
+      break;
+    }
+    case 'sqlite':
+      result = await new Promise((resolve, reject) => {
+        this.connection.get(sql, params, (err, row) => {
+          if (err) reject(new Error(err.message || String(err)));
+          else resolve(row.result);
+        });
+      });
+      break;
+    }
+
+    logQuery(sql, params, Date.now() - start);
+    return result != null ? Number(result) : 0;
+  }
+
+  /**
    * Execute a raw query and return normalized results.
    * ⚠️  SECURITY WARNING: The `sql` parameter is passed to the database driver without
    * any sanitization. NEVER pass user-controlled data in `sql`. User-controlled values

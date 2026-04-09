@@ -73,6 +73,19 @@ class Model {
     this.morphMap = map;
   }
 
+  // Appends: computed attributes included in serialization
+  static appends = [];
+
+  /**
+   * Internal own-property names that must never be intercepted by the Proxy.
+   * @private
+   */
+  static _ownProperties = new Set([
+    'attributes', 'original', 'relations', 'touches',
+    'exists', '_showHidden', '_withTrashed', '_onlyTrashed',
+    '_instanceVisible', '_instanceHidden', '_changes'
+  ]);
+
   constructor(attributes = {}) {
     // Auto-initialize connection on first model instantiation if missing
     this.constructor.ensureConnection();
@@ -84,7 +97,35 @@ class Model {
     this._showHidden = false;
     this._withTrashed = false;
     this._onlyTrashed = false;
+    this._instanceVisible = null;
+    this._instanceHidden = null;
+    this._changes = {};
     this.fill(attributes);
+
+    // Return a Proxy so that attribute access works as user.name / user.name = 'x'
+    return new Proxy(this, {
+      get(target, prop, receiver) {
+        // Symbols, own properties, and prototype members → normal access
+        if (typeof prop === 'symbol' || prop in target || typeof target[prop] === 'function') {
+          return Reflect.get(target, prop, receiver);
+        }
+        // Static / prototype properties that are not functions (e.g. constructor)
+        if (Object.prototype.hasOwnProperty.call(target, prop)) {
+          return Reflect.get(target, prop, receiver);
+        }
+        // Everything else → delegate to getAttribute (accessors, casts, relations)
+        return target.getAttribute(prop);
+      },
+      set(target, prop, value, receiver) {
+        // Known own properties → direct assignment
+        if (target.constructor._ownProperties.has(prop) || prop in target) {
+          return Reflect.set(target, prop, value, receiver);
+        }
+        // Everything else → delegate to setAttribute (mutators, casts)
+        target.setAttribute(prop, value);
+        return true;
+      }
+    });
   }
 
   // ==================== Events/Hooks ====================
@@ -469,7 +510,25 @@ class Model {
   static query() {
     // Ensure a connection exists even when using static APIs without instantiation
     this.ensureConnection();
-    return new QueryBuilder(this);
+    const qb = new QueryBuilder(this);
+
+    // Return a Proxy that recognizes local scopes (static scopeXxx methods on the model)
+    return new Proxy(qb, {
+      get(target, prop, receiver) {
+        if (prop in target || typeof prop === 'symbol') {
+          return Reflect.get(target, prop, receiver);
+        }
+        // Check for a local scope: model.scopeActive => User.query().active()
+        const scopeName = 'scope' + prop.charAt(0).toUpperCase() + prop.slice(1);
+        if (typeof target.model[scopeName] === 'function') {
+          return (...args) => {
+            target.model[scopeName](target, ...args);
+            return receiver; // keep the proxy chain
+          };
+        }
+        return Reflect.get(target, prop, receiver);
+      }
+    });
   }
 
   /**
@@ -952,6 +1011,7 @@ class Model {
 
     this.setAttribute(this.constructor.primaryKey, result.insertId);
     this.exists = true;
+    this._changes = { ...this.attributes };
     this.original = { ...this.attributes };
 
     await this.touchParents();
@@ -986,6 +1046,7 @@ class Model {
       { wheres: [{ type: 'basic', column: this.constructor.primaryKey, operator: '=', value: this.getAttribute(this.constructor.primaryKey) }] }
     );
 
+    this._changes = { ...dirty };
     this.original = { ...this.attributes };
 
     await this.touchParents();
@@ -1077,13 +1138,29 @@ class Model {
    * @returns {Object}
    */
   toJSON() {
-    const json = { ...this.attributes };
+    let json = { ...this.attributes };
 
-    // Hide specified attributes unless _showHidden is true
-    if (!this._showHidden) {
-      this.constructor.hidden.forEach(key => {
+    // Instance-level visible: keep only these keys
+    if (this._instanceVisible && this._instanceVisible.length > 0) {
+      const visible = new Set(this._instanceVisible);
+      for (const key of Object.keys(json)) {
+        if (!visible.has(key)) delete json[key];
+      }
+    } else if (!this._showHidden) {
+      // Hide specified attributes unless _showHidden is true
+      // If _instanceHidden was explicitly set (via makeVisible/makeHidden), use it as-is
+      const hidden = this._instanceHidden !== null
+        ? new Set(this._instanceHidden)
+        : new Set(this.constructor.hidden);
+      hidden.forEach(key => {
         delete json[key];
       });
+    }
+
+    // Appends: include computed attributes via accessors
+    const appends = this.constructor.appends || [];
+    for (const attr of appends) {
+      json[attr] = this.getAttribute(attr);
     }
 
     // Add relations
@@ -1142,6 +1219,169 @@ class Model {
         await value.load(tail);
       }
     }
+  }
+
+  // ==================== Model Instance Utilities ====================
+
+  /**
+   * Reload a fresh model instance from the database
+   * @param {...string} relations - Relations to eager load
+   * @returns {Promise<Model|null>}
+   */
+  async fresh(...relations) {
+    if (!this.exists) return null;
+    const pk = this.getAttribute(this.constructor.primaryKey);
+    if (pk == null) return null;
+
+    let query = this.constructor.query().where(this.constructor.primaryKey, pk);
+    if (relations.length > 0) {
+      query = query.with(...relations);
+    }
+    return query.first();
+  }
+
+  /**
+   * Reload the model attributes from the database (mutates this instance)
+   * @returns {Promise<this>}
+   */
+  async refresh() {
+    if (!this.exists) return this;
+    const pk = this.getAttribute(this.constructor.primaryKey);
+    if (pk == null) return this;
+
+    const freshModel = await this.constructor.query()
+      .where(this.constructor.primaryKey, pk)
+      .first();
+
+    if (freshModel) {
+      this.attributes = { ...freshModel.attributes };
+      this.original = { ...freshModel.attributes };
+      this.relations = {};
+    }
+    return this;
+  }
+
+  /**
+   * Clone the model into a new, non-existing instance (without primary key)
+   * @param {...string} except - Additional attributes to exclude
+   * @returns {Model}
+   */
+  replicate(...except) {
+    const excluded = new Set([this.constructor.primaryKey, ...except]);
+    const attrs = {};
+    for (const [key, value] of Object.entries(this.attributes)) {
+      if (!excluded.has(key)) {
+        attrs[key] = value;
+      }
+    }
+    const instance = new this.constructor();
+    instance.attributes = attrs;
+    return instance;
+  }
+
+  /**
+   * Determine if two models have the same ID and belong to the same table
+   * @param {Model|null} model
+   * @returns {boolean}
+   */
+  is(model) {
+    if (!model) return false;
+    return this.constructor.table === model.constructor.table &&
+      this.constructor.primaryKey === model.constructor.primaryKey &&
+      this.getAttribute(this.constructor.primaryKey) === model.getAttribute(model.constructor.primaryKey) &&
+      this.getAttribute(this.constructor.primaryKey) != null;
+  }
+
+  /**
+   * Determine if two models are not the same
+   * @param {Model|null} model
+   * @returns {boolean}
+   */
+  isNot(model) {
+    return !this.is(model);
+  }
+
+  /**
+   * Get a subset of the model's attributes as a plain object
+   * @param {...string|Array<string>} keys
+   * @returns {Object}
+   */
+  only(...keys) {
+    const flatKeys = keys.flat();
+    const result = {};
+    for (const key of flatKeys) {
+      result[key] = this.getAttribute(key);
+    }
+    return result;
+  }
+
+  /**
+   * Get all attributes except the specified keys as a plain object
+   * @param {...string|Array<string>} keys
+   * @returns {Object}
+   */
+  except(...keys) {
+    const excluded = new Set(keys.flat());
+    const result = {};
+    for (const [key, value] of Object.entries(this.attributes)) {
+      if (!excluded.has(key)) {
+        result[key] = value;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Make given attributes visible on this instance (overrides static hidden)
+   * @param {...string|Array<string>} attrs
+   * @returns {this}
+   */
+  makeVisible(...attrs) {
+    const flat = attrs.flat();
+    // Initialize from static hidden if not yet overridden
+    if (!this._instanceHidden) {
+      this._instanceHidden = [...this.constructor.hidden];
+    }
+    this._instanceHidden = this._instanceHidden.filter(k => !flat.includes(k));
+    return this;
+  }
+
+  /**
+   * Make given attributes hidden on this instance
+   * @param {...string|Array<string>} attrs
+   * @returns {this}
+   */
+  makeHidden(...attrs) {
+    const flat = attrs.flat();
+    if (!this._instanceHidden) {
+      this._instanceHidden = [...this.constructor.hidden];
+    }
+    for (const k of flat) {
+      if (!this._instanceHidden.includes(k)) {
+        this._instanceHidden.push(k);
+      }
+    }
+    return this;
+  }
+
+  /**
+   * Determine if the model or a given attribute was changed after the last save
+   * @param {string} [attr]
+   * @returns {boolean}
+   */
+  wasChanged(attr) {
+    if (attr) {
+      return attr in this._changes;
+    }
+    return Object.keys(this._changes).length > 0;
+  }
+
+  /**
+   * Get the attributes that were changed on the last save
+   * @returns {Object}
+   */
+  getChanges() {
+    return { ...this._changes };
   }
 
   // ==================== Relationships ====================

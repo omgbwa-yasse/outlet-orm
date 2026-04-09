@@ -924,6 +924,196 @@ class QueryBuilder {
     }
   }
 
+  // ==================== Convenience Query Methods ====================
+
+  /**
+   * Get an array of values for a single column, optionally keyed by another column
+   * @param {string} column
+   * @param {string} [keyColumn]
+   * @returns {Promise<Array|Object>}
+   */
+  async pluck(column, keyColumn) {
+    assertIdentifier(column, 'pluck column');
+    if (keyColumn) assertIdentifier(keyColumn, 'pluck key column');
+
+    const cols = keyColumn ? [column, keyColumn] : [column];
+    this.selectedColumns = cols;
+    this._applyGlobalScopes();
+    this._applySoftDeleteConstraints();
+
+    const rows = await this.model.connection.select(
+      this.model.table,
+      this.buildQuery()
+    );
+
+    if (keyColumn) {
+      const result = {};
+      for (const row of rows) {
+        result[row[keyColumn]] = row[column];
+      }
+      return result;
+    }
+    return rows.map(row => row[column]);
+  }
+
+  /**
+   * Get the value of a single column from the first matching row
+   * @param {string} column
+   * @returns {Promise<any>}
+   */
+  async value(column) {
+    assertIdentifier(column, 'value column');
+    this.selectedColumns = [column];
+    this._applyGlobalScopes();
+    this._applySoftDeleteConstraints();
+    this.limitValue = 1;
+
+    const rows = await this.model.connection.select(
+      this.model.table,
+      this.buildQuery()
+    );
+    if (rows.length === 0) return null;
+    return rows[0][column];
+  }
+
+  // ==================== Aggregate Methods ====================
+
+  /**
+   * Get the sum of a column
+   * @param {string} column
+   * @returns {Promise<number>}
+   */
+  async sum(column) {
+    return this._aggregate('SUM', column);
+  }
+
+  /**
+   * Get the average of a column
+   * @param {string} column
+   * @returns {Promise<number>}
+   */
+  async avg(column) {
+    return this._aggregate('AVG', column);
+  }
+
+  /**
+   * Get the minimum value of a column
+   * @param {string} column
+   * @returns {Promise<number>}
+   */
+  async min(column) {
+    return this._aggregate('MIN', column);
+  }
+
+  /**
+   * Get the maximum value of a column
+   * @param {string} column
+   * @returns {Promise<number>}
+   */
+  async max(column) {
+    return this._aggregate('MAX', column);
+  }
+
+  /**
+   * Execute an aggregate function on a column
+   * @param {string} fn - SQL aggregate function
+   * @param {string} column
+   * @returns {Promise<number>}
+   * @private
+   */
+  async _aggregate(fn, column) {
+    assertIdentifier(column, 'aggregate column');
+    this._applyGlobalScopes();
+    this._applySoftDeleteConstraints();
+
+    const result = await this.model.connection.aggregate(
+      this.model.table,
+      fn,
+      column,
+      this.buildQuery()
+    );
+    return result;
+  }
+
+  // ==================== Batch & Conditional Methods ====================
+
+  /**
+   * Process query results in chunks
+   * @param {number} size - Chunk size
+   * @param {Function} callback - Receives (chunk, page). Return false to stop.
+   * @returns {Promise<void>}
+   */
+  async chunk(size, callback) {
+    let page = 1;
+    let offset = 0;
+
+    while (true) {
+      const cloned = this.clone();
+      cloned.limitValue = size;
+      cloned.offsetValue = offset;
+      const results = await cloned.get();
+
+      if (results.length === 0) break;
+
+      const shouldContinue = await callback(results, page);
+      if (shouldContinue === false) break;
+      if (results.length < size) break;
+
+      offset += size;
+      page++;
+    }
+  }
+
+  /**
+   * Apply a callback to the query when a condition is truthy
+   * @param {any} condition
+   * @param {Function} callback - Receives the query builder when condition is truthy
+   * @param {Function} [fallback] - Receives the query builder when condition is falsy
+   * @returns {this}
+   */
+  when(condition, callback, fallback) {
+    if (condition) {
+      callback(this, condition);
+    } else if (typeof fallback === 'function') {
+      fallback(this, condition);
+    }
+    return this;
+  }
+
+  /**
+   * Pass the query builder to a callback for inspection without modifying the chain
+   * @param {Function} callback
+   * @returns {this}
+   */
+  tap(callback) {
+    callback(this);
+    return this;
+  }
+
+  // ==================== Debugging ====================
+
+  /**
+   * Get the raw SQL representation of the current query (for debugging)
+   * @returns {Object} Query object with all clauses
+   */
+  toSQL() {
+    this._applyGlobalScopes();
+    this._applySoftDeleteConstraints();
+    return {
+      table: this.model.table,
+      ...this.buildQuery()
+    };
+  }
+
+  /**
+   * Dump the SQL representation and die (log + throw)
+   */
+  dd() {
+    const sql = this.toSQL();
+    console.log('Query Dump:', JSON.stringify(sql, null, 2));
+    throw new Error('dd(): Query dumped. See console output above.');
+  }
+
   /**
    * Build the query object
    * @returns {Object}

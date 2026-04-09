@@ -88,6 +88,8 @@ declare module 'outlet-orm' {
     update(table: string, data: Record<string, any>, query: QueryObject): Promise<UpdateResult>;
     delete(table: string, query: QueryObject): Promise<DeleteResult>;
     count(table: string, query: QueryObject): Promise<number>;
+    /** Execute an aggregate function (SUM, AVG, MIN, MAX) */
+    aggregate(table: string, fn: 'SUM' | 'AVG' | 'MIN' | 'MAX', column: string, query: QueryObject): Promise<number>;
     executeRawQuery(sql: string, params?: any[]): Promise<any[]>;
     /** Execute raw SQL and return driver-native results (used by migrations) */
     execute(sql: string, params?: any[]): Promise<any>;
@@ -237,6 +239,37 @@ declare module 'outlet-orm' {
     /** Lazily iterate over matching records using an async generator */
     cursor(chunkSize?: number): AsyncGenerator<T, void, unknown>;
 
+    // Convenience query methods
+    /** Get an array of values for a single column, optionally keyed by another column */
+    pluck(column: string): Promise<any[]>;
+    pluck(column: string, keyColumn: string): Promise<Record<string, any>>;
+    /** Get the value of a single column from the first matching row */
+    value(column: string): Promise<any>;
+
+    // Aggregate methods
+    /** Get the sum of a column */
+    sum(column: string): Promise<number>;
+    /** Get the average of a column */
+    avg(column: string): Promise<number>;
+    /** Get the minimum value of a column */
+    min(column: string): Promise<number>;
+    /** Get the maximum value of a column */
+    max(column: string): Promise<number>;
+
+    // Batch & conditional methods
+    /** Process results in chunks */
+    chunk(size: number, callback: (chunk: T[], page: number) => void | false | Promise<void | false>): Promise<void>;
+    /** Conditionally apply a callback to the query */
+    when(condition: any, callback: (qb: this, value: any) => void, fallback?: (qb: this, value: any) => void): this;
+    /** Pass the query builder to a callback without modifying the chain */
+    tap(callback: (qb: this) => void): this;
+
+    // Debugging
+    /** Get the SQL representation of the current query */
+    toSQL(): { table: string } & QueryObject;
+    /** Dump the SQL and throw */
+    dd(): never;
+
     clone(): QueryBuilder<T>;
   }
 
@@ -279,10 +312,15 @@ declare module 'outlet-orm' {
   export type EventCallback<T extends Model = Model> = (model: T) => boolean | void | Promise<boolean | void>;
 
   /**
-   * Base Model class with optional generic for typed attributes
+   * Base Model class with optional generic for typed attributes.
+   * Instances are wrapped in a Proxy so attributes can be accessed
+   * directly as properties: `user.name` / `user.name = 'Jean'`.
+   * Existing methods (getAttribute, setAttribute) remain available.
    * @template TAttributes - Type of model attributes (defaults to Record<string, any>)
    */
   export class Model<TAttributes extends Record<string, any> = Record<string, any>> {
+    /** Property-style attribute access via Proxy (read & write) */
+    [K: string]: any;
     static table: string;
     static primaryKey: string;
     static timestamps: boolean;
@@ -290,6 +328,8 @@ declare module 'outlet-orm' {
     static hidden: string[];
     static casts: Record<string, CastType>;
     static connection: DatabaseConnection | null;
+    /** Computed attributes to append in serialization */
+    static appends: string[];
 
     // Soft Deletes
     static softDeletes: boolean;
@@ -409,6 +449,30 @@ declare module 'outlet-orm' {
     /** Load relations on an existing instance. Supports dot-notation and arrays. */
     load(...relations: string[] | [string[]]): Promise<this>;
 
+    // Model instance utilities
+    /** Reload a fresh model instance from the database */
+    fresh(...relations: string[]): Promise<this | null>;
+    /** Reload attributes from DB into this instance */
+    refresh(): Promise<this>;
+    /** Clone the model without the primary key */
+    replicate(...except: string[]): this;
+    /** Check if two models have the same ID and table */
+    is(model: Model | null): boolean;
+    /** Check if two models are different */
+    isNot(model: Model | null): boolean;
+    /** Get a subset of attributes as a plain object */
+    only(...keys: (string | string[])[]): Partial<TAttributes>;
+    /** Get all attributes except specified keys */
+    except(...keys: (string | string[])[]): Partial<TAttributes>;
+    /** Make attributes visible on this instance */
+    makeVisible(...attrs: (string | string[])[]): this;
+    /** Make attributes hidden on this instance */
+    makeHidden(...attrs: (string | string[])[]): this;
+    /** Check if attribute was changed on last save */
+    wasChanged(attr?: string): boolean;
+    /** Get attributes changed on last save */
+    getChanges(): Partial<TAttributes>;
+
     // Soft delete instance methods
     trashed(): boolean;
     restore(): Promise<this>;
@@ -459,6 +523,8 @@ declare module 'outlet-orm' {
 
   export abstract class Relation<T extends Model> {
     constructor(parent: Model, related: new () => T, foreignKey: string, localKey: string);
+    /** Set a default value when the relation result is null */
+    withDefault(value?: Record<string, any> | (() => T) | boolean): this;
     abstract get(): Promise<T | T[] | null>;
     abstract eagerLoad(models: Model[], relationName: string, constraint?: (qb: QueryBuilder<T>) => void): Promise<void>;
   }

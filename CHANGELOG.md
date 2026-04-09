@@ -4,6 +4,69 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [11.0.0] - 2026-04-08
+
+### ✨ New — Proxy-based Property Access
+
+- Model instances now support direct property access (`user.name` instead of `user.getAttribute('name')`)
+- Proxy-based implementation with collision-safe `_ownProperties` guard
+- Property assignment writes through to `setAttribute()` automatically
+
+### ✨ New — Eloquent-style Model Methods
+
+- **`fresh(...relations)`** — Reload a model from the database, returns a new instance
+- **`refresh()`** — Reload the current instance in place from the database
+- **`replicate(...except)`** — Clone the model without its primary key
+- **`is(model)` / `isNot(model)`** — Identity comparison (same table + same PK)
+- **`only(...keys)` / `except(...keys)`** — Return a subset/exclusion of attributes as plain objects
+
+### ✨ New — Instance-level Visibility Control
+
+- **`makeVisible(...attrs)`** — Reveal statically hidden attributes on a specific instance
+- **`makeHidden(...attrs)`** — Hide additional attributes on a specific instance
+- **`static appends`** — Declare computed accessor attributes to include in `toJSON()` output
+
+### ✨ New — Change Tracking
+
+- **`wasChanged(attr?)`** — Check if attribute(s) changed after the last save
+- **`getChanges()`** — Get all attributes that changed during the last save
+
+### ✨ New — QueryBuilder Enhancements
+
+- **`pluck(column, keyColumn?)`** — Return array of values (or keyed object) for a column
+- **`value(column)`** — Return a single scalar value from the first row
+- **`sum(column)` / `avg(column)` / `min(column)` / `max(column)`** — SQL aggregate functions
+- **`chunk(size, callback)`** — Process large result sets in chunks
+- **`when(condition, callback, fallback?)`** — Conditional query building
+- **`tap(callback)`** — Debugging passthrough for query inspection
+- **`toSQL()`** — Return the built query representation without executing
+- **`dd()`** — Dump query and die (throws after logging)
+
+### ✨ New — Local Scopes
+
+- Define `static scopeName(query, ...args)` methods on models
+- Call them fluently: `User.query().active().olderThan(18)`
+- Proxy-based interception on `QueryBuilder` returned by `Model.query()`
+
+### ✨ New — Relation Defaults
+
+- **`withDefault(value?)`** on `HasOne`, `MorphOne`, `HasOneThrough` relations
+- Supports `true` (empty model), object (model with attributes), or function (custom builder)
+
+### ✨ New — DatabaseConnection Aggregates
+
+- **`aggregate(table, fn, column, query)`** — Generic SUM/AVG/MIN/MAX support at driver level
+
+### 🧪 Tests
+
+- Added 17 tests for property access (`tests/PropertyAccess.test.js`)
+- Added 51 tests for all new features (`tests/NewEvolutions.test.js`)
+- Total: 433 tests passing
+
+### 📝 TypeScript
+
+- Updated `types/index.d.ts` with all new method signatures and types
+
 ## [10.0.0] - 2026-04-01
 
 ### 💥 Breaking — Rename AiBridge → AI

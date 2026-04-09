@@ -14,7 +14,7 @@ class HasOneRelation extends Relation {
       .where(this.foreignKey, this.parent.getAttribute(this.localKey))
       .first();
 
-    return result;
+    return result || this._buildDefault();
   }
 
   /**
@@ -42,7 +42,7 @@ class HasOneRelation extends Relation {
 
     models.forEach(model => {
       const localKeyValue = model.getAttribute(this.localKey);
-      model.relations[relationName] = relatedMap[localKeyValue] || null;
+      model.relations[relationName] = relatedMap[localKeyValue] || this._buildDefault();
     });
   }
 
