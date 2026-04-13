@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [12.0.0] — 2026-04-13
+
+### Breaking Changes
+- `DBFunction` alias removed — use `SchemaFunction` or `Function` instead
+
+### Added
+- All `src/Objects/` class names harmonised to `Schema*` prefix (`SchemaView`, `SchemaTrigger`, `SchemaProcedure`, `SchemaFunction`, `SchemaTransaction`)
+- Short-name aliases (`View`, `Trigger`, `Procedure`, `Function`, `Transaction`) kept for backward compatibility
+- `useSchema()` helper binds all five builders in a single call
+- Full fluent DDL builder API for views, triggers, stored procedures, functions and savepoint transactions
+- `docs/DATABASE_OBJECTS.md` reference documentation
+- `skills/outlet-orm/` updated: SKILL.md v12.0.0 metadata, ADVANCED.md Fluent Builder section
+
 ## [11.4.0] — Fluent DB Objects API
 
 ### Added

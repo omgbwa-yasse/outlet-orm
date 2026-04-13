@@ -4,7 +4,7 @@ description: Outlet ORM is a Laravel Eloquent-inspired ORM for Node.js with MySQ
 license: MIT
 metadata:
 author: omgbwa-yasse
-version: "11.4.0"
+version: "12.0.0"
 source: https://github.com/omgbwa-yasse/outlet-orm
 npm: https://www.npmjs.com/package/outlet-orm
 ---
