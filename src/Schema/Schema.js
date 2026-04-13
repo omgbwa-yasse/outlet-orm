@@ -3,6 +3,11 @@
  * Provides a fluent interface for creating and modifying database tables
  */
 
+const ViewBuilder = require('./ViewBuilder');
+const TriggerBuilder = require('./TriggerBuilder');
+const ProcedureBuilder = require('./ProcedureBuilder');
+const { UnsupportedCapabilityError } = require('../Errors/UnsupportedCapabilityError');
+
 function quoteIdentifier(identifier) {
   if (!identifier || typeof identifier !== 'string') {
     throw new Error('Invalid SQL identifier');
@@ -12,6 +17,23 @@ function quoteIdentifier(identifier) {
     throw new Error('Invalid SQL identifier');
   }
   return `\`${identifier}\``;
+}
+
+/**
+ * Quote a SQL identifier using driver-appropriate characters.
+ * MySQL → backtick, PostgreSQL / SQLite → double-quote.
+ * @param {string} identifier
+ * @param {string} driver
+ * @returns {string}
+ */
+function quoteId(identifier, driver) {
+  if (!identifier || typeof identifier !== 'string') {
+    throw new Error('Invalid SQL identifier');
+  }
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(identifier)) {
+    throw new Error('Invalid SQL identifier');
+  }
+  return driver === 'mysql' ? `\`${identifier}\`` : `"${identifier}"`;
 }
 
 class Schema {
@@ -171,6 +193,433 @@ class Schema {
 
     const result = await this.connection.execute(sql, params);
     return result[0].count > 0;
+  }
+
+  // ==================== Views ====================
+
+  /**
+   * Create a view, optionally replacing an existing one.
+   * @param {string}  name      - View name
+   * @param {string}  selectSql - The SELECT statement body (no parameters — embed literals only)
+   * @param {Object}  [options]
+   * @param {boolean} [options.replace=true] - Use CREATE OR REPLACE (MySQL/PG) or DROP+CREATE (SQLite)
+   * @returns {Promise<void>}
+   */
+  async createView(name, selectSql, options = {}) {
+    const driver = this.connection.driver;
+    const replace = options.replace !== false;
+    const statements = ViewBuilder.buildCreate(name, selectSql, replace, driver);
+    for (const sql of statements) {
+      await this.connection.execute(sql);
+    }
+  }
+
+  /**
+   * Create or replace a view (shorthand for createView with replace:true).
+   * @param {string} name
+   * @param {string} selectSql
+   * @returns {Promise<void>}
+   */
+  async createOrReplaceView(name, selectSql) {
+    return this.createView(name, selectSql, { replace: true });
+  }
+
+  /**
+   * Drop a view. Throws if the view does not exist.
+   * @param {string} name
+   * @returns {Promise<void>}
+   */
+  async dropView(name) {
+    const driver = this.connection.driver;
+    await this.connection.execute(`DROP VIEW ${quoteId(name, driver)}`);
+  }
+
+  /**
+   * Drop a view if it exists (no-op otherwise).
+   * @param {string} name
+   * @returns {Promise<void>}
+   */
+  async dropViewIfExists(name) {
+    const driver = this.connection.driver;
+    await this.connection.execute(`DROP VIEW IF EXISTS ${quoteId(name, driver)}`);
+  }
+
+  /**
+   * Check whether a view with the given name exists.
+   * @param {string} name
+   * @returns {Promise<boolean>}
+   */
+  async hasView(name) {
+    const driver = this.connection.driver;
+    let sql, params;
+
+    switch (driver) {
+    case 'mysql':
+      sql = 'SELECT COUNT(*) as count FROM information_schema.views WHERE table_schema = DATABASE() AND table_name = ?';
+      params = [name];
+      break;
+    case 'postgres':
+      sql = 'SELECT COUNT(*) as count FROM information_schema.views WHERE table_schema = \'public\' AND table_name = $1';
+      params = [name];
+      break;
+    case 'sqlite':
+      sql = 'SELECT COUNT(*) as count FROM sqlite_master WHERE type = \'view\' AND name = ?';
+      params = [name];
+      break;
+    default:
+      throw new Error(`Unsupported driver: ${driver}`);
+    }
+
+    const result = await this.connection.execute(sql, params);
+    const count = result[0]?.count ?? result[0]?.COUNT ?? 0;
+    return Number(count) > 0;
+  }
+
+  /**
+   * Return the names of all views in the current schema/database.
+   * @returns {Promise<string[]>}
+   */
+  async getViews() {
+    const driver = this.connection.driver;
+    let sql;
+
+    switch (driver) {
+    case 'mysql':
+      sql = 'SELECT table_name FROM information_schema.views WHERE table_schema = DATABASE() ORDER BY table_name';
+      break;
+    case 'postgres':
+      sql = 'SELECT table_name FROM information_schema.views WHERE table_schema = \'public\' ORDER BY table_name';
+      break;
+    case 'sqlite':
+      sql = 'SELECT name FROM sqlite_master WHERE type = \'view\' ORDER BY name';
+      break;
+    default:
+      throw new Error(`Unsupported driver: ${driver}`);
+    }
+
+    const rows = await this.connection.execute(sql);
+    return rows.map(row => row.table_name ?? row.name);
+  }
+
+  // ==================== Triggers ====================
+
+  /**
+   * Create a database trigger.
+   * @param {Object} options
+   * @param {string} options.name     - Trigger name
+   * @param {string} options.table    - Target table (or view for INSTEAD OF)
+   * @param {string} options.timing   - 'BEFORE' | 'AFTER' | 'INSTEAD OF'
+   * @param {string} options.event    - 'INSERT' | 'UPDATE' | 'DELETE'
+   * @param {string} [options.forEach='ROW'] - 'ROW' | 'STATEMENT'
+   * @param {string} options.body     - Trigger body (BEGIN … END for MySQL; SQLite statement list)
+   * @returns {Promise<void>}
+   */
+  async createTrigger(options) {
+    const driver = this.connection.driver;
+
+    // PG collision guard: if a trigger function already exists with this name, abort
+    if (driver === 'postgres') {
+      const fnName = options.name + '_fn';
+      const fnExists = await this.hasFunction(fnName);
+      if (fnExists) {
+        throw new Error(
+          `A PostgreSQL trigger function named "${fnName}" already exists. ` +
+          'Drop it first or choose a different trigger name.'
+        );
+      }
+    }
+
+    const statements = TriggerBuilder.buildCreate(options, driver);
+    for (const sql of statements) {
+      await this.connection.execute(sql);
+    }
+  }
+
+  /**
+   * Drop a trigger. Throws if it does not exist.
+   * PostgreSQL also drops the associated trigger function ({name}_fn).
+   * @param {string} name  - Trigger name
+   * @param {string} table - Table the trigger belongs to
+   * @returns {Promise<void>}
+   */
+  async dropTrigger(name, table) {
+    const driver = this.connection.driver;
+    const qName  = quoteId(name,  driver);
+    const qTable = quoteId(table, driver);
+
+    switch (driver) {
+    case 'mysql':
+      await this.connection.execute(`DROP TRIGGER ${qTable}.${qName}`);
+      break;
+    case 'postgres':
+      await this.connection.execute(`DROP TRIGGER ${qName} ON ${qTable}`);
+      await this.connection.execute(`DROP FUNCTION IF EXISTS ${quoteId(name + '_fn', driver)}()`);
+      break;
+    case 'sqlite':
+      await this.connection.execute(`DROP TRIGGER ${qName}`);
+      break;
+    default:
+      throw new Error(`Unsupported driver: ${driver}`);
+    }
+  }
+
+  /**
+   * Drop a trigger if it exists (no-op otherwise).
+   * PostgreSQL also drops the associated trigger function ({name}_fn).
+   * @param {string} name
+   * @param {string} table
+   * @returns {Promise<void>}
+   */
+  async dropTriggerIfExists(name, table) {
+    const driver = this.connection.driver;
+    const qName  = quoteId(name,  driver);
+    const qTable = quoteId(table, driver);
+
+    switch (driver) {
+    case 'mysql':
+      await this.connection.execute(`DROP TRIGGER IF EXISTS ${qTable}.${qName}`);
+      break;
+    case 'postgres':
+      await this.connection.execute(`DROP TRIGGER IF EXISTS ${qName} ON ${qTable}`);
+      await this.connection.execute(`DROP FUNCTION IF EXISTS ${quoteId(name + '_fn', driver)}()`);
+      break;
+    case 'sqlite':
+      await this.connection.execute(`DROP TRIGGER IF EXISTS ${qName}`);
+      break;
+    default:
+      throw new Error(`Unsupported driver: ${driver}`);
+    }
+  }
+
+  /**
+   * Check whether a trigger with the given name exists on the given table.
+   * @param {string} name
+   * @param {string} table
+   * @returns {Promise<boolean>}
+   */
+  async hasTrigger(name, table) {
+    const driver = this.connection.driver;
+    let sql, params;
+
+    switch (driver) {
+    case 'mysql':
+      sql = 'SELECT COUNT(*) as count FROM information_schema.triggers WHERE event_object_schema = DATABASE() AND trigger_name = ? AND event_object_table = ?';
+      params = [name, table];
+      break;
+    case 'postgres':
+      sql = 'SELECT COUNT(*) as count FROM pg_trigger t JOIN pg_class c ON t.tgrelid = c.oid WHERE t.tgname = $1 AND c.relname = $2';
+      params = [name, table];
+      break;
+    case 'sqlite':
+      sql = 'SELECT COUNT(*) as count FROM sqlite_master WHERE type = \'trigger\' AND name = ? AND tbl_name = ?';
+      params = [name, table];
+      break;
+    default:
+      throw new Error(`Unsupported driver: ${driver}`);
+    }
+
+    const result = await this.connection.execute(sql, params);
+    const count = result[0]?.count ?? result[0]?.COUNT ?? 0;
+    return Number(count) > 0;
+  }
+
+  /**
+   * Return the names of all triggers, optionally filtered by table.
+   * @param {string} [table] - If provided, list only triggers for this table
+   * @returns {Promise<string[]>}
+   */
+  async getTriggers(table) {
+    const driver = this.connection.driver;
+    let sql, params = [];
+
+    switch (driver) {
+    case 'mysql':
+      if (table) {
+        sql = 'SELECT trigger_name FROM information_schema.triggers WHERE event_object_schema = DATABASE() AND event_object_table = ? ORDER BY trigger_name';
+        params = [table];
+      } else {
+        sql = 'SELECT trigger_name FROM information_schema.triggers WHERE event_object_schema = DATABASE() ORDER BY trigger_name';
+      }
+      break;
+    case 'postgres':
+      if (table) {
+        sql = 'SELECT t.tgname FROM pg_trigger t JOIN pg_class c ON t.tgrelid = c.oid WHERE NOT t.tgisinternal AND c.relname = $1 ORDER BY t.tgname';
+        params = [table];
+      } else {
+        sql = 'SELECT t.tgname FROM pg_trigger t JOIN pg_class c ON t.tgrelid = c.oid WHERE NOT t.tgisinternal ORDER BY t.tgname';
+      }
+      break;
+    case 'sqlite':
+      if (table) {
+        sql = 'SELECT name FROM sqlite_master WHERE type = \'trigger\' AND tbl_name = ? ORDER BY name';
+        params = [table];
+      } else {
+        sql = 'SELECT name FROM sqlite_master WHERE type = \'trigger\' ORDER BY name';
+      }
+      break;
+    default:
+      throw new Error(`Unsupported driver: ${driver}`);
+    }
+
+    const rows = await this.connection.execute(sql, params);
+    return rows.map(row => row.trigger_name ?? row.tgname ?? row.name);
+  }
+
+  // ==================== Stored Procedures ====================
+
+  /**
+   * Create a stored procedure (MySQL / PostgreSQL only).
+   * @param {string} name
+   * @param {string} params - Parameter list string (raw SQL, e.g. 'IN x INT, IN y INT')
+   * @param {string} body   - Procedure body
+   * @param {Object} [options]
+   * @param {string} [options.language='plpgsql'] - PG only: procedural language
+   * @returns {Promise<void>}
+   */
+  async createProcedure(name, params, body, options = {}) {
+    const driver = this.connection.driver;
+    const sql = ProcedureBuilder.buildCreateProcedure({ name, params, body, ...options }, driver);
+    await this.connection.execute(sql);
+  }
+
+  /**
+   * Drop a stored procedure. Throws if it does not exist.
+   * @param {string} name
+   * @returns {Promise<void>}
+   */
+  async dropProcedure(name) {
+    const driver = this.connection.driver;
+    if (driver === 'sqlite') {
+      throw new UnsupportedCapabilityError('sqlite', 'stored procedures');
+    }
+    const qName = quoteId(name, driver);
+    if (driver === 'mysql') {
+      await this.connection.execute(`DROP PROCEDURE ${qName}`);
+    } else {
+      await this.connection.execute(`DROP PROCEDURE ${qName}`);
+    }
+  }
+
+  /**
+   * Drop a stored procedure if it exists.
+   * @param {string} name
+   * @returns {Promise<void>}
+   */
+  async dropProcedureIfExists(name) {
+    const driver = this.connection.driver;
+    if (driver === 'sqlite') {
+      throw new UnsupportedCapabilityError('sqlite', 'stored procedures');
+    }
+    const qName = quoteId(name, driver);
+    await this.connection.execute(`DROP PROCEDURE IF EXISTS ${qName}`);
+  }
+
+  /**
+   * Check whether a stored procedure with the given name exists.
+   * @param {string} name
+   * @returns {Promise<boolean>}
+   */
+  async hasProcedure(name) {
+    const driver = this.connection.driver;
+    if (driver === 'sqlite') {
+      throw new UnsupportedCapabilityError('sqlite', 'stored procedures');
+    }
+    let sql, params;
+
+    if (driver === 'mysql') {
+      sql = 'SELECT COUNT(*) as count FROM information_schema.routines WHERE routine_type = \'PROCEDURE\' AND routine_schema = DATABASE() AND routine_name = ?';
+      params = [name];
+    } else {
+      // PostgreSQL
+      const pgVersion = this.connection._pgVersionNum ?? 110000;
+      if (pgVersion < 110000) {
+        // Stored procedures (CALL) did not exist before PG 11
+        return false;
+      }
+      sql = 'SELECT COUNT(*) as count FROM pg_proc p JOIN pg_namespace n ON p.pronamespace = n.oid WHERE p.prokind = \'p\' AND n.nspname = \'public\' AND p.proname = $1';
+      params = [name];
+    }
+
+    const result = await this.connection.execute(sql, params);
+    const count = result[0]?.count ?? result[0]?.COUNT ?? 0;
+    return Number(count) > 0;
+  }
+
+  // ==================== Stored Functions ====================
+
+  /**
+   * Create a stored function (MySQL / PostgreSQL only).
+   * @param {string} name
+   * @param {string} params  - Parameter list string
+   * @param {string} body    - Function body
+   * @param {Object} [options]
+   * @param {string} [options.returns]             - Return type (required for MySQL)
+   * @param {string} [options.language='plpgsql']  - PG: procedural language
+   * @returns {Promise<void>}
+   */
+  async createFunction(name, params, body, options = {}) {
+    const driver = this.connection.driver;
+    const sql = ProcedureBuilder.buildCreateFunction({ name, params, body, ...options }, driver);
+    await this.connection.execute(sql);
+  }
+
+  /**
+   * Drop a stored function. Throws if it does not exist.
+   * @param {string} name
+   * @returns {Promise<void>}
+   */
+  async dropFunction(name) {
+    const driver = this.connection.driver;
+    if (driver === 'sqlite') {
+      throw new UnsupportedCapabilityError('sqlite', 'stored functions');
+    }
+    const qName = quoteId(name, driver);
+    await this.connection.execute(`DROP FUNCTION ${qName}`);
+  }
+
+  /**
+   * Drop a stored function if it exists.
+   * @param {string} name
+   * @returns {Promise<void>}
+   */
+  async dropFunctionIfExists(name) {
+    const driver = this.connection.driver;
+    if (driver === 'sqlite') {
+      throw new UnsupportedCapabilityError('sqlite', 'stored functions');
+    }
+    const qName = quoteId(name, driver);
+    await this.connection.execute(`DROP FUNCTION IF EXISTS ${qName}`);
+  }
+
+  /**
+   * Check whether a stored function with the given name exists.
+   * @param {string} name
+   * @returns {Promise<boolean>}
+   */
+  async hasFunction(name) {
+    const driver = this.connection.driver;
+    if (driver === 'sqlite') {
+      throw new UnsupportedCapabilityError('sqlite', 'stored functions');
+    }
+    let sql, params;
+
+    if (driver === 'mysql') {
+      sql = 'SELECT COUNT(*) as count FROM information_schema.routines WHERE routine_type = \'FUNCTION\' AND routine_schema = DATABASE() AND routine_name = ?';
+      params = [name];
+    } else {
+      // PostgreSQL
+      const pgVersion = this.connection._pgVersionNum ?? 110000;
+      if (pgVersion >= 110000) {
+        sql = 'SELECT COUNT(*) as count FROM pg_proc p JOIN pg_namespace n ON p.pronamespace = n.oid WHERE p.prokind = \'f\' AND n.nspname = \'public\' AND p.proname = $1';
+      } else {
+        sql = 'SELECT COUNT(*) as count FROM pg_proc p JOIN pg_namespace n ON p.pronamespace = n.oid WHERE NOT p.proisagg AND NOT p.proiswindow AND n.nspname = \'public\' AND p.proname = $1';
+      }
+      params = [name];
+    }
+
+    const result = await this.connection.execute(sql, params);
+    const count = result[0]?.count ?? result[0]?.COUNT ?? 0;
+    return Number(count) > 0;
   }
 }
 

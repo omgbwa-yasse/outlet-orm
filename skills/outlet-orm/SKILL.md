@@ -4,7 +4,7 @@ description: Outlet ORM is a Laravel Eloquent-inspired ORM for Node.js with MySQ
 license: MIT
 metadata:
 author: omgbwa-yasse
-version: "11.0.0"
+version: "11.4.0"
 source: https://github.com/omgbwa-yasse/outlet-orm
 npm: https://www.npmjs.com/package/outlet-orm
 ---
@@ -13,6 +13,8 @@ npm: https://www.npmjs.com/package/outlet-orm
 
 Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for Node.js/TypeScript with support for MySQL, PostgreSQL, and SQLite.
 
+> 🆕 **v11.4.0**: Fluent Builder API — `SchemaView`, `SchemaTrigger`, `SchemaProcedure`, `SchemaFunction`, `SchemaTransaction` and `useSchema()`. Bind all DB object builders to a schema/connection in one call. Harmonised `Schema*` exports alongside short aliases. See [DATABASE_OBJECTS.md](../../docs/DATABASE_OBJECTS.md).
+>
 > 🆕 **v11.0.0**: Proxy property access (`user.name`), Eloquent-style model methods (`fresh`, `refresh`, `replicate`, `is`, `isNot`, `only`, `except`, `makeVisible`, `makeHidden`, `wasChanged`, `getChanges`), computed `appends`, QueryBuilder enhancements (`value`, `chunk`, `when`, `tap`, `toSQL`, `dd`), fluent local scopes (`static scopeActive(query)` → `User.query().active()`), relation `withDefault()`. See [MODELS.md](MODELS.md), [QUERIES.md](QUERIES.md), [ADVANCED.md](ADVANCED.md), [RELATIONS.md](RELATIONS.md).
 >
 > 🔖 **v9.0.0**: Complete AI documentation — AI multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, AI Prompt Enhancer, AI Safety Guardrails. See [AI.md](AI.md).
@@ -36,6 +38,7 @@ Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for N
 | **[RELATIONS.md](RELATIONS.md)** | Relationships, Eager Loading, polymorphic, naming conventions |
 | **[MIGRATIONS.md](MIGRATIONS.md)** | Schema Builder, CLI tools, column types, foreign keys |
 | **[ADVANCED.md](ADVANCED.md)** | Transactions, Soft Deletes, Events, Validation, Best Practices |
+| **[DATABASE_OBJECTS.md](../../docs/DATABASE_OBJECTS.md)** | 🗂️ Views, Triggers, Procedures, Functions, Savepoints, Fluent Builder API (`SchemaView`, `SchemaTrigger` …) |
 | **[TYPESCRIPT.md](TYPESCRIPT.md)** | TypeScript types, generics, typed models, migrations |
 | **[SECURITY.md](SECURITY.md)** | 🔐 Security best practices, authentication, authorisation |
 | **[BACKUP.md](BACKUP.md)** | 🗄️ Backups, scheduling, AES-256-GCM encryption, TCP daemon, restore |
@@ -53,6 +56,8 @@ Reference these guidelines when:
 - Using Eager Loading  [RELATIONS.md](RELATIONS.md)
 - Setting up migrations  [MIGRATIONS.md](MIGRATIONS.md)
 - Implementing transactions, soft deletes, events  [ADVANCED.md](ADVANCED.md)
+- Creating views, triggers, stored procedures/functions  [DATABASE_OBJECTS.md](../../docs/DATABASE_OBJECTS.md)
+- Using the Fluent Builder API (`useSchema`, `SchemaView`, `SchemaTrigger` …)  [DATABASE_OBJECTS.md](../../docs/DATABASE_OBJECTS.md)
 - Using TypeScript with typed models  [TYPESCRIPT.md](TYPESCRIPT.md)
 - Securing your backend application  [SECURITY.md](SECURITY.md)
 - Scheduling or encrypting database backups  [BACKUP.md](BACKUP.md)

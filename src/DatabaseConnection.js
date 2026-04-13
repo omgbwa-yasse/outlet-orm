@@ -13,6 +13,7 @@ let queryLoggingEnabled = false;
 const MAX_QUERY_LOG_SIZE = 1000;
 
 const RawExpression = require('./RawExpression');
+const { UnsupportedCapabilityError } = require('./Errors/UnsupportedCapabilityError');
 
 /**
  * Sanitize SQL identifier (table/column name) to prevent SQL injection
@@ -118,6 +119,9 @@ class DatabaseConnection {
     this.connection = null;
     this.pool = null;
     this._transactionConnection = null;
+    this._pendingIsolationLevel = null;
+    this._pgVersionNum = null;
+    this._sqliteInTransaction = false;
   }
 
   // ==================== Query Logging ====================
@@ -222,6 +226,22 @@ class DatabaseConnection {
       database: this.config.database,
       max: this.config.connectionLimit
     });
+
+    // Cache the server version number (e.g. 110012 for 11.0.12) for feature gating.
+    // Defaults to 110000 (PG 11.0) if the query fails — safe fallback assuming ≥11.
+    try {
+      const client = await this.pool.connect();
+      try {
+        const res = await client.query(
+          'SELECT current_setting(\'server_version_num\')::int AS v'
+        );
+        this._pgVersionNum = res.rows[0].v;
+      } finally {
+        client.release();
+      }
+    } catch (_) {
+      this._pgVersionNum = 110000;
+    }
   }
 
   /**
@@ -250,16 +270,30 @@ class DatabaseConnection {
     await this.connect();
 
     switch (this.driver) {
-    case 'mysql':
+    case 'mysql': {
       this._transactionConnection = await this.pool.getConnection();
+      if (this._pendingIsolationLevel) {
+        await this._transactionConnection.execute(
+          `SET TRANSACTION ISOLATION LEVEL ${this._pendingIsolationLevel}`
+        );
+        this._pendingIsolationLevel = null;
+      }
       await this._transactionConnection.beginTransaction();
       break;
+    }
 
     case 'postgres':
-    case 'postgresql':
+    case 'postgresql': {
       this._transactionConnection = await this.pool.connect();
       await this._transactionConnection.query('BEGIN');
+      if (this._pendingIsolationLevel) {
+        await this._transactionConnection.query(
+          `SET TRANSACTION ISOLATION LEVEL ${this._pendingIsolationLevel}`
+        );
+        this._pendingIsolationLevel = null;
+      }
       break;
+    }
 
     case 'sqlite':
       await new Promise((resolve, reject) => {
@@ -268,6 +302,7 @@ class DatabaseConnection {
           else resolve();
         });
       });
+      this._sqliteInTransaction = true;
       break;
     }
   }
@@ -308,6 +343,7 @@ class DatabaseConnection {
           else resolve();
         });
       });
+      this._sqliteInTransaction = false;
       break;
     }
   }
@@ -348,6 +384,7 @@ class DatabaseConnection {
           else resolve();
         });
       });
+      this._sqliteInTransaction = false;
       break;
     }
   }
@@ -367,6 +404,125 @@ class DatabaseConnection {
       await this.rollback();
       throw error;
     }
+  }
+
+  // ==================== Savepoints ====================
+
+  /**
+   * Create a named savepoint within the current transaction.
+   * For MySQL and PostgreSQL, a transaction must be active first.
+   * SQLite allows SAVEPOINT outside an explicit BEGIN (it begins a deferred transaction).
+   * @param {string} name - Savepoint name (alphanumeric / underscore only)
+   * @returns {Promise<void>}
+   */
+  async savepoint(name) {
+    await this.connect();
+    const safeName = sanitizeIdentifier(name);
+    if (this.driver === 'mysql' || this.driver === 'postgres') {
+      if (!this._transactionConnection) {
+        throw new Error('No active transaction. Call beginTransaction() first.');
+      }
+    }
+    await this.execute(`SAVEPOINT ${safeName}`);
+  }
+
+  /**
+   * Roll back to a named savepoint.
+   * MySQL and PostgreSQL prune all inner savepoints created after this one.
+   * SQLite does NOT remove the named savepoint itself after rollback.
+   * @param {string} name
+   * @returns {Promise<void>}
+   */
+  async rollbackTo(name) {
+    await this.connect();
+    const safeName = sanitizeIdentifier(name);
+    await this.execute(`ROLLBACK TO SAVEPOINT ${safeName}`);
+  }
+
+  /**
+   * Release a named savepoint, merging its changes into the enclosing transaction.
+   * @note On SQLite, releasing the outermost savepoint commits the entire transaction.
+   * @param {string} name
+   * @returns {Promise<void>}
+   */
+  async releaseSavepoint(name) {
+    await this.connect();
+    const safeName = sanitizeIdentifier(name);
+    await this.execute(`RELEASE SAVEPOINT ${safeName}`);
+  }
+
+  // ==================== Isolation Levels ====================
+
+  /**
+   * Set the isolation level for the **next** transaction.
+   * Must be called before beginTransaction().
+   * - SQLite + SERIALIZABLE: silent no-op (SQLite is always serializable)
+   * - SQLite + any other level: throws UnsupportedCapabilityError
+   * - MySQL / PostgreSQL: stores the level; emitted in beginTransaction()
+   * @param {string} level - One of the IsolationLevel constants
+   * @returns {void}
+   */
+  setIsolationLevel(level) {
+    if (this._transactionConnection !== null || this._sqliteInTransaction) {
+      throw new Error('Cannot set isolation level inside an active transaction');
+    }
+    if (this.driver === 'sqlite') {
+      if (level === 'SERIALIZABLE') {
+        // SQLite is inherently serializable — no SQL needed
+        return;
+      }
+      throw new UnsupportedCapabilityError('sqlite', 'isolation levels other than SERIALIZABLE');
+    }
+    this._pendingIsolationLevel = level;
+  }
+
+  // ==================== Stored Procedures & Functions ====================
+
+  /**
+   * Call a stored procedure and return its result set.
+   * @param {string} name   - Procedure name (alphanumeric / underscore only)
+   * @param {Array}  params - Bound parameter values
+   * @returns {Promise<Array>}
+   */
+  async callProcedure(name, params = []) {
+    if (this.driver === 'sqlite') {
+      throw new UnsupportedCapabilityError('sqlite', 'stored procedures');
+    }
+    await this.connect();
+    const safeName = sanitizeIdentifier(name);
+    let sql;
+    if (this.driver === 'mysql') {
+      sql = `CALL \`${safeName}\`(${params.map(() => '?').join(', ')})`;
+    } else {
+      // postgres
+      const placeholders = params.map((_, i) => `$${i + 1}`).join(', ');
+      sql = `CALL "${safeName}"(${placeholders})`;
+    }
+    return this.execute(sql, params);
+  }
+
+  /**
+   * Call a stored function and return its scalar result.
+   * @param {string} name   - Function name (alphanumeric / underscore only)
+   * @param {Array}  params - Bound parameter values
+   * @returns {Promise<any>}
+   */
+  async callFunction(name, params = []) {
+    if (this.driver === 'sqlite') {
+      throw new UnsupportedCapabilityError('sqlite', 'stored functions');
+    }
+    await this.connect();
+    const safeName = sanitizeIdentifier(name);
+    let sql;
+    if (this.driver === 'mysql') {
+      sql = `SELECT \`${safeName}\`(${params.map(() => '?').join(', ')}) AS result`;
+    } else {
+      // postgres
+      const placeholders = params.map((_, i) => `$${i + 1}`).join(', ');
+      sql = `SELECT "${safeName}"(${placeholders}) AS result`;
+    }
+    const rows = await this.execute(sql, params);
+    return rows && rows[0] ? rows[0].result : null;
   }
 
   // ==================== Query Methods ====================

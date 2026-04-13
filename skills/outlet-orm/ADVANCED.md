@@ -60,6 +60,48 @@ try {
 
 ---
 
+## Fluent Builder API — DB Objects (v11.4.0)
+
+Use `useSchema(schema)` to bind all five DB-object builders to a schema (connection prefix) at once. Full reference: [DATABASE_OBJECTS.md](../../docs/DATABASE_OBJECTS.md).
+
+### Bind all builders to a schema
+
+```javascript
+const { useSchema } = require('outlet-orm');
+const { View, Trigger, Procedure, Function, Transaction } = useSchema('app');
+// or use harmonised Schema* names:
+const {
+  SchemaView, SchemaTrigger, SchemaProcedure,
+  SchemaFunction, SchemaTransaction
+} = useSchema('app');
+```
+
+### Per-class `.use()` pattern
+
+Every builder exposes a static `.use(schema)` shorthand:
+
+```javascript
+const { SchemaView, SchemaTrigger, SchemaProcedure } = require('outlet-orm');
+
+const View       = SchemaView.use('dbo');
+const Trigger    = SchemaTrigger.use('dbo');
+const Procedure  = SchemaProcedure.use('dbo');
+```
+
+### Quick reference
+
+| Builder | Short alias | Purpose |
+|---|---|---|
+| `SchemaView` | `View` | `CREATE / DROP VIEW` |
+| `SchemaTrigger` | `Trigger` | `CREATE / DROP TRIGGER` |
+| `SchemaProcedure` | `Procedure` | `CREATE / DROP PROCEDURE` |
+| `SchemaFunction` | `Function` | `CREATE / DROP FUNCTION` |
+| `SchemaTransaction` | `Transaction` | `BEGIN / COMMIT / ROLLBACK / SAVEPOINT` |
+
+> **Note**: Short names (`View`, `Trigger`, etc.) are backward-compatible aliases exported alongside the full `Schema*` names. `DBFunction` has been removed — use `SchemaFunction` or `Function` instead.
+
+---
+
 ## Soft Deletes
 
 ### Enable Soft Deletes

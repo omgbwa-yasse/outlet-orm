@@ -4,6 +4,74 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [11.4.0] — Fluent DB Objects API
+
+### Added
+- `View`, `Trigger`, `Procedure`, `Function`, `Transaction` builder classes for a fluent DB objects API
+- `useSchema(schemaOrDb)` helper returning all five builder classes bound to a schema/connection in one call
+- `DBFunction` and `SchemaFunction` aliases for `Function`
+- All schema-bound builders (`View`, `Trigger`, `Procedure`, `Function`) accept either `Schema` or `DatabaseConnection` in `.use()` / `useSchema()` — a `DatabaseConnection` is auto-wrapped in a `Schema`
+- `Transaction` builder binds to `DatabaseConnection` directly (or extracts `.connection` from a `Schema`)
+- Unbound guard on all builders throws a descriptive `TypeError` with class name and remediation hint
+
+## [11.3.0] - 2026-04-13
+
+### ✨ New — Database Objects Support
+
+#### Views
+- `schema.createView(name, selectSql)` — create a view (all drivers)
+- `schema.createOrReplaceView(name, selectSql)` — create or replace (SQLite: drop + create)
+- `schema.dropView(name)` / `schema.dropViewIfExists(name)` — drop a view
+- `schema.hasView(name)` — check existence, returns `true` / `false`
+- `schema.getViews()` — list all view names
+
+#### Triggers
+- `schema.createTrigger({ name, table, timing, event, forEach, isView, body })` — create a trigger
+  - PostgreSQL: auto-generates a companion `{name}_fn()` trigger function
+  - SQLite: validates body (no qualified names, no DEFAULT VALUES, no ORDER BY/LIMIT)
+- `schema.dropTrigger(name, table)` / `schema.dropTriggerIfExists(name, table)` — drop a trigger
+- `schema.hasTrigger(name, table)` — check existence
+- `schema.getTriggers(table?)` — list trigger names (optionally filtered by table)
+
+#### Stored Procedures & Functions
+- `schema.createProcedure(name, params, body, options?)` — create a stored procedure (MySQL / PG)
+- `schema.dropProcedure(name)` / `schema.dropProcedureIfExists(name)`
+- `schema.hasProcedure(name)` — check existence
+- `schema.createFunction(name, params, body, options?)` — create a function (MySQL / PG)
+- `schema.dropFunction(name)` / `schema.dropFunctionIfExists(name)`
+- `schema.hasFunction(name)`
+- `db.callProcedure(name, params)` — call a stored procedure
+- `db.callFunction(name, params)` — call a function
+
+#### Savepoints
+- `db.savepoint(name)` — create a savepoint inside a transaction
+- `db.rollbackTo(name)` — partial rollback to a savepoint
+- `db.releaseSavepoint(name)` — release a savepoint
+
+#### Isolation Levels
+- `db.setIsolationLevel(level)` — set isolation level before `beginTransaction()`
+- New `IsolationLevel` constant exported from `'outlet-orm'`:
+  `READ_UNCOMMITTED`, `READ_COMMITTED`, `REPEATABLE_READ`, `SERIALIZABLE`
+- SQLite: `SERIALIZABLE` is a no-op; other levels throw `UnsupportedCapabilityError`
+
+#### New Error Class
+- `UnsupportedCapabilityError` — thrown when a driver doesn't support a capability.
+  Has `.driver` and `.capability` properties. Exported from `'outlet-orm'`.
+
+#### New Source Files
+- `src/Errors/UnsupportedCapabilityError.js`
+- `src/Schema/ViewBuilder.js`
+- `src/Schema/TriggerBuilder.js`
+- `src/Schema/ProcedureBuilder.js`
+
+#### Tests
+- `tests/DatabaseObjects.test.js` — 25 tests covering all new features with SQLite in-memory
+
+#### Documentation
+- `docs/DATABASE_OBJECTS.md` — comprehensive reference for all new DB-object APIs
+- `docs/MIGRATIONS.md` — new "Database Objects in Migrations" section
+- `README.md` — savepoints, isolation levels, and DB objects sections added
+
 ## [11.1.0] - 2026-04-08
 
 ### 📚 Documentation
