@@ -873,7 +873,65 @@ try {
 }
 ```
 
-## 🗑️ Soft Deletes
+### Savepoints
+
+Partial rollback within a transaction:
+
+```javascript
+await db.beginTransaction();
+await db.execute("INSERT INTO orders (product) VALUES ('A')");
+await db.savepoint('sp1');
+await db.execute("INSERT INTO orders (product) VALUES ('B')");
+await db.rollbackTo('sp1');   // undo 'B'
+await db.releaseSavepoint('sp1');
+await db.commit();            // only 'A' is saved
+```
+
+### Isolation Levels
+
+```javascript
+const { IsolationLevel } = require('outlet-orm');
+
+db.setIsolationLevel(IsolationLevel.SERIALIZABLE); // must be before beginTransaction()
+await db.beginTransaction();
+// …
+await db.commit();
+```
+
+Available: `READ_UNCOMMITTED`, `READ_COMMITTED`, `REPEATABLE_READ`, `SERIALIZABLE`.
+
+## 🗄️ Database Objects (v11.3.0+)
+
+Manage **views**, **triggers**, and **stored procedures/functions** directly from the Schema builder or inside migrations:
+
+```javascript
+const schema = db.getSchema();
+
+// Views
+await schema.createView('active_users', "SELECT * FROM users WHERE status = 'active'");
+await schema.hasView('active_users'); // true
+await schema.dropViewIfExists('active_users');
+
+// Triggers
+await schema.createTrigger({
+  name: 'stamp_updated_at', table: 'orders',
+  timing: 'AFTER', event: 'UPDATE',
+  body: "UPDATE orders SET updated_at = NOW() WHERE id = NEW.id;"
+});
+await schema.dropTriggerIfExists('stamp_updated_at', 'orders');
+
+// Stored procedures & functions (MySQL / PostgreSQL only)
+await schema.createProcedure('greet', 'IN name VARCHAR(100)', "SELECT CONCAT('Hi, ', name);");
+await schema.createFunction('add_tax', 'IN p DECIMAL(10,2)', 'RETURN p * 1.10;', { returns: 'DECIMAL(10,2)' });
+
+// Call at runtime
+await db.callProcedure('greet', ['Alice']);
+await db.callFunction('add_tax', [99.99]);
+```
+
+See [docs/DATABASE_OBJECTS.md](docs/DATABASE_OBJECTS.md) for the complete reference.
+
+
 
 Soft deletion using a `deleted_at` column:
 

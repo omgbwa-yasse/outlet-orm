@@ -1,6 +1,22 @@
 const Model = require('./Model');
 const QueryBuilder = require('./QueryBuilder');
 const DatabaseConnection = require('./DatabaseConnection');
+const { UnsupportedCapabilityError } = require('./Errors/UnsupportedCapabilityError');
+
+// DB Objects — Fluent API (v11.4.0)
+const { View, Trigger, Procedure, Function, Transaction, useSchema } = require('./Objects');
+
+/**
+ * Isolation level constants for use with DatabaseConnection.setIsolationLevel().
+ * @readonly
+ * @enum {string}
+ */
+const IsolationLevel = Object.freeze({
+  READ_UNCOMMITTED: 'READ UNCOMMITTED',
+  READ_COMMITTED:   'READ COMMITTED',
+  REPEATABLE_READ:  'REPEATABLE READ',
+  SERIALIZABLE:     'SERIALIZABLE'
+});
 
 // Relations
 const Relation = require('./Relations/Relation');
@@ -141,5 +157,17 @@ module.exports = {
   AIQueryBuilder,
   AISeeder,
   AIQueryOptimizer,
-  AIPromptEnhancer
+  AIPromptEnhancer,
+
+  // DB Objects support (v11.3.0)
+  IsolationLevel,
+  UnsupportedCapabilityError,
+
+  // DB Objects — Fluent API (v11.4.0)
+  View,
+  Trigger,
+  Procedure,
+  Function,
+  Transaction,
+  useSchema
 };

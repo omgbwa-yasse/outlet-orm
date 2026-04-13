@@ -754,6 +754,45 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 ```
 
+## 🗄️ Database Objects in Migrations (v11.3.0+)
+
+Migrations can manage **views**, **triggers**, and **stored procedures/functions** using the same Schema builder via `this.getSchema()`.
+
+```js
+const Migration = require('outlet-orm/src/Migrations/Migration');
+
+class CreateViewsAndTriggers extends Migration {
+  async up() {
+    const schema = this.getSchema();
+
+    await schema.createView(
+      'active_users',
+      "SELECT * FROM users WHERE status = 'active'"
+    );
+
+    await schema.createTrigger({
+      name:   'set_last_modified',
+      table:  'users',
+      timing: 'AFTER',
+      event:  'UPDATE',
+      body:   "UPDATE users SET last_modified = NOW() WHERE id = NEW.id;"
+    });
+  }
+
+  async down() {
+    const schema = this.getSchema();
+    await schema.dropViewIfExists('active_users');
+    await schema.dropTriggerIfExists('set_last_modified', 'users');
+  }
+}
+
+module.exports = CreateViewsAndTriggers;
+```
+
+See [DATABASE_OBJECTS.md](./DATABASE_OBJECTS.md) for the full reference including triggers, stored procedures, savepoints, and isolation levels.
+
+---
+
 ## 🎓 Résumé
 
 The Outlet ORM migration system offers:
@@ -766,5 +805,6 @@ The Outlet ORM migration system offers:
 - ✅ **Batch tracking** for precise rollback
 - ✅ **Interactive CLI** for all operations
 - ✅ **Custom SQL** when needed
+- ✅ **Views, triggers, procedures/functions** via Schema builder
 
 Use migrations for any changes to your production database! 🚀
