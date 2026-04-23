@@ -1,17 +1,11 @@
 ---
 name: outlet-orm-ai-integration
-description: Guide for AI agents to use Outlet ORM's AI multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, AI Prompt Enhancer, MCP Server, and AI Safety Guardrails. Use this skill when an AI agent needs to interact with LLMs, databases, run migrations, generate data, optimize queries, or create projects safely.
-license: MIT
-metadata:
-  author: omgbwa-yasse
-  version: "9.0.0"
-  source: https://github.com/omgbwa-yasse/outlet-orm
-  npm: https://www.npmjs.com/package/outlet-orm
+description: Guide for AI agents using Outlet ORM's AI multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, AI Prompt Enhancer, MCP Server, and AI Safety Guardrails. Use when an AI agent needs to interact with LLMs, databases, run migrations, generate data, optimize queries, or create projects safely.
 ---
 
 # Outlet ORM — AI Integration Guide
 
-This skill covers Outlet ORM's complete AI feature set (v7.0.0 – v9.0.0):
+This skill covers Outlet ORM's complete AI feature set (v7.0.0+, current: v12.0.0):
 
 - **AI** — Multi-provider LLM abstraction (9 providers, chat, stream, embeddings, images, TTS, STT, tool calling)
 - **AI Query Builder** — Natural language to SQL

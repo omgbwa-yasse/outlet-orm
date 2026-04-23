@@ -1,6 +1,6 @@
 # 📚 Outlet ORM – Complete Documentation
 
-> **Version 9.0.0** – A JavaScript/TypeScript ORM inspired by Laravel Eloquent for Node.js
+> **Version 12.0.0** – A JavaScript/TypeScript ORM inspired by Laravel Eloquent for Node.js
 
 ### 🚀 Getting Started
 - [Quick Start Guide](QUICKSTART.md)
@@ -24,11 +24,12 @@
 - [Events / Hooks](EVENTS.md)
 - [Validation](VALIDATION.md)
 - [Query Logging](QUERY_LOGGING.md)
+- [**Database Objects**](DATABASE_OBJECTS.md) – Views, triggers, procedures, functions, savepoints (v11.4.0+; `useSchema()` fluent API v12.0.0)
 
 ### 🗄️ Backup & Restore (v6.0.0)
 - [**Backup Guide**](BACKUP.md) – Full / partial / journal backups, scheduling, AES-256-GCM encryption, TCP daemon, remote restore
 
-### 🤖 AI Integration (v7.0.0 – v9.0.0)
+### 🤖 AI Integration (v7.0.0+)
 
 #### AI — Multi-Provider LLM Abstraction (v8.0.0+)
 - [**AI Manager**](AI_BRIDGE.md) – Unified API for 9+ LLM providers (OpenAI, Claude, Gemini, Ollama, Grok, Mistral, ONN, OpenRouter)
@@ -96,6 +97,28 @@ const users = await User.with('posts').where('status', 'active').get();
 ```
 
 > 💡 **Automatic connection**: Simply create a `.env` file with your connection settings. `Model` connects automatically on first use.
+
+## What's New in v12.0.0
+
+| Feature | Description |
+|---|---|
+| ⚠️ **Breaking** — `DBFunction` removed | Use `SchemaFunction` (or short alias `Function`) instead |
+| 🏗️ **`Schema*` harmonisation** | All DB object builders exported as `SchemaView`, `SchemaTrigger`, `SchemaProcedure`, `SchemaFunction`, `SchemaTransaction` |
+| 🔗 **`useSchema()` helper** | Bind all five builders in one call: `const { view, trigger, procedure, fn, tx } = useSchema(db)` |
+| 📖 **DATABASE_OBJECTS.md** | Comprehensive reference for views, triggers, procedures, functions, savepoints, isolation levels |
+
+### Previous Release — v11.0.0 / v11.3.0 / v11.4.0
+
+| Feature | Description |
+|---|---|
+| 🔍 **Proxy property access** | `user.name` instead of `user.getAttribute('name')` |
+| 🔄 **Eloquent model methods** | `fresh()`, `refresh()`, `replicate()`, `is()`, `only()`, `except()` |
+| 👁️ **Instance visibility control** | `makeVisible()`, `makeHidden()`, `static appends` |
+| 📝 **Change tracking** | `wasChanged()`, `isDirty()` |
+| 🏗️ **DB Object API (v11.3.0)** | Views, triggers, procedures, functions, savepoints, isolation levels via `Schema` |
+| 🔗 **Fluent DB object builders (v11.4.0)** | `View`, `Trigger`, `Procedure`, `Function`, `Transaction` builder classes + `useSchema()` |
+
+### Previous Release — v9.0.0 / v10.0.0
 
 ## What's New in v9.0.0
 

@@ -702,6 +702,12 @@ declare module 'outlet-orm' {
     dropUnique(name: string): void;
     /** Drop a foreign key */
     dropForeign(name: string): void;
+    /** Add a CHECK constraint */
+    check(expression: string): CheckConstraintBuilder;
+    /** Drop a named constraint (CHECK or FK) by name */
+    dropConstraint(name: string): this;
+    /** Drop a CHECK constraint by name (alias for dropConstraint) */
+    dropCheck(name: string): this;
   }
 
   /** Column builder for column definitions */
@@ -744,6 +750,18 @@ declare module 'outlet-orm' {
     onDelete(action: ForeignKeyAction): this;
     /** On update action */
     onUpdate(action: ForeignKeyAction): this;
+    /** Set an explicit constraint name (must be a valid SQL identifier) */
+    name(value?: string): this;
+  }
+
+  /** CHECK constraint builder — returned by Blueprint.check() */
+  export interface CheckConstraintBuilder {
+    /** Set an explicit name for the constraint (must be a valid SQL identifier) */
+    name(value?: string): this;
+    /** Get the resolved constraint name (custom or auto-generated) */
+    resolvedName(): string;
+    /** The raw SQL expression */
+    readonly expression: string;
   }
 
   /** Migration interface for typed migrations */

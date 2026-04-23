@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [12.1.0] — Fluent Migration Constraints
+
+### Added
+- `Blueprint.check(expression)` — add a `CHECK` constraint in `CREATE TABLE` or `ALTER TABLE … ADD CONSTRAINT CHECK` (MySQL, PostgreSQL; throws `UnsupportedCapabilityError` for SQLite ALTER)
+- `Blueprint.dropConstraint(name)` — drop a named constraint via `ALTER TABLE … DROP CHECK` (MySQL) or `ALTER TABLE … DROP CONSTRAINT` (PostgreSQL); throws for SQLite
+- `Blueprint.dropCheck(name)` — alias for `dropConstraint()`
+- `CheckConstraintDefinition` class — fluent builder returned by `check()`; supports `.name(value)` for explicit constraint names and `.resolvedName()` for auto-generated names
+- `ForeignKeyDefinition.name(value)` — set an explicit constraint name for a foreign key, overriding the auto-generated `{table}_{column}_foreign` name
+- TypeScript definitions updated: `TableBuilder.check()`, `TableBuilder.dropConstraint()`, `TableBuilder.dropCheck()`, `ForeignKeyBuilder.name()`, new `CheckConstraintBuilder` interface
+
 ## [12.0.0] — 2026-04-13
 
 ### Breaking Changes
