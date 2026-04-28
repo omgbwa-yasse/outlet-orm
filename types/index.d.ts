@@ -1436,3 +1436,7 @@ declare module 'outlet-orm' {
     generateMigrationCode(tableName: string, tableSchema: { columns: string[] }): Promise<string>;
   }
 }
+
+
+// ── API Layer (v13) ────────────────────────────────────────────────────
+export * from './api/index';

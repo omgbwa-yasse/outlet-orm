@@ -82,6 +82,9 @@ const AISeeder              = require('./AI/AISeeder');
 const AIQueryOptimizer      = require('./AI/AIQueryOptimizer');
 const AIPromptEnhancer      = require('./AI/AIPromptEnhancer');
 
+// API Layer (v13.0.0)
+const ApiLayer = require('./Api');
+
 module.exports = {
   // Core
   Model,
@@ -169,5 +172,8 @@ module.exports = {
   Procedure,
   Function,
   Transaction,
-  useSchema
+  useSchema,
+
+  // API Layer (v13.0.0)
+  ...ApiLayer
 };

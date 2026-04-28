@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/outlet-orm.svg)](https://www.npmjs.com/package/outlet-orm)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A JavaScript ORM inspired by Laravel Eloquent for Node.js with support for MySQL, PostgreSQL and SQLite.
+A JavaScript ORM inspired by Laravel Eloquent for Node.js with support for MySQL, PostgreSQL, SQLite and REST/GraphQL APIs.
 
 📚 **[Complete documentation available in `/docs`](./docs/INDEX.md)**
 
@@ -54,6 +54,11 @@ A JavaScript ORM inspired by Laravel Eloquent for Node.js with support for MySQL
   - [Model (static methods)](#model-static-methods)
   - [Model (instance methods)](#model-instance-methods)
   - [QueryBuilder](#querybuilder)
+- [🌐 API Layer (v13.0.0)](#api-layer-v1300)
+  - [Quick Example](#api-layer-quick-example)
+  - [Authentication](#api-layer-authentication)
+  - [Error Handling](#api-layer-error-handling)
+  - [Api Class Reference](#api-class-reference)
 - [🛠️ CLI tools](#cli-tools)
   - [outlet-init](#outlet-init)
   - [outlet-migrate](#outlet-migrate)
@@ -285,6 +290,10 @@ async store(req, res) {
 - **🆕 Fluent Local Scopes** (v11.0.0): `static scopeActive(query)` → `User.query().active()`
 - **🆕 Relation Defaults** (v11.0.0): `withDefault()` on HasOne/MorphOne/HasOneThrough
 - **🆕 Aggregates & Pluck** (v11.0.0): `sum()`, `avg()`, `min()`, `max()`, `value()`, keyed `pluck(col, key)`
+- **🌐 API Layer** (v13.0.0): `Api` base class — same fluent syntax as `Model` but over HTTP/REST. Native `fetch`, zero new runtime dependencies.
+- **🌐 ApiAdapter** (v13.0.0): Configurable HTTP transport — bearer/basic/apiKey/OAuth2 auth, AbortController timeout, multi-adapter support
+- **🌐 Typed Error Hierarchy** (v13.0.0): 10 typed HTTP error classes (`ApiNotFoundError`, `ApiValidationError`, `ApiRateLimitError`, etc.)
+- **🌐 Upload & Debug** (v13.0.0): `upload()` with progress callbacks, `.toRequest()` dry-run, `enableRequestLog()`
 
 ## ⚡ Quick Start
 
@@ -1305,6 +1314,112 @@ if (db.isLogging()) {
 | `dd()` | Dumps SQL + bindings and throws |
 | `clone()` | Clones the query builder |
 
+## 🌐 API Layer (v13.0.0)
+
+Outlet ORM v13 introduces a first-class **API Layer**: use the same Eloquent-inspired syntax to query REST (and GraphQL) APIs as you already do for SQL databases — no extra dependencies, no new concepts.
+
+```javascript
+const { Api, ApiAdapter } = require('outlet-orm');
+
+// 1. Configure an adapter
+const adapter = new ApiAdapter({
+  baseUrl: 'https://api.example.com',
+  auth: { type: 'bearer', token: process.env.API_TOKEN }
+});
+
+// 2. Define an Api model
+class Post extends Api {
+  static endpoint = 'posts';
+  static adapter  = adapter;
+}
+
+// 3. Use it — same syntax as Model
+const posts = await Post.all();             // GET /posts
+const post  = await Post.find(1);           // GET /posts/1
+const post  = await Post.findOrFail(42);    // throws ApiNotFoundError if missing
+
+const created = await Post.create({ title: 'Hello' }); // POST /posts
+created.title = 'Updated';
+await created.save();                                  // PATCH /posts/{id}
+await created.destroy();                               // DELETE /posts/{id}
+```
+
+### API Layer Quick Example
+
+#### Pagination
+
+```javascript
+// Returns { data: [...], total, per_page, current_page, last_page }
+const page = await Post.all({ page: 2, per_page: 20 });
+```
+
+#### Lifecycle events
+
+```javascript
+Post.on('created', (post) => console.log('Created:', post.id));
+Post.on('deleted', (post) => console.log('Deleted:', post.id));
+```
+
+### API Layer Authentication
+
+```javascript
+const adapter = new ApiAdapter({
+  baseUrl: 'https://api.example.com',
+  auth: {
+    type: 'oauth2',
+    accessToken:   process.env.ACCESS_TOKEN,
+    refreshToken:  process.env.REFRESH_TOKEN,
+    refreshUrl:    'https://api.example.com/auth/refresh',
+    onRefreshFail: () => redirectToLogin()
+  },
+  // Per-request dynamic headers (e.g. tenant ID)
+  dynamicHeaders: (req) => ({ 'X-Tenant-ID': currentTenant() }),
+  timeout: 10000
+});
+```
+
+Supported auth types: `bearer`, `basic`, `apiKey` (header or query), `cookie`, `oauth2` (with auto-refresh).
+
+### API Layer Error Handling
+
+```javascript
+const {
+  ApiNotFoundError,
+  ApiValidationError,
+  ApiRateLimitError,
+  ApiUnauthorizedError
+} = require('outlet-orm');
+
+try {
+  const post = await Post.findOrFail(999);
+} catch (err) {
+  if (err instanceof ApiNotFoundError)   console.log('Not found');
+  if (err instanceof ApiValidationError) console.log(err.errors);
+  if (err instanceof ApiRateLimitError)  console.log('Retry after', err.retryAfter, 's');
+}
+```
+
+Full error hierarchy: `ApiError` → `ApiResponseError` → `ApiNotFoundError` / `ApiValidationError` / `ApiUnauthorizedError` / `ApiForbiddenError` / `ApiServerError` / `ApiRateLimitError`; plus `ApiNetworkError` for timeouts.
+
+### Api Class Reference
+
+| Method | Description |
+|--------|-------------|
+| `Api.find(id)` | `GET {endpoint}/{id}` — returns `null` if 404 |
+| `Api.findOrFail(id)` | Like `find()`, throws `ApiNotFoundError` if not found |
+| `Api.all(params?)` | `GET {endpoint}` — returns array or `[]` on non-array response |
+| `Api.get(params?)` | Alias for `all()` |
+| `Api.create(data)` | `POST {endpoint}` — emits `creating`/`created` |
+| `instance.save()` | `PATCH {endpoint}/{id}` — emits `updating`/`updated` |
+| `instance.destroy()` | `DELETE {endpoint}/{id}` — emits `deleting`/`deleted` |
+| `Api.setDefaultAdapter(a)` | Set the global default adapter |
+| `Api.getDefaultAdapter()` | Get the global default adapter |
+| `Api.usingAdapter(a)` | Per-request adapter override |
+
+📖 **[Complete API Layer reference → OUTLET_ORM_API_LAYER.md](./OUTLET_ORM_API_LAYER.md)**
+
+---
+
 ## 🛠️ CLI tools
 
 ### outlet-init
@@ -1509,6 +1624,7 @@ Configure your AI editor:
 - [Architecture](docs/ARCHITECTURE.md)
 - [**TypeScript (complete)**](docs/TYPESCRIPT.md)
 - [**AI Integration (complete)**](docs/AI_BRIDGE.md)
+- [**🌐 API Layer (complete spec)**](./OUTLET_ORM_API_LAYER.md)
 
 ## 📘 TypeScript Support
 

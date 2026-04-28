@@ -1,6 +1,6 @@
 {
   "name": "outlet-orm",
-  "version": "12.0.0",
+  "version": "13.0.0",
   "description": "A Laravel Eloquent-inspired ORM for Node.js with support for MySQL, PostgreSQL, and SQLite",
   "main": "src/index.js",
   "types": "types/index.d.ts",
@@ -9,7 +9,9 @@
     "outlet-convert": "bin/convert.js",
     "outlet-migrate": "bin/migrate.js",
     "outlet-reverse": "bin/reverse.js",
-    "outlet-mcp": "bin/mcp.js"
+    "outlet-mcp": "bin/mcp.js",
+    "outlet-api-import": "bin/api-import.js",
+    "outlet-api-diff": "bin/api-diff.js"
   },
   "files": [
     "src/**",
@@ -67,7 +69,8 @@
   "peerDependencies": {
     "mysql2": "^3.15.2",
     "pg": "^8.11.0",
-    "sqlite3": "^5.1.6"
+    "sqlite3": "^5.1.6",
+    "graphql-ws": "^5.0.0"
   },
   "peerDependenciesMeta": {
     "mysql2": {
@@ -77,6 +80,9 @@
       "optional": true
     },
     "sqlite3": {
+      "optional": true
+    },
+    "graphql-ws": {
       "optional": true
     }
   },

@@ -4,6 +4,182 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [13.0.0] — 2026-05-01
+
+### ✨ New — API Layer (v13.0.0)
+
+**Zero new runtime dependencies. Requires Node.js ≥ 18.0.0 (native `fetch`, `AbortController`, `crypto.randomUUID`).**
+
+#### Core Classes
+
+- `Api` base class — same Eloquent-inspired syntax as SQL `Model`, over HTTP/REST. Extends `EventEmitter`.
+- `ApiAdapter` — HTTP transport via `globalThis.fetch`; `AbortController`-based timeout (default 30 s).
+- `createAdapter(config)` — factory helper for `ApiAdapter` instances.
+- Full barrel export via `src/Api/index.js`; all symbols re-exported from the main `outlet-orm` entry point.
+
+#### Static CRUD Methods (`Api`)
+
+- `Api.find(id)` — `GET {endpoint}/{id}`; returns `null` on 404 (does not throw).
+- `Api.findOrFail(id)` — like `find()`, throws `ApiNotFoundError` if the record is missing.
+- `Api.all(params?)` / `Api.get(params?)` — `GET {endpoint}` with optional query params (URLSearchParams); returns `[]` on non-array / non-`{data:[]}` response.
+- `Api.create(data)` — `POST {endpoint}`; emits `creating` / `created` on instance and class.
+
+#### Instance Methods (`Api`)
+
+- `instance.save()` — `PATCH {endpoint}/{id}`; emits `updating` / `updated`.
+- `instance.destroy()` — `DELETE {endpoint}/{id}`; emits `deleting` / `deleted`; returns `true`.
+
+#### Adapter Resolution (multi-adapter)
+
+- Per-request `usingAdapter(adapter)` → model `static adapter` → `Api._defaultAdapter` chain.
+- `Api.setDefaultAdapter(adapter)` / `Api.getDefaultAdapter()`.
+
+#### Authentication (FR-02)
+
+- `bearer` — `Authorization: Bearer <token>`.
+- `basic` — `Authorization: Basic <base64(user:pass)>`.
+- `apiKey` — custom header or `?api_key=` query parameter.
+- `cookie` — `Cookie: <name>=<value>`.
+- `oauth2` — bearer with automatic refresh; `onRefreshFail` callback when refresh endpoint itself returns 401.
+- `dynamicHeaders` — function evaluated per request (useful for tenant IDs, trace headers, etc.).
+
+#### Error Hierarchy (FR-10)
+
+10 typed error classes — all extend `Error` through `ApiError`:
+
+| Class | HTTP status | Extra field |
+|---|---|---|
+| `ApiError` | — | base class |
+| `ApiNetworkError` | — | timeout / network |
+| `ApiResponseError` | any non-2xx | `status`, `response` |
+| `ApiNotFoundError` | 404 | — |
+| `ApiValidationError` | 422 | `errors` |
+| `ApiUnauthorizedError` | 401 | — |
+| `ApiForbiddenError` | 403 | — |
+| `ApiServerError` | 500–599 | — |
+| `ApiRateLimitError` | 429 | `retryAfter` (parsed from `Retry-After` header) |
+| `ApiQueryNotSupportedError` | — | thrown when SQL query methods are called on `Api` |
+
+Full `instanceof` chain preserved (e.g. `ApiNotFoundError instanceof ApiResponseError instanceof ApiError instanceof Error`).
+
+Global `onError` callback on `ApiAdapter` called before re-throw.
+
+#### Debug Utilities
+
+- `adapter.toRequest(method, path, options)` — returns `{ method, url, params, headers }` without fetching.
+- `adapter.enableRequestLog()` / `adapter.getRequestLog()` / `adapter.flushRequestLog()`.
+- Request log entries contain `method`, `url`, `headers`, `params`, `timestamp`.
+
+#### File Upload
+
+- `adapter.upload(url, data, options)` — uses XHR with `onProgress` callback when `XMLHttpRequest` is available; falls back to `fetch`.
+
+#### Lifecycle Events
+
+`creating`, `created`, `updating`, `updated`, `deleting`, `deleted` emitted on both the instance and the class.
+
+#### Query Builder (FR-04)
+
+- `Api.query()` — returns `ApiQueryBuilder` with fluent `where()`, `orWhere()`, `whereIn()`, `whereNull()`, `orderBy()`, `limit()`, `offset()`, `with()`, `select()`.
+- `ApiQueryBuilder#get()`, `first()`, `find(id)`, `count()`, `paginate(perPage, page)`.
+
+#### Pagination (FR-05)
+
+- `ApiPaginator<T>` — wraps page data with `currentPage`, `lastPage`, `total`, `hasNextPage()`, `hasPrevPage()`, `nextPage()`, `prevPage()`, `goToPage()`.
+- Supports async iteration (`for await (const page of paginator)`).
+
+#### Caching (FR-06)
+
+- `ApiCache` — `remember(key, ttl, fn)`, `forget(key)`, `flush()`.
+- Three pluggable stores: `CacheMemoryStore`, `CacheLocalStorageStore`, `CacheSessionStorageStore`.
+- Cache config on `ApiAdapter`: `{ cache: { enabled, ttl, store } }`.
+
+#### Validation (FR-07)
+
+- `ApiValidator` — validates with rule objects (`required`, `type`, `min`, `max`, `minLength`, `maxLength`, `pattern`, `enum`, `custom`).
+- `validateOrFail()` throws `ApiValidationError` on failure.
+- `Api.strictResponse` (static boolean) — when `true`, `_validateResponse` strips undeclared fields using `responseSchema || fillable`.
+
+#### Interceptors (FR-08)
+
+- `InterceptorManager` — `use(fulfilled, rejected)`, `eject(id)`, `clear()`.
+- Separate `adapter.interceptors.request` and `adapter.interceptors.response` managers (Axios-compatible API).
+
+#### Mock Adapter (FR-09)
+
+- `MockAdapter extends ApiAdapter` — `onGet/onPost/onPut/onPatch/onDelete(path, response, { status, delay })`.
+- `reset()` clears all registered handlers.
+- Uses in-memory handler registry; throws `ApiNetworkError` for unmatched routes.
+
+#### GraphQL (FR-11)
+
+- `ApiGraphQL extends Api` — `query(gql, vars)`, `mutate(gql, vars)`, `subscribe(gql, vars)` (AsyncGenerator).
+- Sends `POST {graphqlEndpoint}` with `{ query, variables }` body.
+
+#### Offline / Mutation Queue (FR-12)
+
+- `StorageAdapter` — async wrapper over a `CacheStore`.
+- `MemoryStore`, `LocalStorageStore`, `SessionStorageStore` — same interface as cache stores.
+- `MutationQueue` — `enqueue()`, `dequeue()`, `peek()`, `size()`, `clear()`, `replay(adapter)`.
+
+#### Realtime (FR-13)
+
+- `Watcher` — polling-based change detection; `watch(endpoint, callback)` returns an unsubscribe function.
+- `EventStream` — wraps `EventSource`; `on(event, cb)`, `off(event, cb)`, `connect()`, `disconnect()`.
+- `WebSocketConnection` — reconnecting WebSocket; `send(data)`, `on(event, cb)`, `connect()`, `disconnect()`.
+
+#### Security
+
+- `ApiAdapter` header redaction — `redactHeaders` config list; sensitive values replaced with `'***'` in logs and `toRequest()` output. Actual HTTP requests receive real values.
+- `strictResponse` — server-response field allow-listing.
+
+#### Circuit Breaker
+
+- States: `'closed'` → `'open'` → `'half-open'` → `'closed'`.
+- Configurable `threshold` (failure count), `timeout` (ms before half-open probe).
+
+#### Retry
+
+- Automatic retry with configurable `retries`, `retryCodes`, `retryDelay` (default 3 retries on 5xx).
+
+#### New CLI Tools
+
+- `outlet-api-import` (`bin/api-import.js`) — generate `ApiModel` classes from an OpenAPI 3.x spec.
+  - `--spec <path|url>` `--output <dir>` `--lang [js|ts]` `--auth [bearer|basic|apiKey|oauth2]` `--strategy [tag|resource]`
+- `outlet-api-diff` (`bin/api-diff.js`) — compare existing model files against an OpenAPI spec and report divergences.
+  - `--spec <path|url>` `--models <dir>`; exits with code 1 on any divergence.
+
+#### New Source Directory
+
+- `src/Api/` — full API Layer source tree:
+  - `Api.js`, `ApiAdapter.js`, `index.js`
+  - `Errors/` — 10 typed error classes
+  - `Interceptors/InterceptorManager.js`
+  - `GraphQL.js`, `MockAdapter.js`, `ApiCache.js`, `ApiPaginator.js`, `ApiQueryBuilder.js`, `ApiValidator.js`
+  - `Offline/` — `StorageAdapter.js`, `MemoryStore.js`, `LocalStorageStore.js`, `SessionStorageStore.js`, `MutationQueue.js`
+  - `Realtime/` — `Watcher.js`, `EventStream.js`, `WebSocketConnection.js`
+
+#### New Test Files
+
+- `tests/ApiLayer.test.js` — core `Api` + `ApiAdapter` unit tests.
+- `tests/ApiCache.test.js` — cache layer tests.
+- `tests/ApiValidation.test.js` — validator tests.
+- `tests/ApiMock.test.js` — mock adapter tests.
+- `tests/ApiInterceptors.test.js` — interceptor tests.
+- `tests/ApiGraphQL.test.js` — GraphQL adapter tests.
+- `tests/ApiOffline.test.js` — offline/mutation-queue tests.
+
+#### TypeScript
+
+- `types/api/index.d.ts` — full declarations for all API Layer symbols.
+- `types/index.d.ts` — re-exports `types/api/index.d.ts` via `export * from './api/index'`.
+
+#### Documentation
+
+- `OUTLET_ORM_API_LAYER.md` — full specification with 25 sections covering all FR requirements.
+
+---
+
 ## [12.0.0] — 2026-04-13
 
 ### Breaking Changes
