@@ -1,17 +1,13 @@
 ---
 name: outlet-orm-best-practices
 description: Outlet ORM is a Laravel Eloquent-inspired ORM for Node.js with MySQL, PostgreSQL, and SQLite support. Use this skill when working with Outlet ORM models, queries, relationships, migrations, backup, AI integration (AI multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, MCP Server) and database operations.
-license: MIT
-metadata:
-author: omgbwa-yasse
-version: "12.0.0"
-source: https://github.com/omgbwa-yasse/outlet-orm
-npm: https://www.npmjs.com/package/outlet-orm
 ---
 
 # Outlet ORM Best Practices
 
 Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for Node.js/TypeScript with support for MySQL, PostgreSQL, and SQLite.
+
+> 🆕 **v12.0.0**: Fluent DDL Builder names fully harmonised to `Schema*` prefix. `DBFunction` alias removed — use `SchemaFunction`. `useSchema()` binds all builders in one call. See [DATABASE_OBJECTS.md](../../docs/DATABASE_OBJECTS.md).
 
 > 🆕 **v11.4.0**: Fluent Builder API — `SchemaView`, `SchemaTrigger`, `SchemaProcedure`, `SchemaFunction`, `SchemaTransaction` and `useSchema()`. Bind all DB object builders to a schema/connection in one call. Harmonised `Schema*` exports alongside short aliases. See [DATABASE_OBJECTS.md](../../docs/DATABASE_OBJECTS.md).
 >

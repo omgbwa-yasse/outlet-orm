@@ -1,6 +1,8 @@
 # Database Objects
 
-outlet-orm v11.4.0 adds first-class support for **views**, **triggers**, **stored procedures/functions**, **savepoints**, and **transaction isolation levels** across MySQL, PostgreSQL, and SQLite.
+outlet-orm v11.4.0+ adds first-class support for **views**, **triggers**, **stored procedures/functions**, **savepoints**, and **transaction isolation levels** across MySQL, PostgreSQL, and SQLite.
+
+> ⚠️ **v12.0.0 breaking change**: `DBFunction` alias removed — use `SchemaFunction`. All builders are now exported under the `Schema*` prefix (`SchemaView`, `SchemaTrigger`, `SchemaProcedure`, `SchemaFunction`, `SchemaTransaction`). Short-name aliases (`View`, `Trigger`, etc.) remain available for backward compatibility. Use `useSchema()` to bind all builders at once.
 
 ---
 

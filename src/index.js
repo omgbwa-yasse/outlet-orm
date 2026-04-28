@@ -31,7 +31,7 @@ const MorphManyRelation = require('./Relations/MorphManyRelation');
 const MorphToRelation = require('./Relations/MorphToRelation');
 
 // Schema & Migrations (v5.0.0 - moved from lib/)
-const { Schema, Blueprint, ColumnDefinition, ForeignKeyDefinition } = require('./Schema/Schema');
+const { Schema, Blueprint, ColumnDefinition, ForeignKeyDefinition, CheckConstraintDefinition } = require('./Schema/Schema');
 const Migration = require('./Migrations/Migration');
 const MigrationManager = require('./Migrations/MigrationManager');
 const Seeder = require('./Seeders/Seeder');
@@ -108,6 +108,7 @@ module.exports = {
   Blueprint,
   ColumnDefinition,
   ForeignKeyDefinition,
+  CheckConstraintDefinition,
 
   // Migrations (v5.0.0)
   Migration,

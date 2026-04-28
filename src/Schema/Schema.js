@@ -633,6 +633,7 @@ class Blueprint {
     this.columns = [];
     this.commands = [];
     this.isModifying = false;
+    this._checkCount = 0;
   }
 
   /**
@@ -972,7 +973,7 @@ class Blueprint {
       case 'foreign': {
         const fk = command.foreignKey;
         statements.push(
-          `ALTER TABLE ${quoteIdentifier(this.tableName)} ADD CONSTRAINT ${quoteIdentifier(fk.name)} ` +
+          `ALTER TABLE ${quoteIdentifier(this.tableName)} ADD CONSTRAINT ${quoteIdentifier(fk._customName ?? fk._autoName)} ` +
             `FOREIGN KEY (${quoteIdentifier(fk.column)}) REFERENCES ${quoteIdentifier(fk._ref.table)}(${quoteIdentifier(fk._ref.column)})` +
             (fk._onDelete ? ` ON DELETE ${fk._onDelete}` : '') +
             (fk._onUpdate ? ` ON UPDATE ${fk._onUpdate}` : '')
@@ -1007,10 +1008,80 @@ class Blueprint {
       case 'dropIndex':
         statements.push(`ALTER TABLE ${quoteIdentifier(this.tableName)} DROP INDEX ${quoteIdentifier(command.name)}`);
         break;
+
+      case 'check': {
+        if (driver === 'sqlite') {
+          throw new UnsupportedCapabilityError('sqlite', 'ALTER TABLE … ADD CONSTRAINT CHECK');
+        }
+        const tbl = quoteId(this.tableName, driver);
+        const cName = command.constraintDef.resolvedName();
+        const qName = quoteId(cName, driver);
+        statements.push(`ALTER TABLE ${tbl} ADD CONSTRAINT ${qName} CHECK (${command.constraintDef.expression})`);
+        break;
+      }
+
+      case 'dropCheck': {
+        if (driver === 'sqlite') {
+          throw new UnsupportedCapabilityError('sqlite', 'ALTER TABLE … DROP CONSTRAINT');
+        }
+        const tbl = quoteId(this.tableName, driver);
+        const qName = quoteId(command.name, driver);
+        statements.push(driver === 'mysql'
+          ? `ALTER TABLE ${tbl} DROP CHECK ${qName}`
+          : `ALTER TABLE ${tbl} DROP CONSTRAINT ${qName}`
+        );
+        break;
+      }
       }
     }
 
     return statements;
+  }
+
+  /**
+   * Generate the next auto-name for a CHECK constraint on this blueprint.
+   * @private
+   * @returns {string}
+   */
+  _nextCheckName() {
+    return `${this.tableName}_check_${++this._checkCount}`;
+  }
+
+  /**
+   * Add a CHECK constraint.
+   * @param {string} expression - Raw SQL check expression (developer-authored, not sanitised)
+   * @returns {CheckConstraintDefinition}
+   * @throws {TypeError} if expression is not a non-empty string
+   * @warning The expression is trusted verbatim. Only use developer-authored values, never user input.
+   */
+  check(expression) {
+    if (typeof expression !== 'string' || expression.trim() === '') {
+      throw new TypeError('check() requires a non-empty expression string');
+    }
+    const constraintDef = new CheckConstraintDefinition(expression, this);
+    this.commands.push({ type: 'check', constraintDef });
+    return constraintDef;
+  }
+
+  /**
+   * Drop a named constraint.
+   * @param {string} name - Constraint name (must be a valid SQL identifier)
+   * @returns {this}
+   * @throws {Error} if name is not a valid SQL identifier
+   */
+  dropConstraint(name) {
+    quoteIdentifier(name); // validates; throws on invalid identifier
+    this.commands.push({ type: 'dropCheck', name });
+    return this;
+  }
+
+  /**
+   * Drop a named CHECK constraint (alias for dropConstraint).
+   * @param {string} name - Constraint name
+   * @returns {this}
+   */
+  dropCheck(name) {
+    return this.dropConstraint(name);
   }
 
   /**
@@ -1034,7 +1105,7 @@ class Blueprint {
     for (const command of this.commands) {
       if (command.type === 'foreign') {
         const fk = command.foreignKey;
-        let constraint = `CONSTRAINT ${quoteIdentifier(fk.name)} FOREIGN KEY (${quoteIdentifier(fk.column)}) ` +
+        let constraint = `CONSTRAINT ${quoteIdentifier(fk._customName ?? fk._autoName)} FOREIGN KEY (${quoteIdentifier(fk.column)}) ` +
                         `REFERENCES ${quoteIdentifier(fk._ref.table)}(${quoteIdentifier(fk._ref.column)})`;
 
         if (fk._onDelete) {
@@ -1056,6 +1127,19 @@ class Blueprint {
           constraints.push(`KEY ${quoteIdentifier(command.name)} (${command.columns.map(c => quoteIdentifier(c)).join(', ')})`);
         }
       }
+    }
+
+    // CHECK constraints
+    const seenCheckNames = new Set();
+    for (const cmd of this.commands) {
+      if (cmd.type !== 'check') continue;
+      const resolvedName = cmd.constraintDef.resolvedName();
+      if (seenCheckNames.has(resolvedName)) {
+        throw new Error(`Duplicate constraint name: "${resolvedName}"`);
+      }
+      seenCheckNames.add(resolvedName);
+      const qName = quoteId(resolvedName, driver);
+      constraints.push(`CONSTRAINT ${qName} CHECK (${cmd.constraintDef.expression})`);
     }
 
     return constraints.join(',\n  ');
@@ -1221,7 +1305,8 @@ class ForeignKeyDefinition {
     this._ref = { table: null, column: 'id' };
     this._onDelete = null;
     this._onUpdate = null;
-    this.name = null;
+    this._autoName = null;
+    this._customName = null;
   }
 
   references(column) {
@@ -1231,7 +1316,7 @@ class ForeignKeyDefinition {
 
   on(table) {
     this._ref.table = table;
-    this.name = `${table}_${this.column}_foreign`;
+    this._autoName = `${table}_${this.column}_foreign`;
     return this;
   }
 
@@ -1243,7 +1328,7 @@ class ForeignKeyDefinition {
       const pluralize = require('pluralize');
       this._ref.table = pluralize(this.column.replace(/_id$/, ''));
     }
-    this.name = `${this._ref.table}_${this.column}_foreign`;
+    this._autoName = `${this._ref.table}_${this.column}_foreign`;
     return this;
   }
 
@@ -1274,6 +1359,64 @@ class ForeignKeyDefinition {
   cascadeOnUpdate() {
     return this.onUpdate('cascade');
   }
+
+  /**
+   * Set an explicit constraint name for this foreign key.
+   * @param {string} [value] - Constraint name (must be a valid SQL identifier)
+   * @returns {ForeignKeyDefinition}
+   */
+  name(value) {
+    if (value && typeof value === 'string' && value.trim() !== '') {
+      quoteIdentifier(value); // validates; throws on invalid identifier
+      this._customName = value;
+    }
+    return this;
+  }
 }
 
-module.exports = { Schema, Blueprint, ColumnDefinition, ForeignKeyDefinition };
+/**
+ * CHECK Constraint Definition
+ * Returned by Blueprint.check() for fluent naming.
+ * @warning The expression is trusted verbatim. Only use developer-authored values, never user input.
+ */
+class CheckConstraintDefinition {
+  /**
+   * @param {string} expression - Raw SQL check expression
+   * @param {Blueprint} blueprint - The owning blueprint (for auto-name generation)
+   */
+  constructor(expression, blueprint) {
+    this.expression = expression;
+    this._name = null;
+    this._blueprint = blueprint;
+    this._cachedAutoName = undefined;
+  }
+
+  /**
+   * Resolve the final constraint name (explicit or auto-generated).
+   * Auto-names are lazily generated and cached.
+   * @returns {string}
+   */
+  resolvedName() {
+    if (this._name !== null) return this._name;
+    if (this._cachedAutoName === undefined) {
+      this._cachedAutoName = this._blueprint._nextCheckName();
+    }
+    return this._cachedAutoName;
+  }
+
+  /**
+   * Set an explicit constraint name.
+   * @param {string} [value] - Constraint name (must be a valid SQL identifier)
+   * @returns {CheckConstraintDefinition}
+   * @throws {Error} if value contains invalid identifier characters
+   */
+  name(value) {
+    if (value && typeof value === 'string' && value.trim() !== '') {
+      quoteIdentifier(value); // validates; throws on invalid identifier
+      this._name = value;
+    }
+    return this;
+  }
+}
+
+module.exports = { Schema, Blueprint, ColumnDefinition, ForeignKeyDefinition, CheckConstraintDefinition };

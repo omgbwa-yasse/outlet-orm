@@ -1,8 +1,8 @@
-# Outlet ORM - TypeScript Best Practices (v5.0.0)
+# Outlet ORM - TypeScript Best Practices (v12.0.0)
 
 [← Back to Index](SKILL.md) | [Previous: Advanced](ADVANCED.md)
 
-> 🆕 **v5.0.0**: Full support for generics with`Model<TAttributes>`, Typed Schema Builder,`MigrationInterface`, and recommended layered architecture.
+> 🆕 **v12.0.0**: `SchemaFunction` replaces removed `DBFunction` alias. All `Schema*` builders export types.
 
 ---
 
