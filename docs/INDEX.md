@@ -53,7 +53,6 @@
 - [**Backend Security Guide**](SECURITY.md) – Secure structure, middleware, and best practices
 
 ### 🌐 API Layer (v13.0.0)
-- [**API Layer Specification**](../OUTLET_ORM_API_LAYER.md) – Complete spec: `Api`, `ApiAdapter`, authentication, multi-adapter, error hierarchy, debug utilities, lifecycle events, file upload, and more
 - [**API Reference**](API_REFERENCE.md) – `Api` class method reference alongside SQL `Model` reference
 
 ### 📘 TypeScript (v5.0.0+)

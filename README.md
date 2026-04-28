@@ -1416,8 +1416,6 @@ Full error hierarchy: `ApiError` → `ApiResponseError` → `ApiNotFoundError` /
 | `Api.getDefaultAdapter()` | Get the global default adapter |
 | `Api.usingAdapter(a)` | Per-request adapter override |
 
-📖 **[Complete API Layer reference → OUTLET_ORM_API_LAYER.md](./OUTLET_ORM_API_LAYER.md)**
-
 ---
 
 ## 🛠️ CLI tools
@@ -1624,8 +1622,6 @@ Configure your AI editor:
 - [Architecture](docs/ARCHITECTURE.md)
 - [**TypeScript (complete)**](docs/TYPESCRIPT.md)
 - [**AI Integration (complete)**](docs/AI_BRIDGE.md)
-- [**🌐 API Layer (complete spec)**](./OUTLET_ORM_API_LAYER.md)
-
 ## 📘 TypeScript Support
 
 Outlet ORM v4.0.0 includes complete TypeScript definitions with support for **generics for typed model attributes**.
