@@ -64,6 +64,32 @@ describe('DatabaseConnection', () => {
       expect(whereClause).toContain('AND status = ?');
       expect(params).toEqual([18, 'active']);
     });
+
+    test('should accept backtick-wrapped identifiers and normalize them', () => {
+      const query = {
+        columns: ['`id`', '`users`.`name`'],
+        wheres: [
+          { column: '`users`.`age`', operator: '>', value: 18, type: 'basic', boolean: 'and' }
+        ]
+      };
+
+      const { sql, params } = connection.buildSelectQuery('users', query);
+
+      expect(sql).toContain('SELECT id, users.name FROM users');
+      expect(sql).toContain('WHERE users.age > ?');
+      expect(params).toEqual([18]);
+    });
+
+    test('should reject unsafe backtick identifier content', () => {
+      const query = {
+        columns: ['`id`'],
+        wheres: [
+          { column: '`age; DROP TABLE users;`', operator: '>', value: 18, type: 'basic', boolean: 'and' }
+        ]
+      };
+
+      expect(() => connection.buildSelectQuery('users', query)).toThrow('Invalid SQL identifier');
+    });
   });
 
   describe('Placeholder Conversion', () => {

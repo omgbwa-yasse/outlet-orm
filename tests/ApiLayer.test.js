@@ -953,14 +953,14 @@ describe('Security', () => {
  * CLI Tools — Manual Integration Test Criteria (T088)
  *
  * outlet-api-import:
- *   node bin/api-import.js --spec openapi.json --output ./models
+ *   node bin/api/import.js --spec openapi.json --output ./models
  *   - Spec with /users path → generates User.js with static endpoint = '/users'
  *   - Spec with $ref array field → generates hasMany relation
  *   - --lang ts → generates TypeScript class file
  *   Exit code: 0 on success, 1 on missing required args or spec parse error
  *
  * outlet-api-diff:
- *   node bin/api-diff.js --spec openapi.json --models ./models
+ *   node bin/api/diff.js --spec openapi.json --models ./models
  *   - Exits 0 when all spec paths have corresponding model files in sync
  *   - Exits 1 with diff report when model files diverge from spec
  *   - Reports: missing models, extra models, field mismatches

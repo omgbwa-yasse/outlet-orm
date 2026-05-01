@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [14.0.0] — 2026-05-01
+
+### ✨ New — Unified `outlet` CLI
+
+- Added `bin/outlet.js` as a single entrypoint: `outlet <command>` routes to all existing sub-commands (`init`, `convert`, `migrate`, `reverse`, `mcp`, `api import`, `api diff`).
+- Legacy `outlet-<name>` aliases (`outlet-init`, `outlet-migrate`, etc.) are preserved for backward compatibility.
+
+### 🔀 Refactor — API Import CLI reorganised
+
+- Moved `bin/api-import.js` → `bin/api/import.js`; moved `bin/api-diff.js` → `bin/api/diff.js`.
+- Moved `src/AI/ApiImport/*` → `src/Api/ApiImport/*` (12 modules): discovery, extraction, conflict resolution, coverage metrics, diagnostics, run comparison.
+- Updated `package.json` bin entries: `"outlet-api-import": "bin/api/import.js"`, `"outlet-api-diff": "bin/api/diff.js"`.
+
+### ✨ New — Reference Documentation Import Enhancements
+
+- Added reference-doc crawl pipeline for `outlet api import --doc` with official-page discovery, provenance capture, deterministic merge, and coverage diagnostics.
+- Added run state and delta artifacts (`_run-state.json`, `_coverage-report.json`, `_run-delta.json`) to compare successive documentation imports.
+- Added crawl controls: `--max-depth`, `--include-official-subdomains`, and `--run-delta`.
+
+### 🧪 Tests
+
+- Split `tests/AI.test.js`: API Import foundations moved to `tests/Api.test.js`; `tests/AI.test.js` now covers AI-only features.
+
+## [13.0.1] — 2026-04-30
+
+### 🐛 Fixes
+
+- Accept MySQL backtick-quoted SQL identifiers during identifier sanitization and normalize them before validation.
+
 ## [13.0.0] — 2026-05-01
 
 ### ✨ New — API Layer (v13.0.0)
@@ -144,9 +173,9 @@ Global `onError` callback on `ApiAdapter` called before re-throw.
 
 #### New CLI Tools
 
-- `outlet-api-import` (`bin/api-import.js`) — generate `ApiModel` classes from an OpenAPI 3.x spec.
+- `outlet-api-import` (`bin/api/import.js`) — generate `ApiModel` classes from an OpenAPI 3.x spec.
   - `--spec <path|url>` `--output <dir>` `--lang [js|ts]` `--auth [bearer|basic|apiKey|oauth2]` `--strategy [tag|resource]`
-- `outlet-api-diff` (`bin/api-diff.js`) — compare existing model files against an OpenAPI spec and report divergences.
+- `outlet-api-diff` (`bin/api/diff.js`) — compare existing model files against an OpenAPI spec and report divergences.
   - `--spec <path|url>` `--models <dir>`; exits with code 1 on any divergence.
 
 #### New Source Directory

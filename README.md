@@ -60,9 +60,14 @@ A JavaScript ORM inspired by Laravel Eloquent for Node.js with support for MySQL
   - [Error Handling](#api-layer-error-handling)
   - [Api Class Reference](#api-class-reference)
 - [🛠️ CLI tools](#cli-tools)
-  - [outlet-init](#outlet-init)
-  - [outlet-migrate](#outlet-migrate)
-  - [outlet-convert](#outlet-convert)
+  - [outlet (unified CLI)](#outlet-unified-cli)
+  - [outlet init](#outlet-init)
+  - [outlet migrate](#outlet-migrate)
+  - [outlet convert](#outlet-convert)
+  - [outlet reverse](#outlet-reverse)
+  - [outlet mcp](#outlet-mcp)
+  - [outlet api import](#outlet-api-import)
+  - [outlet api diff](#outlet-api-diff)
 - [🤖 AI Integration](#ai-integration)
   - [AI — Multi-Provider LLM Abstraction](#ai-multi-provider-llm-abstraction)
   - [AI Query Builder — Natural Language → SQL](#ai-query-builder-natural-language-sql)
@@ -275,7 +280,7 @@ async store(req, res) {
 - **🤖 AI Prompt Enhancer** (v8.0.0): Schema/model/migration generation from natural language
 - **🤖 MCP Server** (v7.0.0): Model Context Protocol for AI agent integration (13 tools)
 - **🤖 AI Safety Guardrails** (v7.0.0): Automatic AI agent detection + destructive operation protection
-- **Handy CLI tools**: `outlet-init`, `outlet-migrate`, `outlet-convert`, `outlet-mcp`
+- **Unified CLI** (`outlet`): single entrypoint — `outlet init`, `outlet migrate`, `outlet convert`, `outlet reverse`, `outlet mcp`, `outlet api import`, `outlet api diff`
 - **`.env` configuration** (loaded automatically)
 - **Multi-database**: MySQL, PostgreSQL, and SQLite
 - **Complete TypeScript types** with Generic Model and typed Schema Builder (v4.0.0+)
@@ -301,26 +306,26 @@ async store(req, res) {
 
 ```bash
 # Create initial configuration
-outlet-init
+outlet init
 
 # Create a migration
-outlet-migrate make create_users_table
+outlet migrate make create_users_table
 
 # Run migrations
-outlet-migrate migrate
+outlet migrate migrate
 ```
 
 ### 🌱 Quick Seeding
 
 ```bash
 # Create a seeder
-outlet-migrate make:seed UserSeeder
+outlet migrate make:seed UserSeeder
 
 # Run seeders (DatabaseSeeder runs first)
-outlet-migrate seed
+outlet migrate seed
 
 # Run a specific seeder
-outlet-migrate seed --class UserSeeder
+outlet migrate seed --class UserSeeder
 ```
 
 ## 📖 Usage
@@ -1420,12 +1425,38 @@ Full error hierarchy: `ApiError` → `ApiResponseError` → `ApiNotFoundError` /
 
 ## 🛠️ CLI tools
 
-### outlet-init
+### outlet (unified CLI)
+
+All CLI commands are available through the single `outlet` entrypoint:
+
+```bash
+outlet --help
+```
+
+```
+outlet - Outlet ORM CLI
+
+Usage:
+  outlet <command> [args]
+
+Commands:
+  init                Project initialization
+  convert             SQL to model converter
+  migrate             Migration manager
+  reverse             Database reverse engineering
+  mcp                 Start MCP server
+  api import          Import API models from docs/specs
+  api diff            Compare API spec and generated models
+```
+
+Each sub-command can also be invoked via its legacy `outlet-<name>` alias (still available, e.g. `outlet-migrate`, `outlet-api-import`).
+
+### outlet init
 
 Initialises a new project with database configuration.
 
 ```bash
-outlet-init
+outlet init
 ```
 
 Generates:
@@ -1434,31 +1465,36 @@ Generates:
 - Example model
 - Usage file
 
-### outlet-migrate
+### outlet migrate
 
-complete migration system.
+Complete migration system.
 
 ```bash
 # Create a migration
-outlet-migrate make create_users_table
+outlet migrate make create_users_table
 
 # Run migrations
-outlet-migrate migrate
+outlet migrate migrate
 
 # See migration status
-outlet-migrate status
+outlet migrate status
 
 # Roll back the latest migration
-outlet-migrate rollback --steps 1
+outlet migrate rollback --steps 1
 
 # Reset all migrations
-outlet-migrate reset --yes
+outlet migrate reset --yes
 
 # Refresh (reset + migrate)
-outlet-migrate refresh --yes
+outlet migrate refresh --yes
 
 # Fresh (drop all + migrate)
-outlet-migrate fresh --yes
+outlet migrate fresh --yes
+
+# Seeders
+outlet migrate make:seed UserSeeder
+outlet migrate seed
+outlet migrate seed --class UserSeeder
 ```
 
 **Migration Features:**
@@ -1473,12 +1509,12 @@ outlet-migrate fresh --yes
 - ✅ Batch tracking: Precise rollback by batch
 - ✅ Custom SQL: execute() for advanced commands
 
-### outlet-convert
+### outlet convert
 
 Converts SQL schemas into ORM models.
 
 ```bash
-outlet-convert
+outlet convert
 ```
 
 **Options:**
@@ -1492,6 +1528,77 @@ outlet-convert
 - ✅ Detection of sensitive fields (password, token, etc.)
 - ✅ Automatic timestamps support
 - ✅ Class names converted to PascalCase
+
+### outlet reverse
+
+Reverse-engineers a connected database into Outlet ORM models.
+
+```bash
+outlet reverse
+```
+
+### outlet mcp
+
+Starts the MCP server for AI editor integration.
+
+```bash
+outlet mcp
+# or via npx:
+npx outlet-mcp
+```
+
+### outlet api import
+
+Generates `ApiModel` classes from an OpenAPI 3.x spec or hosted documentation page.
+
+```bash
+# From a local OpenAPI spec file
+outlet api import --spec openapi.json --output ./models
+
+# From a remote OpenAPI spec URL
+outlet api import --spec https://api.example.com/openapi.json --output ./models --lang ts
+
+# From reference documentation (crawl + extract)
+outlet api import --doc https://docs.example.com/api --output ./models
+
+# With run-delta to compare against previous import
+outlet api import --doc https://docs.example.com/api --output ./models --run-delta
+```
+
+**Options:**
+
+| Flag | Description | Default |
+|------|-------------|--------|
+| `--spec <path\|url>` | OpenAPI 3.x spec (file or URL) | — |
+| `--doc <url>` | Reference documentation URL (crawl mode) | — |
+| `--output <dir>` | Output directory for generated models | `./models` |
+| `--lang [js\|ts]` | Output language | `js` |
+| `--auth [bearer\|basic\|apiKey\|oauth2]` | Auth strategy | — |
+| `--strategy [tag\|resource]` | Model grouping strategy | `tag` |
+| `--max-depth <n>` | Max crawl depth for `--doc` mode | `3` |
+| `--include-official-subdomains` | Include subdomains during crawl | `false` |
+| `--run-delta` | Write `_run-delta.json` comparing successive imports | `false` |
+
+**Artifacts produced** (in `--output` dir):
+- Generated model files (`.js` or `.ts`)
+- `_run-state.json` — state snapshot for incremental imports
+- `_coverage-report.json` — endpoint coverage metrics
+- `_run-delta.json` — diff vs previous run (with `--run-delta`)
+
+### outlet api diff
+
+Compares existing model files against an OpenAPI spec and reports divergences. Exits with code 1 on any divergence.
+
+```bash
+outlet api diff --spec openapi.json --models ./models
+```
+
+**Options:**
+
+| Flag | Description |
+|------|-------------|
+| `--spec <path\|url>` | OpenAPI 3.x spec (file or URL) |
+| `--models <dir>` | Directory containing generated models |
 
 ## 🤖 AI Integration
 
@@ -1586,6 +1693,8 @@ console.log(result.indexes);     // ['CREATE INDEX idx_...']
 
 ```bash
 # Start MCP server for AI editors
+outlet mcp
+# or via npx:
 npx outlet-mcp
 ```
 

@@ -5,6 +5,8 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 .env
+.env*
+!.env.example
 .env.local
 .env.production
 .vscode/
@@ -17,3 +19,5 @@ coverage/
 dist/
 build/
 .specify/
+Thumbs.db
+*.tmp

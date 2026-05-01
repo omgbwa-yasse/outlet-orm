@@ -121,5 +121,14 @@ module.exports = {
 
     /** Max tool call iterations (for chatWithTools loop) */
     max_tool_iterations: Number(process.env.AI_MAX_TOOL_ITERATIONS) || 5,
+
+    /** Reference documentation import defaults */
+    reference_doc_import: {
+      enabled: process.env.AI_REFERENCE_DOC_IMPORT_ENABLED !== 'false',
+      max_depth: Number(process.env.AI_REFERENCE_DOC_IMPORT_MAX_DEPTH) || 4,
+      include_official_subdomains: process.env.AI_REFERENCE_DOC_IMPORT_INCLUDE_SUBDOMAINS !== 'false',
+      coverage_threshold: Number(process.env.AI_REFERENCE_DOC_IMPORT_COVERAGE_THRESHOLD) || 0.7,
+      operation_threshold: Number(process.env.AI_REFERENCE_DOC_IMPORT_OPERATION_THRESHOLD) || 0.85,
+    },
   },
 };

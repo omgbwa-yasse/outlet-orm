@@ -27,12 +27,25 @@ function sanitizeIdentifier(identifier) {
   if (!identifier || typeof identifier !== 'string') {
     throw new Error('Invalid SQL identifier');
   }
+  const normalized = identifier
+    .split('.')
+    .map((part) => {
+      const unwrapped = part.startsWith('`') && part.endsWith('`')
+        ? part.slice(1, -1)
+        : part;
+      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(unwrapped)) {
+        throw new Error('Invalid SQL identifier');
+      }
+      return unwrapped;
+    })
+    .join('.');
+
   // Strict allowlist: only alphanumeric, underscore, dot (for table.column)
-  // Any identifier not matching this pattern is rejected outright — no fallback.
-  if (!/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/.test(identifier)) {
+  // Supports optional MySQL-style backticks around each segment, then normalizes.
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/.test(normalized)) {
     throw new Error('Invalid SQL identifier');
   }
-  return identifier;
+  return normalized;
 }
 
 /**
