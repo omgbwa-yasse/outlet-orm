@@ -51,6 +51,7 @@ const PromptGenerator    = require('./AI/PromptGenerator');
 
 // AI (v8.0.0) — Multi-provider LLM abstraction
 const AIManager             = require('./AI/AIManager');
+const Ai                    = AIManager;
 const AIFacade              = require('./AI/Facades/AI');
 const TextBuilder           = require('./AI/Builders/TextBuilder');
 const ChatProviderContract  = require('./AI/Contracts/ChatProviderContract');
@@ -132,6 +133,7 @@ module.exports = {
 
   // AI (v8.0.0)
   AIManager,
+  Ai,
   AIFacade,
   TextBuilder,
   ChatProviderContract,

@@ -1364,6 +1364,9 @@ declare module 'outlet-orm' {
     asStream(): AsyncGenerator<StreamChunk>;
   }
 
+  /** Ai — alias for AIManager (short form) */
+  export const Ai: typeof AIManager;
+
   /** AIManager — central orchestrator for multi-provider AI */
   export class AIManager {
     constructor(config?: AIConfig);
