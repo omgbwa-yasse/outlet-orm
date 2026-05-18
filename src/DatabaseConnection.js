@@ -578,6 +578,21 @@ class DatabaseConnection {
     return result;
   }
 
+  from(source) {
+    if (
+      source === null ||
+      source === undefined ||
+      (typeof source === 'string' && source.trim() === '')
+    ) {
+      const QueryBuilderError = require('./Errors/QueryBuilderError');
+      throw new QueryBuilderError(
+        'db.from() requires a non-empty table name string, a RawExpression instance, or a QueryBuilder instance.'
+      );
+    }
+    const QueryBuilder = require('./QueryBuilder');
+    return new QueryBuilder(null, { connection: this, source });
+  }
+
   /**
    * Insert a record
    * @param {string} table
@@ -1135,10 +1150,20 @@ class DatabaseConnection {
       sql += ` GROUP BY ${query.groupBys.map(col => sanitizeIdentifier(col)).join(', ')}`;
     }
 
+    if (query.params && Array.isArray(query.params)) {
+      params.push(...query.params);
+    }
+
     // HAVING
     if (query.havings && query.havings.length > 0) {
       const havingClauses = [];
       for (const h of query.havings) {
+        if (h.type === 'raw') {
+          havingClauses.push(h.sql);
+          params.push(...(h.bindings || []));
+          continue;
+        }
+
         const ALLOWED_OPERATORS = ['=', '!=', '<>', '<', '>', '<=', '>=', 'LIKE', 'NOT LIKE', 'IS', 'IS NOT'];
         const op = h.operator.toUpperCase();
         if (!ALLOWED_OPERATORS.includes(op)) {

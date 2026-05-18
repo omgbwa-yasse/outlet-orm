@@ -1,5 +1,6 @@
 const Model = require('./Model');
 const QueryBuilder = require('./QueryBuilder');
+const QueryBuilderError = require('./Errors/QueryBuilderError');
 const DatabaseConnection = require('./DatabaseConnection');
 const { UnsupportedCapabilityError } = require('./Errors/UnsupportedCapabilityError');
 
@@ -90,6 +91,7 @@ module.exports = {
   // Core
   Model,
   QueryBuilder,
+  QueryBuilderError,
   DatabaseConnection,
 
   // Relations

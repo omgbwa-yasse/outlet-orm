@@ -65,6 +65,13 @@ declare module 'outlet-orm' {
     timestamp: Date;
   }
 
+  export type RawExpression = any;
+
+  export class QueryBuilderError extends Error {
+    constructor(message: string);
+    name: 'QueryBuilderError';
+  }
+
   export class DatabaseConnection {
     constructor(config?: Partial<DatabaseConfig>);
     connect(): Promise<void>;
@@ -83,6 +90,7 @@ declare module 'outlet-orm' {
     static isLogging(): boolean;
 
     select(table: string, query: QueryObject): Promise<any[]>;
+    from(source: string | RawExpression | QueryBuilder): QueryBuilder;
     insert(table: string, data: Record<string, any>): Promise<InsertResult>;
     insertMany(table: string, data: Record<string, any>[]): Promise<{ affectedRows: number }>;
     update(table: string, data: Record<string, any>, query: QueryObject): Promise<UpdateResult>;
@@ -112,6 +120,7 @@ declare module 'outlet-orm' {
     distinct?: boolean;
     groupBys?: string[];
     havings?: HavingClause[];
+    params?: any[];
     limit?: number | null;
     offset?: number | null;
   }
@@ -131,10 +140,12 @@ declare module 'outlet-orm' {
   }
 
   export interface HavingClause {
-    type: 'basic' | 'count';
-    column: string;
-    operator: string;
-    value: any;
+    type: 'basic' | 'count' | 'raw';
+    column?: string;
+    operator?: string;
+    value?: any;
+    sql?: string;
+    bindings?: any[];
   }
 
   export interface JoinClause {
@@ -170,7 +181,7 @@ declare module 'outlet-orm' {
   }
 
   export class QueryBuilder<T extends Model> {
-    constructor(model: typeof Model);
+    constructor(model: typeof Model | null, options?: { connection?: DatabaseConnection; source?: string | RawExpression | QueryBuilder });
 
     select(...columns: string[]): this;
     /** Convenience alias to pass an array of columns */
@@ -204,6 +215,7 @@ declare module 'outlet-orm' {
     withCount(relations: string | string[]): this;
     groupBy(...columns: string[]): this;
     having(column: string, operator: string, value: any): this;
+    havingRaw(sql: string, bindings?: any[]): this;
     join(table: string, first: string, second: string): this;
     join(table: string, first: string, operator: string, second: string): this;
     leftJoin(table: string, first: string, second: string): this;
@@ -227,7 +239,7 @@ declare module 'outlet-orm' {
     /** Find a record matching current wheres and update it, or create a new one */
     updateOrCreate(values?: Record<string, any>): Promise<T>;
     paginate(page?: number, perPage?: number): Promise<PaginationResult<T>>;
-    count(): Promise<number>;
+    count(column?: string): Promise<number>;
     exists(): Promise<boolean>;
     insert(data: Record<string, any> | Record<string, any>[]): Promise<any>;
     update(attributes: Record<string, any>): Promise<any>;

@@ -127,32 +127,40 @@ class Schema {
    */
   async hasTable(tableName) {
     const driver = this.connection.config.driver;
-    let sql;
-    let params = [];
+    const RawExpression = require('../RawExpression');
+    let rows;
 
     switch (driver) {
     case 'mysql':
-      sql = `SELECT COUNT(*) as count FROM information_schema.tables
-               WHERE table_schema = DATABASE() AND table_name = ?`;
-      params = [tableName];
+      rows = await this.connection
+        .from('information_schema.tables')
+        .selectRaw('COUNT(1) AS cnt')
+        .where('table_schema', new RawExpression('DATABASE()'))
+        .where('table_name', tableName)
+        .get();
       break;
     case 'postgres':
     case 'postgresql':
-      sql = `SELECT COUNT(*) as count FROM information_schema.tables
-               WHERE table_schema = 'public' AND table_name = $1`;
-      params = [tableName];
+      rows = await this.connection
+        .from('information_schema.tables')
+        .selectRaw('COUNT(1) AS cnt')
+        .where('table_schema', 'public')
+        .where('table_name', tableName)
+        .get();
       break;
     case 'sqlite':
-      sql = `SELECT COUNT(*) as count FROM sqlite_master
-               WHERE type='table' AND name=?`;
-      params = [tableName];
+      rows = await this.connection
+        .from('sqlite_master')
+        .selectRaw('COUNT(1) AS cnt')
+        .where('type', 'table')
+        .where('name', tableName)
+        .get();
       break;
     default:
       throw new Error(`Unsupported driver: ${driver}`);
     }
 
-    const result = await this.connection.execute(sql, params);
-    return result[0].count > 0;
+    return Number(rows[0]?.cnt ?? 0) > 0;
   }
 
   /**
@@ -163,36 +171,88 @@ class Schema {
    */
   async hasColumn(tableName, columnName) {
     const driver = this.connection.config.driver;
-    let sql;
-    let params = [];
+    const RawExpression = require('../RawExpression');
+    let rows;
 
     switch (driver) {
     case 'mysql':
-      sql = `SELECT COUNT(*) as count FROM information_schema.columns
-               WHERE table_schema = DATABASE()
-               AND table_name = ?
-               AND column_name = ?`;
-      params = [tableName, columnName];
+      rows = await this.connection
+        .from('information_schema.columns')
+        .selectRaw('COUNT(1) AS cnt')
+        .where('table_schema', new RawExpression('DATABASE()'))
+        .where('table_name', tableName)
+        .where('column_name', columnName)
+        .get();
       break;
     case 'postgres':
     case 'postgresql':
-      sql = `SELECT COUNT(*) as count FROM information_schema.columns
-               WHERE table_schema = 'public'
-               AND table_name = $1
-               AND column_name = $2`;
-      params = [tableName, columnName];
+      rows = await this.connection
+        .from('information_schema.columns')
+        .selectRaw('COUNT(1) AS cnt')
+        .where('table_schema', 'public')
+        .where('table_name', tableName)
+        .where('column_name', columnName)
+        .get();
       break;
-    case 'sqlite':
-      sql = `SELECT COUNT(*) as count FROM pragma_table_info(?)
-               WHERE name = ?`;
-      params = [tableName, columnName];
+    case 'sqlite': {
+      const escapedTableName = String(tableName).replace(/'/g, "''");
+      rows = await this.connection
+        .from(new RawExpression(`pragma_table_info('${escapedTableName}')`))
+        .selectRaw('COUNT(1) AS cnt')
+        .where('name', columnName)
+        .get();
       break;
+    }
     default:
       throw new Error(`Unsupported driver: ${driver}`);
     }
 
-    const result = await this.connection.execute(sql, params);
-    return result[0].count > 0;
+    return Number(rows[0]?.cnt ?? 0) > 0;
+  }
+
+  async tableExists(tableName) {
+    return this.hasTable(tableName);
+  }
+
+  async columnExists(tableName, columnName) {
+    return this.hasColumn(tableName, columnName);
+  }
+
+  async listTables() {
+    const driver = this.connection.config.driver;
+    const RawExpression = require('../RawExpression');
+    let rows;
+
+    switch (driver) {
+    case 'mysql':
+      rows = await this.connection
+        .from('information_schema.tables')
+        .selectRaw('table_name AS name')
+        .where('table_schema', new RawExpression('DATABASE()'))
+        .get();
+      break;
+    case 'postgres':
+    case 'postgresql':
+      rows = await this.connection
+        .from('information_schema.tables')
+        .selectRaw('table_name AS name')
+        .where('table_schema', 'public')
+        .get();
+      break;
+    case 'sqlite':
+      rows = await this.connection
+        .from('sqlite_master')
+        .select('name')
+        .where('type', 'table')
+        .whereRaw("name NOT LIKE 'sqlite_%'")
+        .orderBy('name')
+        .get();
+      break;
+    default:
+      throw new Error(`listTables() is not supported for driver: ${driver}`);
+    }
+
+    return rows.map(r => r.name);
   }
 
   // ==================== Views ====================

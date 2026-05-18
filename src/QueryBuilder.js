@@ -2,6 +2,7 @@
  * Query Builder for constructing and executing database queries
  */
 const RawExpression = require('./RawExpression');
+const QueryBuilderError = require('./Errors/QueryBuilderError');
 
 /**
  * Validate a SQL identifier used internally in subquery construction.
@@ -18,8 +19,12 @@ function assertIdentifier(value, context = 'identifier') {
 }
 
 class QueryBuilder {
-  constructor(model) {
+  constructor(model, options = {}) {
     this.model = model;
+    this._standaloneConnection = options.connection || null;
+    this._standaloneSource = options.source || null;
+    this._consumed = false;
+    this._subParams = [];
     this.wheres = [];
     this.orders = [];
     this.limitValue = null;
@@ -36,6 +41,27 @@ class QueryBuilder {
     this._onlyTrashed = false;
     this._excludedScopes = [];
     this._excludeAllScopes = false;
+  }
+
+  get _isStandalone() {
+    return this.model === null && this._standaloneConnection !== null;
+  }
+
+  _assertNotConsumed() {
+    if (!this._isStandalone) return;
+    if (this._consumed) {
+      throw new QueryBuilderError(
+        'This query builder instance has already been executed. Create a new instance via db.from().'
+      );
+    }
+  }
+
+  _buildQueryObj() {
+    const query = this.buildQuery();
+    if (this._subParams && this._subParams.length > 0) {
+      return { ...query, params: [...this._subParams, ...(query.params || [])] };
+    }
+    return query;
   }
 
   /**
@@ -124,6 +150,9 @@ class QueryBuilder {
    * @returns {this}
    */
   selectRaw(expression) {
+    if (this.selectedColumns.length === 1 && this.selectedColumns[0] === '*') {
+      this.selectedColumns = [];
+    }
     this.selectedColumns.push(new RawExpression(expression));
     return this;
   }
@@ -465,6 +494,17 @@ class QueryBuilder {
   }
 
   /**
+   * Add a raw HAVING clause
+   * @param {string} sql
+   * @param {Array} bindings
+   * @returns {this}
+   */
+  havingRaw(sql, bindings = []) {
+    this.havings.push({ type: 'raw', sql, bindings });
+    return this;
+  }
+
+  /**
    * Set the number of records to skip
    * @param {number} value
    * @returns {this}
@@ -583,6 +623,15 @@ class QueryBuilder {
    * @returns {Promise<Array>}
    */
   async get() {
+    if (this._isStandalone) {
+      this._assertNotConsumed();
+      this._consumed = true;
+      return await this._standaloneConnection.select(
+        this._standaloneSource,
+        this._buildQueryObj()
+      );
+    }
+
     // Apply global scopes and soft delete constraints
     this._applyGlobalScopes();
     this._applySoftDeleteConstraints();
@@ -606,6 +655,17 @@ class QueryBuilder {
    * @returns {Promise<Model|null>}
    */
   async first() {
+    if (this._isStandalone) {
+      this._assertNotConsumed();
+      this._consumed = true;
+      this.limit(1);
+      const rows = await this._standaloneConnection.select(
+        this._standaloneSource,
+        this._buildQueryObj()
+      );
+      return rows[0] || null;
+    }
+
     this.limit(1);
     const results = await this.get();
     return results[0] || null;
@@ -736,7 +796,11 @@ class QueryBuilder {
    * Get the count of records
    * @returns {Promise<number>}
    */
-  async count() {
+  async count(column = '*') {
+    if (this._isStandalone || column !== '*') {
+      return this._aggregate('COUNT', column);
+    }
+
     // Apply scopes for count
     this._applyGlobalScopes();
     this._applySoftDeleteConstraints();
@@ -1022,7 +1086,18 @@ class QueryBuilder {
    * @private
    */
   async _aggregate(fn, column) {
-    assertIdentifier(column, 'aggregate column');
+    if (column !== '*') {
+      assertIdentifier(column, 'aggregate column');
+    }
+    if (this._isStandalone) {
+      this._assertNotConsumed();
+      this._consumed = true;
+      const queryObj = this._buildQueryObj();
+      queryObj.columns = [new RawExpression(`${fn}(${column}) AS aggregate`)];
+      const rows = await this._standaloneConnection.select(this._standaloneSource, queryObj);
+      return Number(rows[0]?.aggregate ?? 0);
+    }
+
     this._applyGlobalScopes();
     this._applySoftDeleteConstraints();
 
@@ -1158,6 +1233,10 @@ class QueryBuilder {
     cloned._excludeAllScopes = this._excludeAllScopes;
     cloned._scopesApplied = this._scopesApplied;
     cloned._softDeleteApplied = this._softDeleteApplied;
+    cloned._standaloneConnection = this._standaloneConnection;
+    cloned._standaloneSource = this._standaloneSource;
+    cloned._consumed = this._consumed;
+    cloned._subParams = this._subParams ? [...this._subParams] : [];
 
     return cloned;
   }
