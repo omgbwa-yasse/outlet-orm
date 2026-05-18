@@ -1119,7 +1119,10 @@ class DatabaseConnection {
     // SELECT clause
     let selectClause = '*';
     if (query.columns && query.columns.length > 0 && query.columns[0] !== '*') {
-      selectClause = query.columns.map(col => sanitizeIdentifier(col)).join(', ');
+      selectClause = query.columns.map(col => {
+        if (col instanceof RawExpression) return col.value;
+        return sanitizeIdentifier(col);
+      }).join(', ');
     }
 
     // DISTINCT
