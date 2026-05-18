@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [14.2.0] — 2026-05-03
+
+### ✨ New — AI alias export
+
+- Added `Ai` as a strict alias of `AIManager` in the public entry point.
+- Added TypeScript alias declaration for `Ai` so typed consumers can import it directly.
+- Added test coverage to assert `Ai === AIManager`.
+
 ## [14.0.0] — 2026-05-01
 
 ### ✨ New — Unified `outlet` CLI

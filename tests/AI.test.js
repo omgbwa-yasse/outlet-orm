@@ -479,4 +479,9 @@ describe('Module exports', () => {
     expect(outlet.AISafetyGuardrails).toBeDefined();
     expect(outlet.PromptGenerator).toBeDefined();
   });
+
+  test('exports Ai as a strict alias of AIManager', () => {
+    const { Ai, AIManager } = require('../src/index');
+    expect(Ai).toBe(AIManager);
+  });
 });

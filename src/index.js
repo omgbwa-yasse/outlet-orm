@@ -1,5 +1,6 @@
 const Model = require('./Model');
 const QueryBuilder = require('./QueryBuilder');
+const QueryBuilderError = require('./Errors/QueryBuilderError');
 const DatabaseConnection = require('./DatabaseConnection');
 const { UnsupportedCapabilityError } = require('./Errors/UnsupportedCapabilityError');
 
@@ -51,6 +52,7 @@ const PromptGenerator    = require('./AI/PromptGenerator');
 
 // AI (v8.0.0) — Multi-provider LLM abstraction
 const AIManager             = require('./AI/AIManager');
+const Ai                    = AIManager;
 const AIFacade              = require('./AI/Facades/AI');
 const TextBuilder           = require('./AI/Builders/TextBuilder');
 const ChatProviderContract  = require('./AI/Contracts/ChatProviderContract');
@@ -89,6 +91,7 @@ module.exports = {
   // Core
   Model,
   QueryBuilder,
+  QueryBuilderError,
   DatabaseConnection,
 
   // Relations
@@ -132,6 +135,7 @@ module.exports = {
 
   // AI (v8.0.0)
   AIManager,
+  Ai,
   AIFacade,
   TextBuilder,
   ChatProviderContract,
