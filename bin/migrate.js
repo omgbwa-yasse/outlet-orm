@@ -9,6 +9,8 @@ const readline = require('readline');
 const fs = require('fs').promises;
 const path = require('path');
 const AISafetyGuardrails = require('../src/AI/AISafetyGuardrails');
+const safety = require('./_safety');
+const Environment = require('../src/Environment');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -39,7 +41,13 @@ async function main() {
   }
 
   // Support non-interactive commands for automation and CI
-  const nonInteractive = new Set(['migrate', 'up', 'rollback', 'reset', 'refresh', 'fresh', 'status', 'seed', 'db:seed']);
+  const nonInteractive = new Set([
+    'install',
+    'migrate', 'up', 'rollback', 'reset', 'refresh', 'fresh', 'status',
+    'deploy', 'resolve',
+    'seed', 'db:seed',
+    'restore:auto', 'backups:list', 'make:transform'
+  ]);
   if (nonInteractive.has(command)) {
     const flags = parseFlags(process.argv.slice(3));
     await runNonInteractive(command, flags);
@@ -60,7 +68,7 @@ async function makeMigration() {
   const migrationName = process.argv[3];
 
   if (!migrationName) {
-    console.error('✗ Error: Migration name is required');
+    console.error('Error: Migration name is required');
     console.log('Usage: outlet-migrate make <migration_name>');
     console.log('Example: outlet-migrate make create_users_table');
     return;
@@ -87,9 +95,21 @@ async function makeMigration() {
   const fileName = `${timestamp}_${migrationName}.js`;
   const filePath = path.join(migrationsDir, fileName);
 
-  // Determine if it's a create or alter migration
-  const isCreate = migrationName.includes('create_');
-  const tableName = extractTableName(migrationName);
+  // Determine create-vs-alter and target table. Explicit --create / --table
+  // flags win over name-based auto-detection.
+  const flagsForMake = parseFlags(process.argv.slice(3));
+  let isCreate;
+  let tableName;
+  if (flagsForMake.create) {
+    isCreate = true;
+    tableName = flagsForMake.create;
+  } else if (flagsForMake.table) {
+    isCreate = false;
+    tableName = flagsForMake.table;
+  } else {
+    isCreate = migrationName.includes('create_');
+    tableName = extractTableName(migrationName);
+  }
 
   const template = isCreate
     ? getCreateMigrationTemplate(tableName)
@@ -97,7 +117,7 @@ async function makeMigration() {
 
   await fs.writeFile(filePath, template);
 
-  console.log(`✓ Migration created: ${fileName}`);
+  console.log(`Migration created: ${fileName}`);
   console.log(`  Location: ${filePath}`);
 }
 
@@ -108,7 +128,7 @@ async function makeSeeder() {
   const seederName = process.argv[3];
 
   if (!seederName) {
-    console.error('✗ Error: Seeder name is required');
+    console.error('Error: Seeder name is required');
     console.log('Usage: outlet-migrate make:seed <seeder_name>');
     console.log('Example: outlet-migrate make:seed UserSeeder');
     return;
@@ -131,7 +151,58 @@ async function makeSeeder() {
   const template = getSeederTemplate(className);
   await fs.writeFile(filePath, template);
 
-  console.log(`✓ Seeder created: ${fileName}`);
+  console.log(`Seeder created: ${fileName}`);
+  console.log(`  Location: ${filePath}`);
+}
+
+/**
+ * Create a new data-transform migration from the template.
+ * Used by `outlet-migrate make:transform <name>`.
+ */
+async function makeTransformMigration(/* flags */) {
+  const migrationName = process.argv[3];
+  if (!migrationName) {
+    console.error('✗ Error: Migration name is required');
+    console.log('Usage: outlet-migrate make:transform <migration_name>');
+    process.exit(2);
+  }
+  if (!/^[a-z][a-z0-9_]*$/.test(migrationName)) {
+    console.error(`✗ Error: Invalid migration name "${migrationName}"`);
+    console.error('  Names must match /^[a-z][a-z0-9_]*$/ (lowercase, digits, underscores; must start with a letter).');
+    process.exit(2);
+  }
+
+  const migrationsDir = path.join(process.cwd(), 'database', 'migrations');
+  await fs.mkdir(migrationsDir, { recursive: true });
+
+  const templatePath = path.join(__dirname, '..', 'database', 'templates', 'transform-migration.js');
+  let template;
+  try {
+    template = await fs.readFile(templatePath, 'utf8');
+  } catch (e) {
+    console.error(`✗ Template not found at ${templatePath}`);
+    console.error('  Run package install/upgrade or restore the templates directory.');
+    process.exit(1);
+  }
+
+  const className = migrationName
+    .split(/[_\-\s]+/)
+    .filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join('');
+  const filled = template
+    .replace(/__CLASS_NAME__/g, className)
+    .replace(/__MIGRATION_NAME__/g, migrationName);
+
+  const timestamp = new Date().toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/T/, '_')
+    .replace(/\..+/, '');
+  const fileName = `${timestamp}_${migrationName}.js`;
+  const filePath = path.join(migrationsDir, fileName);
+  await fs.writeFile(filePath, filled);
+
+  console.log(`Transform migration created: ${fileName}`);
   console.log(`  Location: ${filePath}`);
 }
 
@@ -297,14 +368,45 @@ function parseFlags(argv) {
   // Booleans
   if (/(^|\s)(--yes|-y)(\s|$)/.test(text)) flags.yes = true;
   if (/(^|\s)(--force|-f)(\s|$)/.test(text)) flags.force = true;
-  // Steps with value: supports "--steps N", "--steps=N", "-s N"
+  if (/(^|\s)--skip-auto-backup(\s|$)/.test(text)) flags.skipAutoBackup = true;
+  if (/(^|\s)--allow-drift(\s|$)/.test(text)) flags.allowDrift = true;
+  if (/(^|\s)--json(\s|$)/.test(text)) flags.json = true;
+  if (/(^|\s)--pretend(\s|$)/.test(text)) flags.pretend = true;
+  if (/(^|\s)--step(\s|$)/.test(text)) flags.step = true;
+  if (/(^|\s)--seed(\s|$)/.test(text)) flags.seed = true;
+  if (/(^|\s)--pending(\s|$)/.test(text)) flags.pending = true;
+  if (/(^|\s)--allow-failed(\s|$)/.test(text)) flags.allowFailed = true;
+  // --applied=<name> / --rolled-back=<name> (resolve)
+  const appliedRe = /--applied(?:=|\s+)(\S+)/;
+  const appliedMatch = appliedRe.exec(text);
+  if (appliedMatch) flags.applied = appliedMatch[1];
+  const rolledRe = /--rolled-back(?:=|\s+)(\S+)/;
+  const rolledMatch = rolledRe.exec(text);
+  if (rolledMatch) flags.rolledBack = rolledMatch[1];
+  // Steps with value: supports "--steps N", "--steps=N", "-s N". (Bare "--step" is the
+  // per-migration-batch flag handled above.)
   const stepsRe = /(?:--steps(?:=|\s+)|-s\s+)(\S+)/;
   const stepsMatch = stepsRe.exec(text);
   if (stepsMatch) flags.steps = coerce(stepsMatch[1]);
-  // Seeder target: --class Name, --class=Name, -c Name
-  const classRe = /(?:--class(?:=|\s+)|-c\s+)(\S+)/;
+  // Seeder target: --class Name, --class=Name, -c Name, --seeder=Name
+  const classRe = /(?:--class(?:=|\s+)|-c\s+|--seeder(?:=|\s+))(\S+)/;
   const classMatch = classRe.exec(text);
   if (classMatch) flags.class = classMatch[1];
+  // --batch=N (rollback to specific batch)
+  const batchRe = /--batch(?:=|\s+)(\S+)/;
+  const batchMatch = batchRe.exec(text);
+  if (batchMatch) flags.batch = coerce(batchMatch[1]);
+  // --create=<table> / --table=<table> (make command)
+  const createRe = /--create(?:=|\s+)(\S+)/;
+  const createMatch = createRe.exec(text);
+  if (createMatch) flags.create = createMatch[1];
+  const tableRe = /--table(?:=|\s+)(\S+)/;
+  const tableMatch = tableRe.exec(text);
+  if (tableMatch) flags.table = tableMatch[1];
+  // --backup=<file> (or --backup <file>)
+  const backupRe = /--backup(?:=|\s+)(\S+)/;
+  const backupMatch = backupRe.exec(text);
+  if (backupMatch) flags.backup = backupMatch[1];
   return flags;
 }
 
@@ -339,7 +441,7 @@ async function runNonInteractive(cmd, flags) {
       database: env.DB_DATABASE || env.DB_NAME || env.DB_FILE || env.SQLITE_DB || env.SQLITE_FILENAME
     };
     if (!dbConfig.driver) {
-      console.error('\n✗ Error: Could not load database configuration');
+      console.error('\nError: Could not load database configuration');
       console.error(`  Make sure ${dbConfigPath} exists OR provide .env variables like DB_DRIVER, DB_HOST, DB_DATABASE`);
       console.error('  Run "outlet-init" to create the configuration');
       console.error(`  Details: ${error.message}`);
@@ -352,18 +454,66 @@ async function runNonInteractive(cmd, flags) {
   const connection = new DatabaseConnection(dbConfig);
   await connection.connect();
 
-  const manager = new MigrationManager(connection);
+  // Build safety options from flags; MigrationManager applies env-var overrides.
+  const safetyOpts = {};
+  if (flags.skipAutoBackup) safetyOpts.autoBackup = false;
+  if (flags.allowDrift) safetyOpts.allowDrift = true;
+
+  const manager = new MigrationManager(connection, undefined, undefined, { migrations: safetyOpts });
+
+  const destructiveOpts = {
+    skipAutoBackup: !!flags.skipAutoBackup,
+    backupFilename: flags.backup
+  };
 
   try {
+    // CLI-level production gate: prints summary + database-name prompt
+    // for destructive commands. The MigrationManager also enforces the env-var
+    // check; this layer adds the interactive confirmation when in a TTY.
+    const DESTRUCTIVE_CMDS = ['fresh', 'reset', 'refresh', 'rollback', 'restore:auto'];
+    if (DESTRUCTIVE_CMDS.includes(cmd)) {
+      const env = Environment.detect();
+      if (env === 'production') {
+        safety.printConnectionSummary(connection, env);
+        const gate = safety.requireProductionConfirm(env);
+        if (!gate.ok) {
+          if (gate.message) console.error(gate.message);
+          await connection.disconnect().catch(() => {});
+          process.exit(gate.exitCode);
+        }
+        const ok = await safety.promptDatabaseName(connection);
+        if (!ok) {
+          console.error('Database name confirmation failed. Aborting.');
+          await connection.disconnect().catch(() => {});
+          process.exit(2);
+        }
+      }
+    }
+
     switch (cmd) {
+    case 'install':
+      await manager.install();
+      console.log('Migrations table initialized.');
+      break;
+
     case 'migrate':
     case 'up':
-      await manager.run();
+      await manager.run({
+        pretend: !!flags.pretend,
+        step: !!flags.step,
+        seed: !!flags.seed,
+        seeder: flags.class || undefined
+      });
       break;
 
     case 'rollback': {
       const steps = Number(flags.steps) || 1;
-      await manager.rollback(steps);
+      await manager.rollback({
+        steps,
+        batch: flags.batch != null ? Number(flags.batch) : undefined,
+        pretend: !!flags.pretend,
+        ...destructiveOpts
+      });
       break;
     }
 
@@ -376,10 +526,10 @@ async function runNonInteractive(cmd, flags) {
           return;
         }
       }
-      if (flags.yes || flags.force) {
-        await manager.reset();
+      if (flags.yes || flags.force || flags.pretend) {
+        await manager.reset({ ...destructiveOpts, pretend: !!flags.pretend });
       } else {
-        console.error('✗ Refused to reset without --yes');
+        console.error('Refused to reset without --yes');
       }
       break;
     }
@@ -393,10 +543,16 @@ async function runNonInteractive(cmd, flags) {
           return;
         }
       }
-      if (flags.yes || flags.force) {
-        await manager.refresh();
+      if (flags.yes || flags.force || flags.pretend) {
+        await manager.refresh({
+          ...destructiveOpts,
+          pretend: !!flags.pretend,
+          step: !!flags.step,
+          seed: !!flags.seed,
+          seeder: flags.class || undefined
+        });
       } else {
-        console.error('✗ Refused to refresh without --yes');
+        console.error('Refused to refresh without --yes');
       }
       break;
     }
@@ -410,17 +566,48 @@ async function runNonInteractive(cmd, flags) {
           return;
         }
       }
-      if (flags.yes || flags.force) {
-        await manager.fresh();
+      if (flags.yes || flags.force || flags.pretend) {
+        await manager.fresh({
+          ...destructiveOpts,
+          pretend: !!flags.pretend,
+          step: !!flags.step,
+          seed: !!flags.seed,
+          seeder: flags.class || undefined
+        });
       } else {
-        console.error('✗ Refused to fresh without --yes');
+        console.error('Refused to fresh without --yes');
       }
       break;
     }
 
     case 'status':
-      await manager.status();
+      await manager.status({ pending: !!flags.pending });
       break;
+
+    case 'deploy':
+      await manager.deploy({
+        pretend: !!flags.pretend,
+        allowDrift: !!flags.allowDrift,
+        allowFailed: !!flags.allowFailed
+      });
+      break;
+
+    case 'resolve': {
+      if (!flags.applied && !flags.rolledBack) {
+        console.error('Error: resolve requires --applied=<name> or --rolled-back=<name>');
+        process.exit(1);
+      }
+      if (flags.applied && flags.rolledBack) {
+        console.error('Error: --applied and --rolled-back are mutually exclusive');
+        process.exit(1);
+      }
+      if (flags.applied) {
+        await manager.markMigrationApplied(flags.applied);
+      } else {
+        await manager.markMigrationRolledBack(flags.rolledBack);
+      }
+      break;
+    }
 
     case 'seed':
     case 'db:seed': {
@@ -429,12 +616,95 @@ async function runNonInteractive(cmd, flags) {
       break;
     }
 
+    case 'restore:auto': {
+      const result = await manager.restoreAuto({ backup: flags.backup });
+      console.log(`✓ Restored ${result.statements} statement(s) from ${result.file}`);
+      break;
+    }
+
+    case 'backups:list': {
+      const list = await manager.listAutoBackups();
+      if (flags.json) {
+        console.log(JSON.stringify(list, null, 2));
+      } else if (list.length === 0) {
+        console.log('No auto-backups found.');
+      } else {
+        console.log('Auto-backups (newest first):');
+        for (const b of list) {
+          const size = typeof b.size === 'number' ? `${(b.size / 1024).toFixed(1)} KB` : '?';
+          console.log(`  ${b.file}  [${b.command || '?'}]  ${size}  ${b.timestamp || ''}`);
+        }
+      }
+      break;
+    }
+
+    case 'make:transform': {
+      await makeTransformMigration(flags);
+      break;
+    }
+
     default:
-      console.error(`✗ Unknown command: ${cmd}`);
+      console.error(`Unknown command: ${cmd}`);
+      console.error('');
+      console.error('Usage: outlet-migrate <command> [flags]');
+      console.error('');
+      console.error('Commands:');
+      console.error('  install                     Create the migrations table only');
+      console.error('  migrate | up                Run pending migrations');
+      console.error('  deploy                      Apply pending migrations non-interactively (CI/CD)');
+      console.error('  resolve --applied=<name>    Mark a migration as applied (recovery / baseline)');
+      console.error('  resolve --rolled-back=<name>  Mark a migration as rolled back (recovery)');
+      console.error('  rollback [steps]            Roll back the last batch (or N steps)');
+      console.error('  reset                       Roll back ALL migrations');
+      console.error('  refresh                     reset + migrate');
+      console.error('  fresh                       Drop all tables, then migrate');
+      console.error('  status                      Show migration status (incl. drift)');
+      console.error('  seed | db:seed [name]       Run seeders');
+      console.error('  make <name> [--create=T|--table=T]   Scaffold a new migration');
+      console.error('  make:seed <name>            Scaffold a new seeder');
+      console.error('  make:transform <name>       Scaffold a data-transform migration');
+      console.error('  restore:auto [--backup=<f>] Restore the latest (or named) auto-backup');
+      console.error('  backups:list [--json]       List auto-backups');
+      console.error('');
+      console.error('Flags:');
+      console.error('  --pretend                   Show SQL/plan without executing (migrate/rollback/reset/refresh/fresh)');
+      console.error('  --allow-failed              deploy: proceed despite previously-failed migrations');
+      console.error('  --step                      Run each pending migration in its own batch');
+      console.error('  --steps=N | -s N            Number of batches to roll back (default 1)');
+      console.error('  --batch=N                   Roll back a specific batch number');
+      console.error('  --seed                      Run seeders after migrate/refresh/fresh');
+      console.error('  --seeder=Name | --class=N   Target a specific seeder class');
+      console.error('  --pending                   status: show only pending migrations');
+      console.error('  --create=<table>            make: force a create-table template');
+      console.error('  --table=<table>             make: force an alter-table template');
+      console.error('  --skip-auto-backup          Skip auto-backup (ignored in production)');
+      console.error('  --allow-drift               Allow migrations to run when drift is detected');
+      console.error('  --backup=<file>             Choose a specific backup file for restore:auto');
+      console.error('  --json                      Emit machine-readable output (backups:list)');
+      console.error('');
+      console.error('Environment:');
+      console.error('  OUTLET_PRODUCTION_CONFIRM=1 Required for destructive commands in production');
+      console.error('  OUTLET_ALLOW_DRIFT=1        Equivalent to --allow-drift');
+      console.error('  OUTLET_ENV / NODE_ENV       development | test | production');
+      process.exit(1);
     }
   } catch (error) {
-    console.error('\n✗ Migration error:', error.message);
-    console.error(error.stack);
+    console.error('\nMigration error:', error.message);
+    if (process.env.DEBUG) console.error(error.stack);
+    await connection.disconnect().catch(() => {});
+    // Map error codes to exit codes per CLI contract.
+    switch (error.code) {
+    case 'EOUTLET_PRODUCTION':
+    case 'EOUTLET_CONFIRM':
+      process.exit(2);
+      // eslint-disable-next-line no-fallthrough
+    case 'EOUTLET_DRIFT':
+    case 'EOUTLET_NO_BACKUP':
+      process.exit(3);
+      // eslint-disable-next-line no-fallthrough
+    default:
+      process.exit(1);
+    }
   }
 
   await connection.disconnect();
@@ -480,7 +750,7 @@ async function runMigrationCommands() {
       database: env.DB_DATABASE || env.DB_NAME || env.DB_FILE || env.SQLITE_DB || env.SQLITE_FILENAME
     };
     if (!dbConfig.driver) {
-      console.error('\n✗ Error: Could not load database configuration');
+      console.error('\nError: Could not load database configuration');
       console.error(`  Make sure ${dbConfigPath} exists OR provide .env variables like DB_DRIVER, DB_HOST, DB_DATABASE`);
       console.error('  Run "outlet-init" to create the configuration');
       console.error(`  Details: ${error.message}`);
@@ -555,7 +825,7 @@ async function runMigrationCommands() {
       console.log('Invalid choice');
     }
   } catch (error) {
-    console.error('\n✗ Migration error:', error.message);
+    console.error('\nMigration error:', error.message);
     console.error(error.stack);
   }
 

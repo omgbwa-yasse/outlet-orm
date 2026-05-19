@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/outlet-orm.svg)](https://www.npmjs.com/package/outlet-orm)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A JavaScript ORM inspired by Laravel Eloquent for Node.js with support for MySQL, PostgreSQL, SQLite and REST/GraphQL APIs.
+A JavaScript Active Record ORM for Node.js with support for MySQL, PostgreSQL, SQLite and REST/GraphQL APIs.
 
 📚 **[Complete documentation available in `/docs`](./docs/INDEX.md)**
 
@@ -249,9 +249,9 @@ async store(req, res) {
 
 ## ✨ Key features
 
-- **Eloquent-inspired API** (Active Record) for a fluent developer experience
+- **Active Record API** for a fluent developer experience
 - **Expressive Query Builder**: where/joins/order/limit/offset/paginate
-- **Laravel-style relationship filters**: `whereHas()`, `has()`, `whereDoesntHave()`, `withCount()`
+- **Relationship filters**: `whereHas()`, `has()`, `whereDoesntHave()`, `withCount()`
 - **Eager Loading** of relationships via `.with(...)` with constraints and dot-notation
 - **Complete relations**:
   - `hasOne`, `hasMany`, `belongsTo`, `belongsToMany` (with attach/detach/sync)
@@ -505,7 +505,7 @@ await User
   .where('status', 'pending')
   .update({ status: 'active' });
 
-// Update + Fetch (comme Prisma)
+// Update + Fetch
 const updated = await User
   .where('id', 1)
   .updateAndFetch({ name: 'Neo' }, ['profile', 'posts']);
@@ -1321,7 +1321,7 @@ if (db.isLogging()) {
 
 ## 🌐 API Layer (v13.0.0)
 
-Outlet ORM v13 introduces a first-class **API Layer**: use the same Eloquent-inspired syntax to query REST (and GraphQL) APIs as you already do for SQL databases — no extra dependencies, no new concepts.
+Outlet ORM v13 introduces a first-class **API Layer**: use the same Active Record syntax to query REST (and GraphQL) APIs as you already do for SQL databases — no extra dependencies, no new concepts.
 
 ```javascript
 const { Api, ApiAdapter } = require('outlet-orm');
@@ -1725,6 +1725,7 @@ Configure your AI editor:
 ## 📚 Documentation
 
 - [Migrations Guide](docs/MIGRATIONS.md)
+- [Migration Data Safety](docs/MIGRATION_DATA_SAFETY.md) — Auto-backups, drift detection, production gate, transform helpers
 - [SQL Conversion](docs/SQL_CONVERSION.md)
 - [Relation Detection](docs/RELATIONS_DETECTION.md)
 - [Quick Start Guide](docs/QUICKSTART.md)

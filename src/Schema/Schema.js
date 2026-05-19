@@ -1,5 +1,5 @@
 /**
- * Schema Builder - Inspired by Laravel Schema
+ * Schema Builder
  * Provides a fluent interface for creating and modifying database tables
  */
 
@@ -54,7 +54,7 @@ class Schema {
     for (const sql of statements) {
       await this.connection.execute(sql);
     }
-    console.log(`✓ Table '${tableName}' created successfully`);
+    console.log(`Table '${tableName}' created successfully`);
   }
 
   /**
@@ -71,7 +71,7 @@ class Schema {
     for (const sql of statements) {
       await this.connection.execute(sql);
     }
-    console.log(`✓ Table '${tableName}' modified successfully`);
+    console.log(`Table '${tableName}' modified successfully`);
   }
 
   /**
@@ -97,7 +97,7 @@ class Schema {
     }
 
     await this.connection.execute(sql);
-    console.log(`✓ Table '${from}' renamed to '${to}'`);
+    console.log(`Table '${from}' renamed to '${to}'`);
   }
 
   /**
@@ -107,7 +107,7 @@ class Schema {
   async drop(tableName) {
     const sql = `DROP TABLE ${quoteIdentifier(tableName)}`;
     await this.connection.execute(sql);
-    console.log(`✓ Table '${tableName}' dropped successfully`);
+    console.log(`Table '${tableName}' dropped successfully`);
   }
 
   /**
@@ -117,7 +117,7 @@ class Schema {
   async dropIfExists(tableName) {
     const sql = `DROP TABLE IF EXISTS ${quoteIdentifier(tableName)}`;
     await this.connection.execute(sql);
-    console.log(`✓ Table '${tableName}' dropped if existed`);
+    console.log(`Table '${tableName}' dropped if existed`);
   }
 
   /**

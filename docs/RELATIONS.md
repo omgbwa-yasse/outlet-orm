@@ -1,6 +1,6 @@
 # 🔗 Relationships
 
-Outlet ORM supports all Eloquent-style relationships to link your models.
+Outlet ORM supports all standard Active Record relationships to link your models.
 
 > 📁 **Location**: Define your relationships in`models/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 >

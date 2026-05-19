@@ -1,6 +1,6 @@
-# Contributing to Eloquent JS ORM
+# Contributing to Outlet ORM
 
-First off, thank you for considering contributing to Eloquent JS ORM! It's people like you that make this project such a great tool.
+First off, thank you for considering contributing to Outlet ORM! It's people like you that make this project such a great tool.
 
 ## Code of Conduct
 

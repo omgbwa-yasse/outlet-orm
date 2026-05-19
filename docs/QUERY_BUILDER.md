@@ -551,3 +551,71 @@ for await (const user of User.where('active', true).cursor(50)) {
 - [Relationships](RELATIONS.md) - Model associations
 - [Transactions](TRANSACTIONS.md) - Transaction management
 - [Scopes](SCOPES.md) - Reusable queries
+
+---
+
+## v14.9.0 — Query-builder additions
+
+### whereNotBetween and or* variants
+
+```js
+await User.query().whereNotBetween('age', [30, 40]).get();
+await User.query().where('name', 'Alice').orWhereIn('name', ['Bob']).get();
+await User.query().where('age', 25).orWhereNotIn('age', [30, 35]).get();
+await User.query().where('age', 25).orWhereBetween('age', [40, 50]).get();
+await User.query().where('age', 25).orWhereNotBetween('age', [30, 40]).get();
+await User.query().where('name', 'Alice').orWhereNull('deleted_at').get();
+await User.query().where('name', 'Alice').orWhereNotNull('email').get();
+```
+
+### Aggregate relation subqueries: withSum / withAvg / withMin / withMax
+
+Sister methods of withCount. Each adds an aliased subquery column to the SELECT (alias: relation_fn_column).
+
+```js
+const users = await User.query()
+  .withSum('posts', 'views')
+  .withAvg('posts', 'views')
+  .withMin('posts', 'views')
+  .withMax('posts', 'views')
+  .get();
+users[0].getAttribute('posts_sum_views');
+```
+
+Supports hasOne, hasMany, belongsTo, and belongsToMany relations.
+
+### Additional joins: rightJoin, crossJoin
+
+```js
+qb.rightJoin('profiles', 'users.id', '=', 'profiles.user_id');
+qb.crossJoin('tags');
+```
+
+### union(qb) / unionAll(qb)
+
+```js
+const q1 = User.query().select('name').where('name', 'Alice');
+const rows = await User.query().select('name').where('name', 'Bob').union(q1).get();
+```
+
+### doesntExist()
+
+```js
+if (await User.query().where('email', email).doesntExist()) { /* safe to insert */ }
+```
+
+### insertGetId(data)
+
+```js
+const id = await User.query().insertGetId({ name: 'Dave', age: 50 });
+```
+
+### as(alias) — Table alias
+
+Emits `FROM table AS alias`. Use qualified columns (`alias.column`) in subsequent clauses.
+
+```js
+await User.query().as('u').where('u.age', '>', 30).get();
+await User.as('u').select('u.name').orderBy('u.age').get();
+```
+

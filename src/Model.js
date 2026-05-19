@@ -1,7 +1,7 @@
 const QueryBuilder = require('./QueryBuilder');
 
 /**
- * Base Model class inspired by Laravel Eloquent
+ * Base Model class implementing the Active Record pattern.
  */
 class Model {
   static table = '';
@@ -504,6 +504,15 @@ class Model {
   // ==================== Query Builder ====================
 
   /**
+   * Alias the table for this query (e.g. `User.as('u').where('u.age', '>', 20).get()`)
+   * @param {string} alias
+   * @returns {QueryBuilder}
+   */
+  static as(alias) {
+    return this.query().as(alias);
+  }
+
+  /**
    * Begin querying the model
    * @returns {QueryBuilder}
    */
@@ -555,6 +564,18 @@ class Model {
    */
   static findOrFail(id) {
     return this.query().where(this.primaryKey, id).firstOrFail();
+  }
+
+  /**
+   * Find a model by its primary key, or run a fallback callback if not found.
+   * @param {any} id
+   * @param {Function} callback
+   * @returns {Promise<Model|any>}
+   */
+  static async findOr(id, callback) {
+    const found = await this.find(id);
+    if (found !== null && found !== undefined) return found;
+    return typeof callback === 'function' ? await callback() : null;
   }
 
   /**

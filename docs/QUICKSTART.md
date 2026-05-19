@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-This guide will help you get started quickly with Eloquent JS ORM.
+This guide will help you get started quickly with Outlet ORM.
 
 ## Table of Contents
 

@@ -1,6 +1,6 @@
 # 📚 Outlet ORM – Complete Documentation
 
-> **Version 13.0.0** – A JavaScript/TypeScript ORM inspired by Laravel Eloquent for Node.js
+> **Version 13.0.0** – A JavaScript/TypeScript Active Record ORM for Node.js
 
 ### 🚀 Getting Started
 - [Quick Start Guide](QUICKSTART.md)
@@ -115,7 +115,7 @@ const users = await User.with('posts').where('status', 'active').get();
 | Feature | Description |
 |---|---|
 | 🔍 **Proxy property access** | `user.name` instead of `user.getAttribute('name')` |
-| 🔄 **Eloquent model methods** | `fresh()`, `refresh()`, `replicate()`, `is()`, `only()`, `except()` |
+| 🔄 **Active Record helpers** | `fresh()`, `refresh()`, `replicate()`, `is()`, `only()`, `except()` |
 | 👁️ **Instance visibility control** | `makeVisible()`, `makeHidden()`, `static appends` |
 | 📝 **Change tracking** | `wasChanged()`, `isDirty()` |
 | 🏗️ **DB Object API (v11.3.0)** | Views, triggers, procedures, functions, savepoints, isolation levels via `Schema` |

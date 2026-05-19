@@ -84,7 +84,7 @@ RULES:
    * @returns {Promise<string>}
    */
   async generateModelCode(tableName, tableSchema, relations = []) {
-    const systemPrompt = `You are an expert in outlet-orm (a Node.js Eloquent-inspired ORM).
+    const systemPrompt = `You are an expert in outlet-orm (a Node.js Active Record ORM).
 Generate a complete model class for the given table. Use CommonJS (module.exports).
 
 Example format:

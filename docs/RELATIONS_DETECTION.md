@@ -439,7 +439,7 @@ publishedPosts() {
 ## 📝 Important Notes
 
 1. **Pivot tables**: Do not generate a model if they only contain the 2 foreign keys
-2. **Naming**: Relationship methods follow Laravel conventions:
+2. **Naming**: Relationship methods follow conventions:
 -`belongsTo`→ individually (from:`user()`,`category()`)
 -`hasMany`→ several times (from:`posts()`,`comments()`)
 -`hasOne`→ individually (from:`profile()`)

@@ -1,6 +1,6 @@
 # 📋 Models and CRUD
 
-The models in Outlet ORM follow the Active Record pattern, inspired by Laravel Eloquent.
+The models in Outlet ORM follow the Active Record pattern.
 
 > 📁 **Recommended location**:`models/`(definitions) and used in`controllers/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 >
@@ -813,3 +813,23 @@ user.getChanges();       // { name: 'Updated' }
 - [Relationships](RELATIONS.md) - Model associations
 - [Validation](VALIDATION.md) - Validate data
 - [Events](EVENTS.md) - Hooks on the life cycle
+
+---
+
+## v14.9.0 — Model.findOr(id, callback)
+
+Returns the model when found, otherwise returns the value produced by the callback.
+
+```js
+const user = await User.findOr(1, () => ({ guest: true }));
+const fallback = await User.findOr(99999, () => 'not found');
+```
+
+## Model.as(alias) — Table alias shortcut
+
+Shortcut for `Model.query().as(alias)`. Emits `FROM table AS alias`; reference columns as `alias.column` in subsequent clauses.
+
+```js
+const adults = await User.as('u').where('u.age', '>', 18).get();
+```
+

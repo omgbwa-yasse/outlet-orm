@@ -62,7 +62,7 @@
 
 ## 📚 Overview
 
-The Outlet ORM migration system is inspired by Laravel and allows you to manage the evolution of your database schema in a versioned and collaborative manner.
+The Outlet ORM migration system lets you manage the evolution of your database schema in a versioned and collaborative manner.
 
 > 📁 **Location** :`database/migrations/`— See [Project structure](INSTALLATION.md#structure-de-projet-recommended)
 >
@@ -76,6 +76,17 @@ The Outlet ORM migration system is inspired by Laravel and allows you to manage 
 outlet-migrate make create_users_table
 outlet-migrate make add_email_to_users_table
 outlet-migrate make alter_posts_table
+
+# Force a template explicitly (overrides name-based detection)
+outlet-migrate make add_audit_log --create=audit_log
+outlet-migrate make tweak_users --table=users
+```
+
+### Install the migrations table
+
+```bash
+# Create the migrations table only (migrate:install)
+outlet-migrate install
 ```
 
 ### Run migrations
@@ -114,9 +125,199 @@ outlet-migrate
 ```bash
 outlet-migrate
 # Option 6: status
+# Show only pending migrations
+outlet-migrate status --pending
 ```
 
-## 📝 Create a Migration
+## 🧩 Extra CLI options (v14.7.0)
+
+Available on the CLI and on the `MigrationManager` programmatic API.
+
+### Flags
+
+| Flag | Commands | Description |
+|------|----------|-------------|
+| `--pretend` | `migrate`, `rollback`, `reset`, `refresh`, `fresh` | Dry-run. Lists what would happen without touching the DB. |
+| `--step` | `migrate`, `refresh`, `fresh` | Runs each pending migration in its own batch (granular rollback). |
+| `--steps=N` / `-s N` | `rollback` | Number of batches to revert (default 1). |
+| `--batch=N` | `rollback` | Revert only the specified batch number. |
+| `--seed` | `migrate`, `refresh`, `fresh` | Chain seeders after a successful migration. |
+| `--seeder=Name` / `--class=Name` | `migrate`, `refresh`, `fresh`, `seed` | Target a specific seeder class. |
+| `--pending` | `status` | Show only migrations that have not yet executed. |
+| `--create=<table>` | `make` | Force a *create-table* template (overrides name detection). |
+| `--table=<table>` | `make` | Force an *alter-table* template (overrides name detection). |
+
+### Per-migration hooks
+
+Subclasses of [src/Migrations/Migration.js](../src/Migrations/Migration.js) may override:
+
+```js
+const Migration = require('outlet-orm').Migration;
+
+class AddIndexIfMissing extends Migration {
+  constructor(connection) {
+    super(connection);
+    this.withinTransaction = true; // wrap up()/down() in a DB transaction
+  }
+
+  // Return false to skip this migration (recorded as status='skipped').
+  async shouldRun() {
+    const rows = await this.connection.execute(
+      "SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_users_email'"
+    );
+    return rows.length === 0;
+  }
+
+  async up()   { /* ... */ }
+  async down() { /* ... */ }
+}
+```
+
+### Lifecycle events
+
+`MigrationManager` extends Node's `EventEmitter`. Subscribe to:
+
+| Event | Payload | When |
+|-------|---------|------|
+| `migrations:none` | `{ direction }` | Nothing to run/rollback. |
+| `migrations:pretend` | `{ direction, migrations }` | `--pretend` dry-run. |
+| `migrations:started` | `{ direction, migrations }` | Before the first migration in a batch. |
+| `migrations:ended` | `{ direction, migrations }` | After the batch finishes. |
+| `migration:started` | `{ name, method, batch }` | Before a single migration runs. |
+| `migration:ended` | `{ name, method, batch, duration }` | After a single migration succeeds. |
+| `migration:skipped` | `{ name }` | `shouldRun()` returned `false`. |
+
+```js
+const manager = new MigrationManager(connection, './database/migrations');
+manager.on('migration:ended', ({ name, duration }) => {
+  console.log(`Applied ${name} in ${duration}ms`);
+});
+await manager.run({ step: true, seed: true });```
+
+## �️ Safety: Automatic Backups, Drift & Production Gate
+
+> Added in **v14.6.0** (feature `003-migration-data-preservation`). All commands below remain backward-compatible — safety features are *on by default* in development and *enforced* in production.
+
+### Automatic Backups
+
+Every destructive command (`fresh`, `reset`, `refresh`, `rollback`) automatically writes a SQL dump **before** mutating the schema:
+
+- Location: `database/backups/`
+- Filename: `auto_before_<command>_<YYYYMMDD_HHMMSS>[_<N>].sql`
+- Sidecar: `<filename>.meta.json` (timestamp, command, database, size, batch, tables, rows, checksum, encrypted flag, retention slot, schema-only flag)
+- Retention: oldest pair pruned beyond `backupRetentionCount` (default **10**)
+- Encryption: if `BackupManager` is configured with encryption, auto-backups are encrypted and `restore:auto` round-trips them transparently
+
+Opt out in **development only**:
+
+```bash
+outlet-migrate fresh --skip-auto-backup
+```
+
+> In production, `--skip-auto-backup` is **ignored** and a warning is logged. The backup always runs.
+
+### Listing Backups
+
+```bash
+outlet-migrate backups:list
+outlet-migrate backups:list --json     # machine-readable, sorted by timestamp desc
+```
+
+Columns: `Backup | Command | Timestamp | Database | Size | Batch | Tables | Rows`.
+
+### Restoring from an Automatic Backup
+
+```bash
+# Restore the most recent backup (TTY prompt for confirmation)
+outlet-migrate restore:auto
+
+# Restore a specific backup
+outlet-migrate restore:auto --backup=auto_before_fresh_20251119_142301.sql
+```
+
+Each successful restore appends one JSON line to `database/backups/.restore-history.log`:
+`{timestamp, backup, command, database, restoredBy}`.
+
+### Idempotent Re-runs
+
+`outlet-migrate run` is now idempotent — re-running with no pending files completes in < 200 ms and prints "Nothing to migrate". The `migrations` table records `checksum`, `execution_time_ms`, and `status` per row (`pending | running | completed | failed`). Legacy tables are auto-upgraded on first run (additive ALTERs only).
+
+### Drift Detection
+
+Outlet computes a SHA-256 of each migration file and compares it to the checksum stored when the migration was applied. Drift policy is environment-aware:
+
+| Environment | Behavior |
+|-------------|----------|
+| `development` | ⚠ warns and continues |
+| `test` / CI    | silent (no warning) |
+| `production` | **throws `EOUTLET_DRIFT`** unless `--allow-drift` is passed or `OUTLET_ALLOW_DRIFT=1` is set |
+
+`outlet-migrate status` adds a `Drift` column highlighting changed files.
+
+### Recovering from a Failed Migration
+
+If a previous `run` left a row with `status='running'` or `status='failed'`, the next `run` prompts (TTY only):
+
+- **re-run** — execute `up()` again
+- **mark-resolved** — flip the row to `completed` (manual recovery)
+- **abort** — exit with code 1
+
+In non-TTY contexts the command aborts with a clear instruction string.
+
+### Production Safety Gate
+
+When `Environment.detect() === 'production'`, every destructive command (and `restore:auto`) requires **two** independent confirmations:
+
+1. `OUTLET_PRODUCTION_CONFIRM=1` must be set in the environment.
+2. The operator must type the exact database name at the interactive prompt (case-sensitive).
+
+If `stdin` is not a TTY the command aborts immediately (exit code 2). This is intentional — automated pipelines should set `OUTLET_PRODUCTION_CONFIRM=1` **and** wire the operation behind a manual approval step.
+
+### Data Transformation Scaffold
+
+```bash
+outlet-migrate make:transform split_full_name
+```
+
+Creates `database/migrations/<timestamp>_split_full_name.js` from `database/templates/transform-migration.js`. The template uses the three helpers added to the base `Migration` class:
+
+- `await this.backupData(table, columns)` — snapshot selected columns keyed by primary key
+- `await this.transformData(table, row => patch, { batchSize: 1000 })` — stream-and-update in batches
+- `await this.restoreData(table, snapshot)` — restore from a snapshot in `down()`
+
+See [`MIGRATION_DATA_SAFETY.md`](MIGRATION_DATA_SAFETY.md) for the full pattern catalog (renames, type changes, splits, merges, nullable→not-null transitions).
+
+### CLI Flags Reference (v14.6.0+)
+
+| Flag | Commands | Effect |
+|------|----------|--------|
+| `--skip-auto-backup` | `fresh`, `reset`, `refresh`, `rollback` | Skip auto-backup (dev/test only; ignored in production) |
+| `--allow-drift` | `run`, `status` | Permit execution when drift is detected (production override) |
+| `--backup=<file>` | `restore:auto` | Restore a specific backup file from `database/backups/` |
+| `--json` | `backups:list`, `status` | Emit machine-readable JSON |
+| `--step <N>`, `--steps <N>`, `-s <N>` | `rollback` | Number of batches to roll back (default 1) |
+
+### Environment Variables
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `OUTLET_ENV` | Explicit override (`development \| production \| test`) | — |
+| `NODE_ENV` | Fallback when `OUTLET_ENV` unset | `development` |
+| `CI` | When `true`, forces `test` environment | unset |
+| `OUTLET_PRODUCTION_CONFIRM` | Must equal `1` for destructive commands in production | unset |
+| `OUTLET_ALLOW_DRIFT` | When `1`, permits drift in production | unset |
+| `OUTLET_AUTO_BACKUP` | When `false`, disables auto-backup in dev/test | `true` |
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | Migration / backup / I-O error |
+| 2 | Confirmation rejected (env var missing, wrong db name, prompt declined, invalid flag) |
+| 3 | Backup not found, or drift detected without `--allow-drift` |
+
+## �📝 Create a Migration
 
 ### Table creation migration
 
@@ -799,7 +1000,7 @@ The Outlet ORM migration system offers:
 
 - ✅ **Versioning** of the database schema
 - ✅ **Reversible migrations** with`up()`et`down()`
-- ✅ **Fluid API** inspired by Laravel
+- ✅ **Fluid API** for schema definition
 - ✅ **Support multi-base** (MySQL, PostgreSQL, SQLite)
 - ✅ **Relationship management** (foreign keys, CASCADE)
 - ✅ **Batch tracking** for precise rollback
@@ -808,3 +1009,219 @@ The Outlet ORM migration system offers:
 - ✅ **Views, triggers, procedures/functions** via Schema builder
 
 Use migrations for any changes to your production database! 🚀
+
+## Deployment options (v14.8.0)
+
+### `outlet-migrate deploy`
+
+Non-interactive command for CI/CD pipelines. Runs only pending migrations and:
+
+- Never produces an automatic backup.
+- Never prompts (no production confirmation).
+- Refuses to run when at least one previously **failed** migration exists in the `_migrations` table, unless `--allow-failed` is passed.
+- Honors `--pretend` and `--allow-drift`.
+
+```bash
+outlet-migrate deploy
+outlet-migrate deploy --pretend
+outlet-migrate deploy --allow-drift
+outlet-migrate deploy --allow-failed
+```
+
+### `outlet-migrate resolve`
+
+Manual recovery for production. Lets you reconcile the `_migrations` table after a hot-fix without re-executing SQL.
+
+```bash
+# Mark a migration as applied without running its up()
+outlet-migrate resolve --applied=2026_05_22_create_users.js
+
+# Mark a previously failed/completed migration as rolled back
+outlet-migrate resolve --rolled-back=2026_05_22_create_users.js
+```
+
+Throws `EOUTLET_NOT_FOUND` if the target migration does not exist in `_migrations`.
+
+### Advisory lock
+
+`deploy` and `resolve` wrap their work in an advisory lock to prevent two CI runners from racing:
+
+- **PostgreSQL** — `pg_advisory_lock` / `pg_advisory_unlock` (lock id derived from the migrations table name).
+- **MySQL** — `GET_LOCK(name, 10)` / `RELEASE_LOCK(name)`.
+- **SQLite** — no-op (single-writer engine).
+
+When the lock cannot be acquired the command exits with `EOUTLET_LOCK_BUSY`. `run`, `rollback`, `reset`, `refresh` and `fresh` are intentionally not wrapped (they are interactive flows).
+
+### New `_migrations` columns
+
+The migrations table is auto-upgraded on `initialize()` with three ISO-8601 timestamp columns:
+
+- `started_at` — set when a migration begins executing.
+- `finished_at` — set when a migration completes successfully.
+- `rolled_back_at` — set when a migration is rolled back (manually via `resolve --rolled-back` or via `rollback`).
+
+### Missing migrations
+
+`status()` now flags rows whose file is no longer present on disk with the status `missing`. The same list is available programmatically via `manager.getMissingMigrations()`.
+
+## Deployment options (v14.8.0)
+
+### `outlet-migrate deploy`
+
+Non-interactive command for CI/CD pipelines. Runs only pending migrations and:
+
+- Never produces an automatic backup.
+- Never prompts (no production confirmation).
+- Refuses to run when at least one previously **failed** migration exists in the `_migrations` table, unless `--allow-failed` is passed.
+- Honors `--pretend` and `--allow-drift`.
+
+```bash
+outlet-migrate deploy
+outlet-migrate deploy --pretend
+outlet-migrate deploy --allow-drift
+outlet-migrate deploy --allow-failed
+```
+
+### `outlet-migrate resolve`
+
+Manual recovery for production. Lets you reconcile the `_migrations` table after a hot-fix without re-executing SQL.
+
+```bash
+# Mark a migration as applied without running its up()
+outlet-migrate resolve --applied=2026_05_22_create_users.js
+
+# Mark a previously failed/completed migration as rolled back
+outlet-migrate resolve --rolled-back=2026_05_22_create_users.js
+```
+
+Throws `EOUTLET_NOT_FOUND` if the target migration does not exist in `_migrations`.
+
+### Advisory lock
+
+`deploy` and `resolve` wrap their work in an advisory lock to prevent two CI runners from racing:
+
+- **PostgreSQL** — `pg_advisory_lock` / `pg_advisory_unlock` (lock id derived from the migrations table name).
+- **MySQL** — `GET_LOCK(name, 10)` / `RELEASE_LOCK(name)`.
+- **SQLite** — no-op (single-writer engine).
+
+When the lock cannot be acquired the command exits with `EOUTLET_LOCK_BUSY`. `run`, `rollback`, `reset`, `refresh` and `fresh` are intentionally not wrapped (they are interactive flows).
+
+### New `_migrations` columns
+
+The migrations table is auto-upgraded on `initialize()` with three ISO-8601 timestamp columns:
+
+- `started_at` — set when a migration begins executing.
+- `finished_at` — set when a migration completes successfully.
+- `rolled_back_at` — set when a migration is rolled back (manually via `resolve --rolled-back` or via `rollback`).
+
+### Missing migrations
+
+`status()` now flags rows whose file is no longer present on disk with the status `missing`. The same list is available programmatically via `manager.getMissingMigrations()`.
+
+## Deployment options (v14.8.0)
+
+### `outlet-migrate deploy`
+
+Non-interactive command for CI/CD pipelines. Runs only pending migrations and:
+
+- Never produces an automatic backup.
+- Never prompts (no production confirmation).
+- Refuses to run when at least one previously **failed** migration exists in the `_migrations` table, unless `--allow-failed` is passed.
+- Honors `--pretend` and `--allow-drift`.
+
+```bash
+outlet-migrate deploy
+outlet-migrate deploy --pretend
+outlet-migrate deploy --allow-drift
+outlet-migrate deploy --allow-failed
+```
+
+### `outlet-migrate resolve`
+
+Manual recovery for production. Lets you reconcile the `_migrations` table after a hot-fix without re-executing SQL.
+
+```bash
+# Mark a migration as applied without running its up()
+outlet-migrate resolve --applied=2026_05_22_create_users.js
+
+# Mark a previously failed/completed migration as rolled back
+outlet-migrate resolve --rolled-back=2026_05_22_create_users.js
+```
+
+Throws `EOUTLET_NOT_FOUND` if the target migration does not exist in `_migrations`.
+
+### Advisory lock
+
+`deploy` and `resolve` wrap their work in an advisory lock to prevent two CI runners from racing:
+
+- **PostgreSQL** — `pg_advisory_lock` / `pg_advisory_unlock` (lock id derived from the migrations table name).
+- **MySQL** — `GET_LOCK(name, 10)` / `RELEASE_LOCK(name)`.
+- **SQLite** — no-op (single-writer engine).
+
+When the lock cannot be acquired the command exits with `EOUTLET_LOCK_BUSY`. `run`, `rollback`, `reset`, `refresh` and `fresh` are intentionally not wrapped (they are interactive flows).
+
+### New `_migrations` columns
+
+The migrations table is auto-upgraded on `initialize()` with three ISO-8601 timestamp columns:
+
+- `started_at` — set when a migration begins executing.
+- `finished_at` — set when a migration completes successfully.
+- `rolled_back_at` — set when a migration is rolled back (manually via `resolve --rolled-back` or via `rollback`).
+
+### Missing migrations
+
+`status()` now flags rows whose file is no longer present on disk with the status `missing`. The same list is available programmatically via `manager.getMissingMigrations()`.
+
+## Deployment options (v14.8.0)
+
+### `outlet-migrate deploy`
+
+Non-interactive command for CI/CD pipelines. Runs only pending migrations and:
+
+- Never produces an automatic backup.
+- Never prompts (no production confirmation).
+- Refuses to run when at least one previously **failed** migration exists in the `_migrations` table, unless `--allow-failed` is passed.
+- Honors `--pretend` and `--allow-drift`.
+
+```bash
+outlet-migrate deploy
+outlet-migrate deploy --pretend
+outlet-migrate deploy --allow-drift
+outlet-migrate deploy --allow-failed
+```
+
+### `outlet-migrate resolve`
+
+Manual recovery for production. Lets you reconcile the `_migrations` table after a hot-fix without re-executing SQL.
+
+```bash
+# Mark a migration as applied without running its up()
+outlet-migrate resolve --applied=2026_05_22_create_users.js
+
+# Mark a previously failed/completed migration as rolled back
+outlet-migrate resolve --rolled-back=2026_05_22_create_users.js
+```
+
+Throws `EOUTLET_NOT_FOUND` if the target migration does not exist in `_migrations`.
+
+### Advisory lock
+
+`deploy` and `resolve` wrap their work in an advisory lock to prevent two CI runners from racing:
+
+- **PostgreSQL** — `pg_advisory_lock` / `pg_advisory_unlock` (lock id derived from the migrations table name).
+- **MySQL** — `GET_LOCK(name, 10)` / `RELEASE_LOCK(name)`.
+- **SQLite** — no-op (single-writer engine).
+
+When the lock cannot be acquired the command exits with `EOUTLET_LOCK_BUSY`. `run`, `rollback`, `reset`, `refresh` and `fresh` are intentionally not wrapped (they are interactive flows).
+
+### New `_migrations` columns
+
+The migrations table is auto-upgraded on `initialize()` with three ISO-8601 timestamp columns:
+
+- `started_at` — set when a migration begins executing.
+- `finished_at` — set when a migration completes successfully.
+- `rolled_back_at` — set when a migration is rolled back (manually via `resolve --rolled-back` or via `rollback`).
+
+### Missing migrations
+
+`status()` now flags rows whose file is no longer present on disk with the status `missing`. The same list is available programmatically via `manager.getMissingMigrations()`.

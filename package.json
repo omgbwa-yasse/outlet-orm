@@ -1,7 +1,7 @@
 {
   "name": "outlet-orm",
-  "version": "14.2.0",
-  "description": "A Laravel Eloquent-inspired ORM for Node.js with support for MySQL, PostgreSQL, and SQLite",
+  "version": "14.9.0",
+  "description": "An Active Record ORM for Node.js with support for MySQL, PostgreSQL, and SQLite",
   "main": "src/index.js",
   "types": "types/index.d.ts",
   "bin": {
@@ -42,14 +42,12 @@
   },
   "keywords": [
     "orm",
-    "eloquent",
-    "laravel",
+    "active-record",
     "database",
     "mysql",
     "postgresql",
     "sqlite",
     "query-builder",
-    "active-record",
     "mcp",
     "ai-agent"
   ],

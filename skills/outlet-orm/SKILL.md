@@ -1,17 +1,17 @@
 ---
 name: outlet-orm-best-practices
-description: Outlet ORM is a Laravel Eloquent-inspired ORM for Node.js with MySQL, PostgreSQL, and SQLite support. Use this skill when working with Outlet ORM models, queries, relationships, migrations, backup, AI integration (AI multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, MCP Server) and database operations.
+description: Outlet ORM is an Active Record ORM for Node.js with MySQL, PostgreSQL, and SQLite support. Use this skill when working with Outlet ORM models, queries, relationships, migrations, backup, AI integration (AI multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, MCP Server) and database operations.
 ---
 
 # Outlet ORM Best Practices
 
-Comprehensive guide for using Outlet ORM - a Laravel Eloquent-inspired ORM for Node.js/TypeScript with support for MySQL, PostgreSQL, and SQLite.
+Comprehensive guide for using Outlet ORM - an Active Record ORM for Node.js/TypeScript with support for MySQL, PostgreSQL, and SQLite.
 
 > 🆕 **v12.0.0**: Fluent DDL Builder names fully harmonised to `Schema*` prefix. `DBFunction` alias removed — use `SchemaFunction`. `useSchema()` binds all builders in one call. See [DATABASE_OBJECTS.md](../../docs/DATABASE_OBJECTS.md).
 
 > 🆕 **v11.4.0**: Fluent Builder API — `SchemaView`, `SchemaTrigger`, `SchemaProcedure`, `SchemaFunction`, `SchemaTransaction` and `useSchema()`. Bind all DB object builders to a schema/connection in one call. Harmonised `Schema*` exports alongside short aliases. See [DATABASE_OBJECTS.md](../../docs/DATABASE_OBJECTS.md).
 >
-> 🆕 **v11.0.0**: Proxy property access (`user.name`), Eloquent-style model methods (`fresh`, `refresh`, `replicate`, `is`, `isNot`, `only`, `except`, `makeVisible`, `makeHidden`, `wasChanged`, `getChanges`), computed `appends`, QueryBuilder enhancements (`value`, `chunk`, `when`, `tap`, `toSQL`, `dd`), fluent local scopes (`static scopeActive(query)` → `User.query().active()`), relation `withDefault()`. See [MODELS.md](MODELS.md), [QUERIES.md](QUERIES.md), [ADVANCED.md](ADVANCED.md), [RELATIONS.md](RELATIONS.md).
+> 🆕 **v11.0.0**: Proxy property access (`user.name`), Active Record model methods (`fresh`, `refresh`, `replicate`, `is`, `isNot`, `only`, `except`, `makeVisible`, `makeHidden`, `wasChanged`, `getChanges`), computed `appends`, QueryBuilder enhancements (`value`, `chunk`, `when`, `tap`, `toSQL`, `dd`), fluent local scopes (`static scopeActive(query)` → `User.query().active()`), relation `withDefault()`. See [MODELS.md](MODELS.md), [QUERIES.md](QUERIES.md), [ADVANCED.md](ADVANCED.md), [RELATIONS.md](RELATIONS.md).
 >
 > 🔖 **v9.0.0**: Complete AI documentation — AI multi-provider LLM, AI Query Builder, AI Seeder, AI Optimizer, AI Prompt Enhancer, AI Safety Guardrails. See [AI.md](AI.md).
 >
