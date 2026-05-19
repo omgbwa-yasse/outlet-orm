@@ -21,3 +21,13 @@ build/
 .specify/
 Thumbs.db
 *.tmp
+
+# Migration auto-backups (T004)
+database/backups/*.sql
+database/backups/*.sql.enc
+database/backups/*.meta.json
+database/backups/.restore-history.log
+!database/backups/.gitkeep
+
+# Research / vendored source for analysis (not shipped)
+.research/

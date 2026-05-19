@@ -176,7 +176,7 @@ function diff(spec, models) {
 // ── Print report ───────────────────────────────────────────────────────
 function printReport(issues) {
   if (!issues.length) {
-    console.log('\noutlet-api-diff: ✓ Models are in sync with the spec.');
+    console.log('\noutlet-api-diff: Models are in sync with the spec.');
     return;
   }
 

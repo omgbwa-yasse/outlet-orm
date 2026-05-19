@@ -362,3 +362,17 @@ console.log(db.getQueryLog());
 - [Soft Deletes](SOFT_DELETES.md) - Soft deletion
 - [Events](EVENTS.md) - Hooks on the life cycle
 - [Query Logging](QUERY_LOGGING.md) - Debug requests
+
+---
+
+## v14.9.0 — afterCommit(callback)
+
+Register a callback that runs only after the active transaction commits successfully. If the transaction rolls back, the callback is discarded. Outside a transaction the callback runs immediately.
+
+```js
+await db.transaction(async (conn) => {
+  await conn.insert('users', { name: 'Alice' });
+  conn.afterCommit(() => sendWelcomeEmail());
+});
+```
+

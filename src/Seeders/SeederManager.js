@@ -11,7 +11,7 @@ class SeederManager {
     const files = await this.getSeederFiles();
 
     if (files.length === 0) {
-      console.log('✓ No seeders found');
+      console.log('No seeders found');
       return;
     }
 
@@ -27,7 +27,7 @@ class SeederManager {
       await this.runSeeder(file);
     }
 
-    console.log('\n✓ Seeding completed successfully');
+    console.log('\nSeeding completed successfully');
   }
 
   filterTargetSeeders(files, target) {
@@ -65,9 +65,9 @@ class SeederManager {
       }
 
       await seeder.run();
-      console.log(`✓ ${path.basename(seederPath)}`);
+      console.log(`${path.basename(seederPath)}`);
     } catch (error) {
-      console.error(`✗ Failed to run seeder: ${path.basename(seederPath)}`);
+      console.error(`Failed to run seeder: ${path.basename(seederPath)}`);
       console.error(error.message);
       throw error;
     }

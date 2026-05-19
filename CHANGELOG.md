@@ -2,6 +2,78 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.9.0] — 2026-05-19
+
+### ✨ query-builder parity
+
+- **Query builder additions** (`QueryBuilder`):
+  - `whereNotBetween(col, [a, b])` and `orWhere*` variants — `orWhereIn`, `orWhereNotIn`, `orWhereBetween`, `orWhereNotBetween`, `orWhereNull`, `orWhereNotNull`.
+  - Aggregate eager-aggregates: `withSum(rel, col)`, `withAvg(rel, col)`, `withMin(rel, col)`, `withMax(rel, col)` (sibling to `withCount`). Aliases follow the `${rel}_${fn}_${col}` convention. Supports `hasMany`, `hasOne`, `belongsTo`, and `belongsToMany` (pivot JOIN).
+  - Joins: `rightJoin(table, first, op, second)` and `crossJoin(table)`.
+  - Set operations: `union(query)` and `unionAll(query)` — accepts another `QueryBuilder` and serializes through `buildQuery()`.
+  - Existence: `doesntExist()` (negation of `exists()`).
+  - Inserts: `insertGetId(data)` returns the new primary-key value (`insertId` / `lastID` / `id`).
+  - Table alias: `QueryBuilder#as(alias)` and `Model.as(alias)` emit `FROM table AS alias`; subsequent clauses can reference `alias.column`.
+- **Model**: `Model.findOr(id, callback)` — returns the model when found, otherwise the callback result (Laravel `findOr`).
+- **DatabaseConnection / transactions**: `afterCommit(cb)` — registers a hook that runs after the current transaction commits (fires immediately if no transaction is active). Hooks are cleared on `rollback()` and never fire.
+- **SQL generation**: `buildSelectQuery` now emits `CROSS JOIN`, `NOT BETWEEN`, and `UNION` / `UNION ALL` clauses while keeping identifier and operator allow-lists intact.
+
+## [14.8.0] — 2026-05-22
+
+### migration options
+
+- **`outlet-migrate deploy`** — non-interactive command tailored for CI/CD. Runs only pending migrations, never auto-backs up, never prompts, refuses to proceed when previously failed migrations exist (unless `--allow-failed` is passed). Honors `--pretend` and `--allow-drift`.
+- **`outlet-migrate resolve --applied=<name>`** — marks a migration as `completed` without executing it (recovery after a manual fix in production).
+- **`outlet-migrate resolve --rolled-back=<name>`** — marks a previously `failed`/`completed` migration as `rolled_back` (clears the failure and lets `deploy` proceed).
+- **Optional advisory lock** around `deploy` and `resolve` to prevent concurrent runners in production:
+  - PostgreSQL: `pg_advisory_lock` / `pg_advisory_unlock` (int4 id derived from a sha1 hash of the lock name).
+  - MySQL: `GET_LOCK(name, 10)` / `RELEASE_LOCK(name)`.
+  - SQLite: no-op (single-writer engine — `_acquireLock()` returns `false`).
+  - `run` / `rollback` / `reset` / `refresh` / `fresh` are intentionally **not** wrapped (interactive flows).
+- **New `_migrations` columns** auto-added on `initialize()`: `started_at`, `finished_at`, `rolled_back_at` (ISO-8601 strings).
+- **Missing-migration detection**: `status()` now flags migrations whose row exists in the DB but whose file is missing on disk (status `missing`); `getMissingMigrations()` exposes the same list programmatically.
+- **Re-entrance**: `_withLock()` is safe to call from within an already-locked section (tracked via `_lockHeld`).
+- **New error code** `EOUTLET_LOCK_BUSY` thrown when an advisory lock cannot be acquired.
+
+## [14.7.0] — 2026-05-21
+
+### ✨ New — Laravel-parity migration options
+
+- **`outlet-migrate install`** creates only the `migrations` table (Laravel's `migrate:install`).
+- **`--pretend`** on `migrate`, `rollback`, `reset`, `refresh`, `fresh` — lists what would run without touching the DB.
+- **`--step`** on `migrate` — runs each pending migration in its own batch (granular rollback).
+- **`--steps=N` / `-s N`** on `rollback` — number of batches to revert (already existed, now documented).
+- **`--batch=N`** on `rollback` — revert one specific batch number.
+- **`--seed`** on `migrate` / `refresh` / `fresh` — chain seeders after success.
+- **`--seeder=Name` / `--class=Name`** — target a specific seeder class.
+- **`--pending`** on `status` — show only migrations not yet executed.
+- **`make <name> --create=<table>` / `--table=<table>`** — explicit template hints for the scaffolder (overrides name-based detection).
+- **`shouldRun()`** hook on the `Migration` base class: return `false` to skip a migration (recorded with `status='skipped'`, emits `migration:skipped`).
+- **`withinTransaction`** property on the `Migration` base class: set to `true` to wrap `up()` / `down()` in a DB transaction with automatic rollback on error.
+- **Migration lifecycle events** (Node `EventEmitter` on `MigrationManager`): `migrations:none`, `migrations:pretend`, `migrations:started`, `migrations:ended`, `migration:started`, `migration:ended`, `migration:skipped`.
+
+## [14.6.0] — 2026-05-20
+
+### 🛡️ New — Migration Data Preservation (feature 003)
+
+- **Automatic backups** before every destructive migration command (`fresh`, `reset`, `refresh`, `rollback`). Files written to `database/backups/auto_before_<command>_<YYYYMMDD_HHMMSS>.sql` with a `.meta.json` sidecar. Retention keeps the 10 most-recent per command. `--skip-auto-backup` opts out in development; the flag is **ignored** in production.
+- **`outlet-migrate restore:auto [--backup=<file>]`** restores the latest (or a named) auto-backup. Every restore is appended to `database/backups/.restore-history.log`.
+- **`outlet-migrate backups:list [--json]`** enumerates auto-backups with metadata.
+- **Idempotent re-runs**: `migrations` table extended with `checksum` (SHA-256), `execution_time_ms`, and `status` (`pending|running|completed|failed`) columns. Legacy 4-column tables are auto-upgraded on `initialize()`.
+- **Drift detection**: stored checksums are compared against on-disk files on every `run`. Policy is env-aware (dev=warn, test=silent, prod=throws `EOUTLET_DRIFT` unless `--allow-drift`).
+- **Recovery prompt**: rows stuck in `running`/`failed` trigger a TTY prompt (`re-run` / `mark-resolved` / `abort`) or throw `EOUTLET_INTERRUPTED` in non-TTY contexts.
+- **Production gate**: destructive commands in production require `OUTLET_PRODUCTION_CONFIRM=1` **and** typing the configured database name. Throws `EOUTLET_PRODUCTION` (exit code 2) otherwise.
+- **`outlet-migrate make:transform <name>`** scaffolds a data-transform migration from `database/templates/transform-migration.js`. Name validated against `^[a-z][a-z0-9_]*$`.
+- **Migration helpers** on the base class: `transformData(table, callback, opts)`, `backupData(table, columns)`, `restoreData(table, rows)` — safe snapshot/transform/rollback for in-flight data changes.
+- **CLI exit codes** standardized: 0 success, 1 generic error, 2 confirmation/flag error, 3 backup-missing/drift.
+- New documentation: [docs/MIGRATION_DATA_SAFETY.md](docs/MIGRATION_DATA_SAFETY.md); expanded [docs/MIGRATIONS.md](docs/MIGRATIONS.md) "Safety" section.
+
+## [14.5.0] — 2026-05-18
+
+### 🐛 Fixes
+
+- Support `RawExpression` values in `selectRaw` column lists during schema introspection.
+
 ## [Unreleased]
 
 ## [14.2.0] — 2026-05-03

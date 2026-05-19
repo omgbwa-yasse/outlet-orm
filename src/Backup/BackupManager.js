@@ -165,7 +165,7 @@ class BackupManager {
       DatabaseConnection.flushQueryLog();
     }
 
-    console.log(`✓ Transaction-log backup written: ${resolvedPath} (${dmlEntries.length} statement(s))`);
+    console.log(`Transaction-log backup written: ${resolvedPath} (${dmlEntries.length} statement(s))`);
     return resolvedPath;
   }
 
@@ -203,7 +203,7 @@ class BackupManager {
       }
     });
 
-    console.log(`✓ Restore complete: ${count} statement(s) executed from ${absolute}`);
+    console.log(`Restore complete: ${count} statement(s) executed from ${absolute}`);
     return { statements: count };
   }
 
@@ -230,7 +230,7 @@ class BackupManager {
       await this._dumpSQL(tables, filePath, label);
     }
 
-    console.log(`✓ ${label.charAt(0).toUpperCase() + label.slice(1)} backup written: ${filePath}`);
+    console.log(`${label.charAt(0).toUpperCase() + label.slice(1)} backup written: ${filePath}`);
     return filePath;
   }
 

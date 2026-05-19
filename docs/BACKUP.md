@@ -259,7 +259,7 @@ const server = new BackupSocketServer(connection, {
 });
 
 await server.listen();
-// ✓ BackupSocketServer listening on 127.0.0.1:9119
+// BackupSocketServer listening on 127.0.0.1:9119
 
 // Graceful shutdown
 await server.close();

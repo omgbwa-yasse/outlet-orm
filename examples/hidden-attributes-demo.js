@@ -56,7 +56,7 @@ async function demo() {
     users.forEach(user => {
       console.log(user.toJSON());
     });
-    console.log('✓ password and api_token are hidden\n');
+    console.log('password and api_token are hidden\n');
 
     console.log('2. Using withHidden() - Show all attributes:\n');
     const usersWithHidden = await User.withHidden().get();
@@ -64,7 +64,7 @@ async function demo() {
     usersWithHidden.forEach(user => {
       console.log(user.toJSON());
     });
-    console.log('✓ password and api_token are visible\n');
+    console.log('password and api_token are visible\n');
 
     console.log('3. Authentication example - Fetch user with password:\n');
     const authenticatingUser = await User.withHidden()
@@ -78,26 +78,26 @@ async function demo() {
         password: authenticatingUser.getAttribute('password'),
         passwordLength: authenticatingUser.getAttribute('password').length
       });
-      console.log('✓ Can access password for verification\n');
+      console.log('Can access password for verification\n');
     }
 
     console.log('4. API Response example - Hide sensitive data:\n');
     const apiUsers = await User.where('name', 'Jane Smith').get();
     console.log('API Response:');
     console.log(JSON.stringify(apiUsers.map(u => u.toJSON()), null, 2));
-    console.log('✓ Safe to send to client - no sensitive data\n');
+    console.log('Safe to send to client - no sensitive data\n');
 
     console.log('5. Using withoutHidden(true) - Alternative syntax:\n');
     const usersAlt = await User.withoutHidden(true).get();
     console.log('Users with withoutHidden(true):');
     console.log(usersAlt[0].toJSON());
-    console.log('✓ Shows hidden attributes when passed true\n');
+    console.log('Shows hidden attributes when passed true\n');
 
     console.log('6. Using withoutHidden(false) - Explicit hiding:\n');
     const usersHidden = await User.withoutHidden(false).get();
     console.log('Users with withoutHidden(false):');
     console.log(usersHidden[0].toJSON());
-    console.log('✓ Hides attributes when passed false (default behavior)\n');
+    console.log('Hides attributes when passed false (default behavior)\n');
 
     console.log('7. Chaining with other query methods:\n');
     const specificUser = await User.withHidden()
@@ -108,7 +108,7 @@ async function demo() {
     if (specificUser) {
       console.log('Chained query result:');
       console.log(specificUser.toJSON());
-      console.log('✓ Works seamlessly with query builder methods\n');
+      console.log('Works seamlessly with query builder methods\n');
     }
 
     console.log('=== Demo completed successfully! ===');

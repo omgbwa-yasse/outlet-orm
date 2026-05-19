@@ -101,7 +101,7 @@ class BackupSocketServer extends events.EventEmitter {
       this._server.listen(this.port, this.host, () => {
         this._startTime = Date.now();
         const addr = `${this.host}:${this.port}`;
-        console.log(`✓ BackupSocketServer listening on ${addr}`);
+        console.log(`BackupSocketServer listening on ${addr}`);
         this.emit('listening', { host: this.host, port: this.port });
         resolve();
       });
@@ -124,7 +124,7 @@ class BackupSocketServer extends events.EventEmitter {
 
       if (this._server) {
         this._server.close(() => {
-          console.log('✓ BackupSocketServer closed');
+          console.log('BackupSocketServer closed');
           this.emit('close');
           resolve();
         });

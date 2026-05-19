@@ -92,7 +92,7 @@ class BackupScheduler {
     const handle = setInterval(run, config.intervalMs);
     this._jobs.set(name, handle);
 
-    console.log(`✓ BackupScheduler: "${name}" scheduled every ${this._humanize(config.intervalMs)}`);
+    console.log(`BackupScheduler: "${name}" scheduled every ${this._humanize(config.intervalMs)}`);
     return name;
   }
 
@@ -104,7 +104,7 @@ class BackupScheduler {
     if (this._jobs.has(name)) {
       clearInterval(this._jobs.get(name));
       this._jobs.delete(name);
-      console.log(`✓ BackupScheduler: job "${name}" stopped`);
+      console.log(`BackupScheduler: job "${name}" stopped`);
     }
   }
 

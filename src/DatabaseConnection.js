@@ -135,6 +135,7 @@ class DatabaseConnection {
     this._pendingIsolationLevel = null;
     this._pgVersionNum = null;
     this._sqliteInTransaction = false;
+    this._afterCommitHooks = [];
   }
 
   // ==================== Query Logging ====================
@@ -359,6 +360,30 @@ class DatabaseConnection {
       this._sqliteInTransaction = false;
       break;
     }
+    await this._fireAfterCommitHooks();
+  }
+
+  /**
+   * Register a callback to be executed after the current transaction successfully commits.
+   * If called outside an active transaction, the callback fires immediately.
+   * @param {Function} cb
+   * @returns {Promise<void>|void}
+   */
+  afterCommit(cb) {
+    if (typeof cb !== 'function') return;
+    if (this._transactionConnection !== null || this._sqliteInTransaction) {
+      this._afterCommitHooks.push(cb);
+      return;
+    }
+    return cb();
+  }
+
+  async _fireAfterCommitHooks() {
+    const hooks = this._afterCommitHooks;
+    this._afterCommitHooks = [];
+    for (const cb of hooks) {
+      await cb();
+    }
   }
 
   /**
@@ -400,6 +425,7 @@ class DatabaseConnection {
       this._sqliteInTransaction = false;
       break;
     }
+    this._afterCommitHooks = [];
   }
 
   /**
@@ -1118,22 +1144,34 @@ class DatabaseConnection {
 
     // SELECT clause
     let selectClause = '*';
-    if (query.columns && query.columns.length > 0 && query.columns[0] !== '*') {
-      selectClause = query.columns.map(col => {
-        if (col instanceof RawExpression) return col.value;
-        return sanitizeIdentifier(col);
-      }).join(', ');
+    if (query.columns && query.columns.length > 0) {
+      const onlyStar = query.columns.length === 1 && query.columns[0] === '*';
+      if (!onlyStar) {
+        selectClause = query.columns.map(col => {
+          if (col instanceof RawExpression) return col.value;
+          if (col === '*') return '*';
+          return sanitizeIdentifier(col);
+        }).join(', ');
+      }
     }
 
     // DISTINCT
     const distinctClause = query.distinct ? 'DISTINCT ' : '';
 
-    let sql = `SELECT ${distinctClause}${selectClause} FROM ${table}`;
+    let fromClause = table;
+    if (query.tableAlias) {
+      fromClause = `${table} AS ${sanitizeIdentifier(query.tableAlias)}`;
+    }
+    let sql = `SELECT ${distinctClause}${selectClause} FROM ${fromClause}`;
 
     // JOINs
     if (query.joins && query.joins.length > 0) {
       for (const join of query.joins) {
         const joinType = (join.type || 'inner').toUpperCase();
+        if (joinType === 'CROSS') {
+          sql += ` CROSS JOIN ${sanitizeIdentifier(join.table)}`;
+          continue;
+        }
         const ALLOWED_OPERATORS = ['=', '!=', '<>', '<', '>', '<=', '>=', 'LIKE', 'NOT LIKE', 'IS', 'IS NOT'];
         const op = join.operator.toUpperCase();
         if (!ALLOWED_OPERATORS.includes(op)) {
@@ -1183,6 +1221,16 @@ class DatabaseConnection {
       }
       if (havingClauses.length) {
         sql += ` HAVING ${havingClauses.join(' AND ')}`;
+      }
+    }
+
+    // UNION / UNION ALL (no parens — SQLite rejects parenthesized compound operands)
+    if (query.unions && query.unions.length > 0) {
+      for (const u of query.unions) {
+        const subTable = sanitizeIdentifier(u.table);
+        const sub = this.buildSelectQuery(subTable, u.query);
+        sql += ` UNION${u.all ? ' ALL' : ''} ${sub.sql}`;
+        params.push(...sub.params);
       }
     }
 
@@ -1274,6 +1322,11 @@ class DatabaseConnection {
 
       case 'between':
         clauses.push(`${boolean} ${col} BETWEEN ? AND ?`);
+        params.push(...where.values);
+        break;
+
+      case 'notBetween':
+        clauses.push(`${boolean} ${col} NOT BETWEEN ? AND ?`);
         params.push(...where.values);
         break;
 

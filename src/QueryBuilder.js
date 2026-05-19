@@ -36,6 +36,8 @@ class QueryBuilder {
     this.distinctFlag = false;
     this.groupBys = [];
     this.havings = [];
+    this.unions = [];
+    this.tableAlias = null;
     this._showHidden = false;
     this._withTrashed = false;
     this._onlyTrashed = false;
@@ -141,6 +143,16 @@ class QueryBuilder {
    */
   select(...columns) {
     this.selectedColumns = columns;
+    return this;
+  }
+
+  /**
+   * Set a table alias for the FROM clause (e.g. `User.query().as('u')`)
+   * @param {string} alias
+   * @returns {this}
+   */
+  as(alias) {
+    this.tableAlias = assertIdentifier(alias, 'table alias');
     return this;
   }
 
@@ -260,6 +272,45 @@ class QueryBuilder {
    */
   whereBetween(column, values) {
     this.wheres.push({ column, values, type: 'between', boolean: 'and' });
+    return this;
+  }
+
+  /**
+   * Add a where not between clause
+   * @param {string} column
+   * @param {Array} values
+   * @returns {this}
+   */
+  whereNotBetween(column, values) {
+    this.wheres.push({ column, values, type: 'notBetween', boolean: 'and' });
+    return this;
+  }
+
+  /**
+   * Or variants of the where helpers
+   */
+  orWhereIn(column, values) {
+    this.wheres.push({ column, values, type: 'in', boolean: 'or' });
+    return this;
+  }
+  orWhereNotIn(column, values) {
+    this.wheres.push({ column, values, type: 'notIn', boolean: 'or' });
+    return this;
+  }
+  orWhereBetween(column, values) {
+    this.wheres.push({ column, values, type: 'between', boolean: 'or' });
+    return this;
+  }
+  orWhereNotBetween(column, values) {
+    this.wheres.push({ column, values, type: 'notBetween', boolean: 'or' });
+    return this;
+  }
+  orWhereNull(column) {
+    this.wheres.push({ column, type: 'null', boolean: 'or' });
+    return this;
+  }
+  orWhereNotNull(column) {
+    this.wheres.push({ column, type: 'notNull', boolean: 'or' });
     return this;
   }
 
@@ -552,35 +603,60 @@ class QueryBuilder {
   withCount(rels) {
     const list = Array.isArray(rels) ? rels : [rels];
     for (const name of list) {
-      // Build simple subquery for hasOne/hasMany/belongsTo/belongsToMany
-      const parent = new this.model();
-      const fn = parent[name];
-      if (typeof fn !== 'function') continue;
-      const relation = fn.call(parent);
-      const parentTable = assertIdentifier(this.model.table, 'parent table');
-      const relatedClass = relation.related;
-      const relatedTable = assertIdentifier(relatedClass.table, 'related table');
-
-      let sub = '';
-      if (relation instanceof require('./Relations/BelongsToManyRelation')) {
-        // belongsToMany: count from pivot
-        const pivot = assertIdentifier(relation.pivot, 'pivot table');
-        const fpk = assertIdentifier(relation.foreignPivotKey, 'foreignPivotKey');
-        const pk = assertIdentifier(relation.parentKey, 'parentKey');
-        sub = `(SELECT COUNT(*) FROM \`${pivot}\` WHERE \`${pivot}\`.\`${fpk}\` = \`${parentTable}\`.\`${pk}\`) AS \`${name}_count\``;
-      } else if (relation.child) {
-        // belongsTo
-        const ownerKey = assertIdentifier(relation.ownerKey || relatedClass.primaryKey || 'id', 'ownerKey');
-        const fk = assertIdentifier(relation.foreignKey, 'foreignKey');
-        sub = `(SELECT COUNT(*) FROM \`${relatedTable}\` WHERE \`${relatedTable}\`.\`${ownerKey}\` = \`${parentTable}\`.\`${fk}\`) AS \`${name}_count\``;
-      } else {
-        // hasOne/hasMany
-        const fk = assertIdentifier(relation.foreignKey, 'foreignKey');
-        const lk = assertIdentifier(relation.localKey, 'localKey');
-        sub = `(SELECT COUNT(*) FROM \`${relatedTable}\` WHERE \`${relatedTable}\`.\`${fk}\` = \`${parentTable}\`.\`${lk}\`) AS \`${name}_count\``;
-      }
-      this.selectedColumns.push(new RawExpression(sub));
+      this._addAggregateSubquery('COUNT', name, '*', `${name}_count`);
     }
+    return this;
+  }
+
+  /**
+   * withSum/withAvg/withMin/withMax helpers
+   * Adds an aggregate subquery column for a relation.
+   * @param {string} rel
+   * @param {string} column
+   * @returns {this}
+   */
+  withSum(rel, column) { return this._addAggregateSubquery('SUM', rel, column, `${rel}_sum_${column}`); }
+  withAvg(rel, column) { return this._addAggregateSubquery('AVG', rel, column, `${rel}_avg_${column}`); }
+  withMin(rel, column) { return this._addAggregateSubquery('MIN', rel, column, `${rel}_min_${column}`); }
+  withMax(rel, column) { return this._addAggregateSubquery('MAX', rel, column, `${rel}_max_${column}`); }
+
+  /**
+   * Internal: build aggregate subquery column for a relation.
+   * @private
+   */
+  _addAggregateSubquery(fn, name, column, alias) {
+    const parent = new this.model();
+    const relFn = parent[name];
+    if (typeof relFn !== 'function') return this;
+    const relation = relFn.call(parent);
+    const parentTable = assertIdentifier(this.model.table, 'parent table');
+    const relatedClass = relation.related;
+    const relatedTable = assertIdentifier(relatedClass.table, 'related table');
+    const aliasId = assertIdentifier(alias, 'aggregate alias');
+    const expr = column === '*' ? '*' : `\`${relatedTable}\`.\`${assertIdentifier(column, 'aggregate column')}\``;
+
+    let sub;
+    if (relation instanceof require('./Relations/BelongsToManyRelation')) {
+      const pivot = assertIdentifier(relation.pivot, 'pivot table');
+      const fpk = assertIdentifier(relation.foreignPivotKey, 'foreignPivotKey');
+      const rpk = assertIdentifier(relation.relatedPivotKey, 'relatedPivotKey');
+      const pk = assertIdentifier(relation.parentKey, 'parentKey');
+      const rk = assertIdentifier(relation.relatedKey || relatedClass.primaryKey || 'id', 'relatedKey');
+      if (fn === 'COUNT' && column === '*') {
+        sub = `(SELECT COUNT(*) FROM \`${pivot}\` WHERE \`${pivot}\`.\`${fpk}\` = \`${parentTable}\`.\`${pk}\`) AS \`${aliasId}\``;
+      } else {
+        sub = `(SELECT ${fn}(${expr}) FROM \`${relatedTable}\` INNER JOIN \`${pivot}\` ON \`${pivot}\`.\`${rpk}\` = \`${relatedTable}\`.\`${rk}\` WHERE \`${pivot}\`.\`${fpk}\` = \`${parentTable}\`.\`${pk}\`) AS \`${aliasId}\``;
+      }
+    } else if (relation.child) {
+      const ownerKey = assertIdentifier(relation.ownerKey || relatedClass.primaryKey || 'id', 'ownerKey');
+      const fk = assertIdentifier(relation.foreignKey, 'foreignKey');
+      sub = `(SELECT ${fn}(${expr}) FROM \`${relatedTable}\` WHERE \`${relatedTable}\`.\`${ownerKey}\` = \`${parentTable}\`.\`${fk}\`) AS \`${aliasId}\``;
+    } else {
+      const fk = assertIdentifier(relation.foreignKey, 'foreignKey');
+      const lk = assertIdentifier(relation.localKey, 'localKey');
+      sub = `(SELECT ${fn}(${expr}) FROM \`${relatedTable}\` WHERE \`${relatedTable}\`.\`${fk}\` = \`${parentTable}\`.\`${lk}\`) AS \`${aliasId}\``;
+    }
+    this.selectedColumns.push(new RawExpression(sub));
     return this;
   }
 
@@ -615,6 +691,53 @@ class QueryBuilder {
       operator = '=';
     }
     this.joins.push({ table, first, operator, second, type: 'left' });
+    return this;
+  }
+
+  /**
+   * Add a right join clause
+   * @param {string} table
+   * @param {string} first
+   * @param {string} operator
+   * @param {string} second
+   * @returns {this}
+   */
+  rightJoin(table, first, operator, second) {
+    if (arguments.length === 3) {
+      second = operator;
+      operator = '=';
+    }
+    this.joins.push({ table, first, operator, second, type: 'right' });
+    return this;
+  }
+
+  /**
+   * Add a cross join clause
+   * @param {string} table
+   * @returns {this}
+   */
+  crossJoin(table) {
+    this.joins.push({ table, type: 'cross' });
+    return this;
+  }
+
+  /**
+   * Append a UNION query
+   * @param {QueryBuilder} query
+   * @returns {this}
+   */
+  union(query) {
+    this.unions.push({ qb: query, all: false });
+    return this;
+  }
+
+  /**
+   * Append a UNION ALL query
+   * @param {QueryBuilder} query
+   * @returns {this}
+   */
+  unionAll(query) {
+    this.unions.push({ qb: query, all: true });
     return this;
   }
 
@@ -822,6 +945,14 @@ class QueryBuilder {
   }
 
   /**
+   * Check that no record matches
+   * @returns {Promise<boolean>}
+   */
+  async doesntExist() {
+    return !(await this.exists());
+  }
+
+  /**
    * Insert records
    * @param {Object|Array<Object>} data
    * @returns {Promise<any>}
@@ -839,6 +970,19 @@ class QueryBuilder {
       return this.model.connection.insertMany(this.model.table, safeData);
     }
     return this.model.connection.insert(this.model.table, safeData);
+  }
+
+  /**
+   * Insert a record and return the new auto-increment id
+   * @param {Object} data
+   * @returns {Promise<number|string|undefined>}
+   */
+  async insertGetId(data) {
+    const result = await this.insert(data);
+    if (result && typeof result === 'object') {
+      return result.insertId ?? result.lastID ?? result.id ?? result;
+    }
+    return result;
   }
 
   /**
@@ -1204,7 +1348,13 @@ class QueryBuilder {
       groupBys: this.groupBys,
       havings: this.havings,
       limit: this.limitValue,
-      offset: this.offsetValue
+      offset: this.offsetValue,
+      tableAlias: this.tableAlias,
+      unions: this.unions.map(u => ({
+        all: u.all,
+        table: u.qb.model ? u.qb.model.table : null,
+        query: u.qb.buildQuery()
+      }))
     };
   }
 
@@ -1225,6 +1375,8 @@ class QueryBuilder {
     cloned.distinctFlag = this.distinctFlag;
     cloned.groupBys = [...this.groupBys];
     cloned.havings = [...this.havings];
+    cloned.unions = [...this.unions];
+    cloned.tableAlias = this.tableAlias;
 
     cloned._showHidden = this._showHidden;
     cloned._withTrashed = this._withTrashed;
