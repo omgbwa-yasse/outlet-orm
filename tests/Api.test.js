@@ -3,12 +3,12 @@ const fs = require('fs');
 const os = require('os');
 const { execFileSync } = require('child_process');
 
-const { createDocumentationRoot } = require('../src/Api/ApiImport/domain');
-const { normalizeUrl, dedupeCanonical } = require('../src/Api/ApiImport/url-normalizer');
-const { mergeContractElements } = require('../src/Api/ApiImport/merge');
-const { calculateCoverage, evaluatePartialSuccess } = require('../src/Api/ApiImport/coverage-metrics');
-const { compareRuns } = require('../src/Api/ApiImport/delta');
-const { buildCoverageDiagnostics } = require('../src/Api/ApiImport/diagnostics');
+const { createDocumentationRoot } = require('../src/Api/Import/domain');
+const { normalizeUrl, dedupeCanonical } = require('../src/Api/Import/url-normalizer');
+const { mergeContractElements } = require('../src/Api/Import/merge');
+const { calculateCoverage, evaluatePartialSuccess } = require('../src/Api/Import/coverage-metrics');
+const { compareRuns } = require('../src/Api/Import/delta');
+const { buildCoverageDiagnostics } = require('../src/Api/Import/diagnostics');
 
 describe('ApiImport foundations', () => {
   test('creates documentation root and normalizes URL', () => {

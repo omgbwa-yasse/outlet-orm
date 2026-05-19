@@ -4,15 +4,15 @@
 const fs = require('fs');
 const path = require('path');
 const pluralize = require('pluralize');
-const { createDocumentationRoot } = require('../../src/Api/ApiImport/domain');
-const { discoverOfficialPages } = require('../../src/Api/ApiImport/discovery');
-const { extractContractElementsFromPage } = require('../../src/Api/ApiImport/extractor');
-const { mergeContractElements } = require('../../src/Api/ApiImport/merge');
-const { calculateCoverage, evaluatePartialSuccess } = require('../../src/Api/ApiImport/coverage-metrics');
-const { createProvenanceRecord } = require('../../src/Api/ApiImport/provenance');
-const { createRunSnapshot } = require('../../src/Api/ApiImport/run-snapshot');
-const { compareRuns } = require('../../src/Api/ApiImport/delta');
-const { buildCoverageDiagnostics } = require('../../src/Api/ApiImport/diagnostics');
+const { createDocumentationRoot } = require('../../src/Api/Import/domain');
+const { discoverOfficialPages } = require('../../src/Api/Import/discovery');
+const { extractContractElementsFromPage } = require('../../src/Api/Import/extractor');
+const { mergeContractElements } = require('../../src/Api/Import/merge');
+const { calculateCoverage, evaluatePartialSuccess } = require('../../src/Api/Import/coverage-metrics');
+const { createProvenanceRecord } = require('../../src/Api/Import/provenance');
+const { createRunSnapshot } = require('../../src/Api/Import/run-snapshot');
+const { compareRuns } = require('../../src/Api/Import/delta');
+const { buildCoverageDiagnostics } = require('../../src/Api/Import/diagnostics');
 
 // ── Parse CLI args ─────────────────────────────────────────────────────
 const args = process.argv.slice(2);
