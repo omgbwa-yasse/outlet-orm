@@ -326,7 +326,7 @@ See [`MIGRATION_DATA_SAFETY.md`](MIGRATION_DATA_SAFETY.md) for the full pattern 
  * Migration: Create users table
  */
 
-const Migration = require('../../lib/Migrations/Migration');
+const { Migration } = require('outlet-orm');
 
 class CreateUsersTable extends Migration {
   async up() {
@@ -354,7 +354,7 @@ module.exports = CreateUsersTable;
 ### Table modification migration
 
 ```javascript
-const Migration = require('../../lib/Migrations/Migration');
+const { Migration } = require('outlet-orm');
 
 class AddPhoneToUsersTable extends Migration {
   async up() {
@@ -611,7 +611,7 @@ await schema.table('users', (table) => {
 ### Full migration with relationships
 
 ```javascript
-const Migration = require('../../lib/Migrations/Migration');
+const { Migration } = require('outlet-orm');
 
 class CreateBlogTables extends Migration {
   async up() {
@@ -719,7 +719,7 @@ module.exports = CreateBlogTables;
 ### Migration with custom SQL
 
 ```javascript
-const Migration = require('../../lib/Migrations/Migration');
+const { Migration } = require('outlet-orm');
 
 class AddFulltextSearch extends Migration {
   async up() {
