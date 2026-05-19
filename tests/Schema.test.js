@@ -54,4 +54,50 @@ describe('Schema Builder', () => {
     expect(hasGroups).toBe(true);
     expect(hasGroupUser).toBe(true);
   });
+
+  describe('index() signatures', () => {
+    const { Blueprint } = require('../src/Schema/Schema');
+
+    test('index(column, name) accepts a single string column with an explicit name', () => {
+      const bp = new Blueprint('users', { config: { driver: 'mysql' } });
+      bp.index('email', 'idx_users_email');
+      const cmd = bp.commands.find(c => c.type === 'index');
+      expect(cmd).toBeDefined();
+      expect(cmd.columns).toEqual(['email']);
+      expect(cmd.name).toBe('idx_users_email');
+      expect(bp.toAlterSql().join('\n')).toContain(
+        'ADD INDEX `idx_users_email` (`email`)'
+      );
+    });
+
+    test('index([columns], name) accepts an array of columns with an explicit name', () => {
+      const bp = new Blueprint('users', { config: { driver: 'mysql' } });
+      bp.index(['a', 'b', 'c'], 'idx_users_abc');
+      const cmd = bp.commands.find(c => c.type === 'index');
+      expect(cmd).toBeDefined();
+      expect(cmd.columns).toEqual(['a', 'b', 'c']);
+      expect(cmd.name).toBe('idx_users_abc');
+      expect(bp.toAlterSql().join('\n')).toContain(
+        'ADD INDEX `idx_users_abc` (`a`, `b`, `c`)'
+      );
+    });
+
+    test('unique() supports both single-column and array forms with explicit name', () => {
+      const bp = new Blueprint('users', { config: { driver: 'mysql' } });
+      bp.unique('slug', 'uq_slug');
+      bp.unique(['x', 'y'], 'uq_xy');
+      const sql = bp.toAlterSql().join('\n');
+      expect(sql).toContain('ADD UNIQUE `uq_slug` (`slug`)');
+      expect(sql).toContain('ADD UNIQUE `uq_xy` (`x`, `y`)');
+    });
+
+    test('fullText() supports both single-column and array forms with explicit name', () => {
+      const bp = new Blueprint('articles', { config: { driver: 'mysql' } });
+      bp.fullText('body', 'ft_body');
+      bp.fullText(['title', 'body'], 'ft_title_body');
+      const sql = bp.toAlterSql().join('\n');
+      expect(sql).toContain('ADD FULLTEXT `ft_body` (`body`)');
+      expect(sql).toContain('ADD FULLTEXT `ft_title_body` (`title`, `body`)');
+    });
+  });
 });

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [15.0.0] — 2026-05-19
+
+### 🎉 Stable release milestone
+
+- Major version bump consolidating the 14.x feature line (query-builder parity, migration deploy/resolve commands, advisory locks, schema builder enhancements) into a stable 15.x release.
+- **Schema builder**: regression tests added to lock in dual-signature support for `index()`, `unique()`, and `fullText()` — both `index('col', 'name')` and `index(['c1','c2'], 'name')` produce correct SQL on MySQL, SQLite, and PostgreSQL.
+
 ## [14.9.0] — 2026-05-19
 
 ### ✨ query-builder parity
