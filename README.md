@@ -1,1804 +1,917 @@
-# Outlet ORM
+# outlet-orm
 
-[![npm version](https://badge.fury.io/js/outlet-orm.svg)](https://www.npmjs.com/package/outlet-orm)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+`outlet-orm` est un ORM Active Record pour Node.js 18+ qui couvre beaucoup plus que la couche SQL classique. Le package regroupe un noyau ORM relationnel, un schema builder et un moteur de migrations, des seeders, des outils de backup et de reverse engineering, une couche API REST/GraphQL, un pont AI multi-provider, ainsi qu'un serveur MCP pour les agents.
 
-A JavaScript Active Record ORM for Node.js with support for MySQL, PostgreSQL, SQLite and REST/GraphQL APIs.
+Le point d'entree public est [src/index.js](src/index.js). Les signatures TypeScript sont exposees via [types/index.d.ts](types/index.d.ts). La surface reelle est egalement confirmee par les suites de tests dans [tests](tests) et les exemples dans [examples](examples).
 
-📚 **[Complete documentation available in `/docs`](./docs/INDEX.md)**
+## Table des matieres
 
-## Table of Contents
+- [Positionnement](#positionnement)
+- [Installation](#installation)
+- [Demarrage rapide](#demarrage-rapide)
+- [Modele Active Record](#modele-active-record)
+- [Requetes et QueryBuilder](#requetes-et-querybuilder)
+- [Relations et eager loading](#relations-et-eager-loading)
+- [Fonctionnalites avancees des modeles](#fonctionnalites-avancees-des-modeles)
+- [DatabaseConnection et mode standalone](#databaseconnection-et-mode-standalone)
+- [Schema builder, migrations et seeders](#schema-builder-migrations-et-seeders)
+- [Backups, restauration et securite des migrations](#backups-restauration-et-securite-des-migrations)
+- [Reverse engineering, init et conversion](#reverse-engineering-init-et-conversion)
+- [Objets SQL avances et transactions](#objets-sql-avances-et-transactions)
+- [API Layer HTTP / GraphQL](#api-layer-http--graphql)
+- [Import et diff de specs API](#import-et-diff-de-specs-api)
+- [AI, MCP et automatisation](#ai-mcp-et-automatisation)
+- [CLI de reference](#cli-de-reference)
+- [TypeScript](#typescript)
+- [Exemples et validation](#exemples-et-validation)
+- [Notes utiles et limites](#notes-utiles-et-limites)
 
-- [✅ Prerequisites and compatibility](#prerequisites-and-compatibility)
-- [🚀 Installation](#installation)
-  - [Install the database driver](#install-the-database-driver)
-- [📁 Recommended Project Structure](#recommended-project-structure)
-  - [🏗️ Architecture Flow](#architecture-flow)
-  - [📋 Role of each layer](#role-of-each-layer)
-  - [✅ Benefits of this architecture](#benefits-of-this-architecture)
-  - [📝 Example workflow](#example-workflow)
-- [✨ Key features](#key-features)
-- [⚡ Quick Start](#quick-start)
-  - [Project Initialisation](#project-initialisation)
-  - [🌱 Quick Seeding](#quick-seeding)
-- [📖 Usage](#usage)
-  - [Connection configuration](#connection-configuration)
-  - [Importation](#importation)
-  - [Define a model](#define-a-model)
-  - [CRUD operations](#crud-operations)
-  - [Query Builder](#query-builder)
-  - [Relationship filters](#relationship-filters)
-- [🔗 Relations](#relations)
-  - [One to One (hasOne)](#one-to-one-hasone)
-  - [One to Many (hasMany)](#one-to-many-hasmany)
-  - [Belongs To (belongsTo)](#belongs-to-belongsto)
-  - [Many to Many (belongsToMany)](#many-to-many-belongstomany)
-  - [Has Many Through (hasManyThrough)](#has-many-through-hasmanythrough)
-  - [Has One Through (hasOneThrough)](#has-one-through-hasonethrough)
-  - [Polymorphic relationships](#polymorphic-relationships)
-  - [Eager Loading](#eager-loading)
-- [🎭 Attributs](#attributs)
-  - [Casts](#casts)
-  - [Hidden attributes](#hidden-attributes)
-  - [Timestamps](#timestamps)
-- [🔄 Transactions](#transactions)
-- [🗑️ Soft Deletes](#soft-deletes)
-- [🔬 Scopes](#scopes)
-  - [Scopes Globaux](#scopes-globaux)
-- [📣 Events / Hooks](#events-hooks)
-- [✅ Validation](#validation)
-  - [Available rules](#available-rules)
-- [📊 Query Logging](#query-logging)
-- [📝 API Reference](#api-reference)
-  - [DatabaseConnection](#databaseconnection)
-  - [Model (static methods)](#model-static-methods)
-  - [Model (instance methods)](#model-instance-methods)
-  - [QueryBuilder](#querybuilder)
-- [🌐 API Layer (v13.0.0)](#api-layer-v1300)
-  - [Quick Example](#api-layer-quick-example)
-  - [Authentication](#api-layer-authentication)
-  - [Error Handling](#api-layer-error-handling)
-  - [Api Class Reference](#api-class-reference)
-- [🛠️ CLI tools](#cli-tools)
-  - [outlet (unified CLI)](#outlet-unified-cli)
-  - [outlet init](#outlet-init)
-  - [outlet migrate](#outlet-migrate)
-  - [outlet convert](#outlet-convert)
-  - [outlet reverse](#outlet-reverse)
-  - [outlet mcp](#outlet-mcp)
-  - [outlet api import](#outlet-api-import)
-  - [outlet api diff](#outlet-api-diff)
-- [🤖 AI Integration](#ai-integration)
-  - [AI — Multi-Provider LLM Abstraction](#ai-multi-provider-llm-abstraction)
-  - [AI Query Builder — Natural Language → SQL](#ai-query-builder-natural-language-sql)
-  - [AI Seeder — Realistic Data Generation](#ai-seeder-realistic-data-generation)
-  - [AI Query Optimizer](#ai-query-optimizer)
-  - [MCP Server — AI Agent Integration](#mcp-server-ai-agent-integration)
-- [📚 Documentation](#documentation)
-- [📘 TypeScript Support](#typescript-support)
-  - [Typed models](#typed-models)
-  - [Migrations typedes](#migrations-typedes)
-- [🤝 Contributions](#contributions)
-- [📄 Licence](#licence)
+## Positionnement
 
----
+`outlet-orm` n'est pas seulement un ORM CRUD. Le package couvre 8 blocs complementaires:
 
-## ✅ Prerequisites and compatibility
+| Domaine | Exports / commandes principales | Ce que cela apporte |
+| --- | --- | --- |
+| ORM SQL | `Model`, `QueryBuilder`, `DatabaseConnection` | Active Record, requetes fluentes, transactions, casts, validation |
+| Relations | `hasOne`, `hasMany`, `belongsTo`, `belongsToMany`, `hasManyThrough`, `hasOneThrough`, `morph*` | Navigation relationnelle et eager loading |
+| Schema / migrations | `Schema`, `Blueprint`, `Migration`, `MigrationManager`, `Seeder`, `SeederManager` | Evolution de schema, seeders, workflows de deploiement |
+| DB objects | `View`, `Trigger`, `Procedure`, `Function`, `Transaction`, `useSchema` | Vues, triggers, procedures, savepoints, isolation level |
+| Backups | `BackupManager`, `BackupScheduler`, `BackupEncryption`, `BackupSocketServer`, `BackupSocketClient` | Sauvegarde SQL/JSON, chiffrement, planification, restore |
+| API Layer | `Api`, `ApiGraphQL`, `ApiAdapter`, `MockAdapter`, cache, offline, realtime | Meme style de modelisation, mais au-dessus de HTTP |
+| AI bridge | `AIManager`, `Ai`, providers, `TextBuilder`, `AIQueryBuilder`, `AISeeder`, `AIPromptEnhancer` | Chat, tools, NL->SQL, seeds AI, generation guidee |
+| CLI / MCP | `outlet`, `outlet-migrate`, `outlet-reverse`, `outlet-mcp`, `outlet api import`, `outlet api diff` | Initialisation, conversion, reverse engineering, MCP agent |
 
-- Node.js >= 18 (recommended/required)
-- Install the database driver corresponding to your DBMS (see below)
+## Installation
 
-## 🚀 Installation
+Installation de base:
 
 ```bash
 npm install outlet-orm
 ```
 
-### Install the database driver
-
-Outlet ORM uses optional peer dependencies for database drivers. Install only the driver you need:
-
-- MySQL/MariaDB: `npm install mysql2`
-- PostgreSQL: `npm install pg`
-- SQLite: `npm install sqlite3`
-
-If no driver is installed, an explicit error message will tell you which one to install when connecting.
-
-## 📁 Recommended Project Structure
-
-Organise your project using Outlet ORM with a **2-layer architecture** — Controllers call Models directly, keeping the codebase lean and productive:
-
-> 🔐 **Security**: See the [Security Guide](./docs/SECURITY.md) for best practices.
-
-```
-my-project/
-├── .env                          # ⚠️ NEVER committed (in .gitignore)
-├── .env.example                  # Template without secrets
-├── .gitignore
-├── package.json
-│
-├── src/                          # 📦 Centralised source code
-│   ├── index.js                  # Application entry point
-│   │
-│   ├── config/                   # ⚙️ Configuration
-│   │   ├── app.js                # General config (port, env)
-│   │   ├── database.js           # DB config (reads .env)
-│   │   └── security.js           # CORS, helmet, rate limit
-│   │
-│   ├── models/                   # 📊 outlet-orm Models (entities)
-│   │   ├── index.js              # Centralised model exports
-│   │   ├── User.js
-│   │   ├── Post.js
-│   │   └── Comment.js
-│   │
-│   ├── controllers/              # 🎮 HTTP handling + business logic (direct ORM calls)
-│   │   ├── AuthController.js
-│   │   ├── UserController.js
-│   │   └── PostController.js
-│   │
-│   ├── routes/                   # 🛤️ Route definitions
-│   │   ├── index.js              # Route aggregator
-│   │   ├── auth.routes.js
-│   │   ├── user.routes.js
-│   │   └── post.routes.js
-│   │
-│   ├── middlewares/              # 🔒 Middlewares
-│   │   ├── auth.js               # JWT verification
-│   │   ├── authorize.js          # RBAC / permissions
-│   │   ├── rateLimiter.js        # Protection DDoS
-│   │   ├── validator.js          # Validation request body
-│   │   └── errorHandler.js       # Centralised error handling
-│   │
-│   ├── validators/               # ✅ Validation schemas
-│   │   ├── authValidator.js
-│   │   └── userValidator.js
-│   │
-│   └── utils/                    # 🔧 Utilities
-│       ├── hash.js               # bcrypt wrapper
-│       ├── token.js              # JWT helpers
-│       ├── logger.js             # Winston/Pino config
-│       └── response.js           # API response formatting
-│
-├── database/
-│   ├── config.js                 # Config migrations (outlet-init)
-│   ├── migrations/               # Migration files
-│   ├── seeds/                    # Test/demo data
-│   │   └── UserSeeder.js
-│   └── backups/                  # 🗄️ Backup files (full / partial / journal)
-│
-├── public/                       # ✅ Public static files
-│   ├── images/
-│   ├── css/
-│   └── js/
-│
-├── uploads/                      # ⚠️ Uploaded files
-│
-├── logs/                         # 📋 Logs (not versioned)
-│
-└── tests/                        # 🧪 Tests
-    ├── unit/                     # Unit tests (models)
-    ├── integration/              # Integration tests (API)
-    │   └── api/
-    └── fixtures/                 # Test data
-        └── users.json
-```
-
-### 🏗️ Architecture Flow
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      HTTP Request                           │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  MIDDLEWARES: auth → validate → rateLimiter → errorHandler │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  ROUTES → CONTROLLERS  HTTP handling + business logic       │
-│                        Direct outlet-orm Model calls        │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  MODELS (outlet-orm) → DATABASE                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 📋 Role of each layer
-
-| Layer | Folder | Responsibility | Security |
-|--------|---------|----------------|----------|
-| **Controllers** | `controllers/` | Handle HTTP, call ORM models, return responses | Input validation, ownership checks |
-| **Models** | `models/` | Entity definition, relationships, validations | `fillable`, `hidden`, rules |
-| **Middlewares** | `middlewares/` | Auth, rate limiting, error handling | 🔒 Critical |
-
-### ✅ Benefits of this architecture
-
-- **Simplicity**: Less files, less abstraction, faster to navigate
-- **Productivity**: Outlet ORM's expressive API handles data access directly
-- **Testability**: Integration tests with SQLite in-memory cover full request flows
-- **Flexibility**: Add a `services/` or `repositories/` layer later if complexity grows
-
-### 📝 Example workflow
-
-```javascript
-// routes/user.routes.js
-router.get('/users/:id', auth, UserController.show);
-
-// controllers/UserController.js
-async show(req, res) {
-  const user = await User.with('posts').find(req.params.id);
-  if (!user) return res.status(404).json({ message: 'User not found' });
-  res.json({ data: user });
-}
-
-async store(req, res) {
-  const existing = await User.where('email', req.body.email).first();
-  if (existing) return res.status(409).json({ message: 'Email already in use' });
-
-  const data = { ...req.body };
-  data.password = await bcrypt.hash(data.password, 10);
-
-  const user = await User.create(data);
-  res.status(201).json({ success: true, data: user });
-}
-```
-
-## ✨ Key features
-
-- **Active Record API** for a fluent developer experience
-- **Expressive Query Builder**: where/joins/order/limit/offset/paginate
-- **Relationship filters**: `whereHas()`, `has()`, `whereDoesntHave()`, `withCount()`
-- **Eager Loading** of relationships via `.with(...)` with constraints and dot-notation
-- **Complete relations**:
-  - `hasOne`, `hasMany`, `belongsTo`, `belongsToMany` (with attach/detach/sync)
-  - `hasManyThrough`, `hasOneThrough` (transitive relationships)
-  - `morphOne`, `morphMany`, `morphTo` (polymorphic relationships)
-- **Complete Transactions**: `beginTransaction()`, `commit()`, `rollback()`, `transaction()`
-- **Soft Deletes**: soft deletion with `deleted_at`, `withTrashed()`, `onlyTrashed()`, `restore()`
-- **Scopes**: global and local, to reuse your query filters
-- **Events/Hooks**: `creating`, `created`, `updating`, `updated`, `deleting`, `deleted`, etc.
-- **Validation**: built-in basic rules (`required`, `email`, `min`, `max`, etc.)
-- **Query Logging**: debug mode with `enableQueryLog()` and `getQueryLog()`
-- **PostgreSQL Pool**: pooled connections for better performance
-- **SQL Protection**: automatic sanitisation of identifiers
-- **Automatic Casts** (int, float, boolean, json, date...)
-- **Hidden attributes** (`hidden`) and automatic timestamps
-- **Visibility control** of hidden attributes: `withHidden()` and `withoutHidden()`
-- **Atomic increment/decrement**: `increment()` and `decrement()`
-- **Ergonomic aliases**: `columns([...])`, `ordrer()` (typo alias for `orderBy`)
-- **Raw queries**: `executeRawQuery()` and `execute()` (native driver results)
-- **Complete Migrations** (create/alter/drop, index, foreign keys, batch tracking)
-- **Database Backup** (v6.0.0): full/partial/journal backups, recurring scheduler, AES-256-GCM encryption, TCP daemon + remote client, automatic restore
-- **🤖 AI** (v8.0.0): Multi-provider LLM abstraction — chat, stream, embeddings, images, TTS, STT with 9+ providers
-- **🤖 AI Query Builder** (v8.0.0): Natural language → SQL with schema introspection
-- **🤖 AI Seeder** (v8.0.0): LLM-powered realistic, domain-specific data generation
-- **🤖 AI Query Optimizer** (v8.0.0): SQL analysis, optimization, and index recommendations
-- **🤖 AI Prompt Enhancer** (v8.0.0): Schema/model/migration generation from natural language
-- **🤖 MCP Server** (v7.0.0): Model Context Protocol for AI agent integration (13 tools)
-- **🤖 AI Safety Guardrails** (v7.0.0): Automatic AI agent detection + destructive operation protection
-- **Unified CLI** (`outlet`): single entrypoint — `outlet init`, `outlet migrate`, `outlet convert`, `outlet reverse`, `outlet mcp`, `outlet api import`, `outlet api diff`
-- **`.env` configuration** (loaded automatically)
-- **Multi-database**: MySQL, PostgreSQL, and SQLite
-- **Complete TypeScript types** with Generic Model and typed Schema Builder (v4.0.0+)
-- **🆕 Property-style attribute access** (v11.0.0): `user.name` instead of `user.getAttribute('name')`
-- **🆕 Computed Appends** (v11.0.0): `static appends` for virtual attributes auto-included in `toJSON()`
-- **🆕 Model Utility Methods** (v11.0.0): `fresh()`, `refresh()`, `replicate()`, `is()` / `isNot()`, `only()` / `except()`
-- **🆕 Instance-Level Visibility** (v11.0.0): `makeVisible()` / `makeHidden()` per-instance control
-- **🆕 Change Tracking** (v11.0.0): `wasChanged()` / `getChanges()` after `save()`
-- **🆕 Batch Processing** (v11.0.0): `chunk(size, callback)` for memory-efficient iteration
-- **🆕 Conditional Queries** (v11.0.0): `when(condition, callback)` and `tap(callback)`
-- **🆕 Query Debugging** (v11.0.0): `dd()` dumps SQL + bindings to console and throws
-- **🆕 Fluent Local Scopes** (v11.0.0): `static scopeActive(query)` → `User.query().active()`
-- **🆕 Relation Defaults** (v11.0.0): `withDefault()` on HasOne/MorphOne/HasOneThrough
-- **🆕 Aggregates & Pluck** (v11.0.0): `sum()`, `avg()`, `min()`, `max()`, `value()`, keyed `pluck(col, key)`
-- **🌐 API Layer** (v13.0.0): `Api` base class — same fluent syntax as `Model` but over HTTP/REST. Native `fetch`, zero new runtime dependencies.
-- **🌐 ApiAdapter** (v13.0.0): Configurable HTTP transport — bearer/basic/apiKey/OAuth2 auth, AbortController timeout, multi-adapter support
-- **🌐 Typed Error Hierarchy** (v13.0.0): 10 typed HTTP error classes (`ApiNotFoundError`, `ApiValidationError`, `ApiRateLimitError`, etc.)
-- **🌐 Upload & Debug** (v13.0.0): `upload()` with progress callbacks, `.toRequest()` dry-run, `enableRequestLog()`
-
-## ⚡ Quick Start
-
-### Project Initialisation
+Installez ensuite seulement le driver dont vous avez besoin:
 
 ```bash
-# Create initial configuration
-outlet init
-
-# Create a migration
-outlet migrate make create_users_table
-
-# Run migrations
-outlet migrate migrate
+npm install mysql2
 ```
-
-### 🌱 Quick Seeding
 
 ```bash
-# Create a seeder
-outlet migrate make:seed UserSeeder
-
-# Run seeders (DatabaseSeeder runs first)
-outlet migrate seed
-
-# Run a specific seeder
-outlet migrate seed --class UserSeeder
+npm install pg
 ```
 
-## 📖 Usage
-
-### Connection configuration
-
-Outlet ORM automatically loads the connection from the `.env` file. **No need to import DatabaseConnection!**
-
-#### `.env` file
-
-```env
-DB_DRIVER=mysql
-DB_HOST=localhost
-DB_DATABASE=myapp
-DB_USER=root
-DB_PASSWORD=secret
-DB_PORT=3306
+```bash
+npm install sqlite3
 ```
 
-#### Simplified usage
+Dependances et prerequis utiles:
 
-```javascript
-const { Model } = require('outlet-orm');
+- Node.js `>= 18.0.0`
+- package principal en CommonJS (`require` / `module.exports`)
+- `mysql2`, `pg`, `sqlite3` sont des peer dependencies optionnelles et chargees a la demande
+- `graphql-ws` est optionnelle si vous utilisez les subscriptions GraphQL
+- le package inclut ses types via `types/index.d.ts`
 
-class User extends Model {
-  static table = 'users';
-}
+## Demarrage rapide
 
-// That's it! The connection is automatic
-const users = await User.all();
-```
+### 1. Configurer une connexion
 
-#### Manual configuration (optional)
+```js
+const { DatabaseConnection } = require('outlet-orm');
 
-If you need to control the connection :
-
-```javascript
-const { DatabaseConnection, Model } = require('outlet-orm');
-
-// Option 1 – via .env (no parameters required)
-const db = new DatabaseConnection();
-
-// Option 2 – via configuration object
 const db = new DatabaseConnection({
-  driver: 'mysql',
-  host: 'localhost',
-  database: 'myapp',
-  user: 'root',
-  password: 'secret',
-  port: 3306
+  driver: 'sqlite',
+  database: ':memory:'
 });
 
-// Set the connection manually (optional)
-Model.setConnection(db);
+await db.connect();
 ```
 
-#### Environment variables (.env)
+Les drivers supportes dans la couche coeur sont:
 
-| Variable | Description | Default |
-|----------|-------------|------------|
-| `DB_DRIVER` | `mysql`, `postgres`, `sqlite` | `mysql` |
-| `DB_HOST` | Database host | `localhost` |
-| `DB_PORT` | Connection port | Driver default |
-| `DB_USER` / `DB_USERNAME` | Username | - |
-| `DB_PASSWORD` | Password | - |
-| `DB_DATABASE` / `DB_NAME` | Database name | - |
-| `DB_FILE` / `SQLITE_DB` | SQLite file | `:memory:` |
+- `mysql`
+- `postgres` / `postgresql`
+- `sqlite`
 
-### Importation
+La configuration peut venir:
 
-```javascript
-// CommonJS - Simple import (automatic connection via .env)
+- directement du constructeur `new DatabaseConnection({...})`
+- de `.env` (`DB_DRIVER`, `DB_HOST`, `DB_DATABASE`, `DB_FILE`, `DATABASE_URL`, etc.)
+- de `database/config.js` pour la CLI de migration
+
+### 2. Definir un modele
+
+```js
 const { Model } = require('outlet-orm');
-
-// ES Modules
-import { Model } from 'outlet-orm';
-
-// If you need manual control over the connection
-const { DatabaseConnection, Model } = require('outlet-orm');
-```
-
-### Define a model
-
-```javascript
-const { Model } = require('outlet-orm');
-
-// Define related models (see Relationships)
-class Post extends Model { static table = 'posts'; }
-class Profile extends Model { static table = 'profiles'; }
 
 class User extends Model {
   static table = 'users';
-  static primaryKey = 'id';           // Default: 'id'
-  static timestamps = true;           // Default: true
-  static fillable = ['name', 'email', 'password'];
+  static fillable = ['name', 'email', 'password', 'status'];
   static hidden = ['password'];
   static casts = {
     id: 'int',
-    email_verified: 'boolean',
-    metadata: 'json',
-    birthday: 'date'
+    email_verified: 'boolean'
   };
-
-  // Relations
-  posts() {
-    return this.hasMany(Post, 'user_id');
-  }
-
-  profile() {
-    return this.hasOne(Profile, 'user_id');
-  }
+  static connection = db;
 }
 ```
 
-### CRUD operations
+### 3. Utiliser le modele
 
-#### Create
-
-```javascript
-// Method 1: create()
+```js
 const user = await User.create({
-  name: 'John Doe',
-  email: 'john@example.com',
-  password: 'secret123'
+  name: 'Ada',
+  email: 'ada@example.com',
+  password: 'secret',
+  status: 'active'
 });
 
-// Method 2: new + save()
-const user = new User({ name: 'Jane Doe', email: 'jane@example.com' });
-user.password = 'secret456';
-await user.save();
-
-// Raw insert (without creating an instance)
-await User.insert({ name: 'Bob', email: 'bob@example.com' });
-```
-
-#### Read
-
-```javascript
-// All records
-const users = await User.all();
-
-// By ID
-const user = await User.find(1);
-const user = await User.findOrFail(1); // Throws an error if not found
-
-// First result
-const firstUser = await User.first();
-
-// With conditions
 const activeUsers = await User
   .where('status', 'active')
-  .where('age', '>', 18)
-  .get();
-
-// With relationships (Eager Loading)
-const usersWithPosts = await User
-  .with('posts', 'profile')
-  .get();
-
-// Ordonner et limiter
-const recentUsers = await User
-  .orderBy('created_at', 'desc')
+  .orderBy('id', 'desc')
   .limit(10)
   .get();
 ```
 
-#### Update
+## Modele Active Record
 
-```javascript
-// Instance
+Le coeur ORM repose sur [src/Model.js](src/Model.js). Un modele declare typiquement:
+
+- `static table`
+- `static primaryKey`
+- `static timestamps`
+- `static fillable`
+- `static hidden`
+- `static casts`
+- `static appends`
+- `static connection`
+- `static softDeletes`
+- `static rules`
+
+Capacites principales du modele:
+
+- CRUD statique: `all()`, `find()`, `findOrFail()`, `create()`, `insert()`, `update()`, `delete()`
+- helpers de recherche: `first()`, `firstOrCreate()`, `firstOrNew()`, `updateOrCreate()`, `upsert()`
+- pagination: `paginate(page, perPage)`
+- streaming: `cursor(chunkSize)`
+- serialization: `toJSON()`, `only()`, `except()`
+- cycle de vie: `save()`, `destroy()`, `fresh()`, `refresh()`, `replicate()`
+- tracking: `getDirty()`, `isDirty()`, `wasChanged()`, `getChanges()`
+
+Particularite utile: les instances sont enveloppees dans un `Proxy`, ce qui permet l'acces style propriete:
+
+```js
 const user = await User.find(1);
-user.name = 'Updated Name';
+
+console.log(user.name);
+user.name = 'Grace';
 await user.save();
-
-// Bulk update
-await User
-  .where('status', 'pending')
-  .update({ status: 'active' });
-
-// Update + Fetch
-const updated = await User
-  .where('id', 1)
-  .updateAndFetch({ name: 'Neo' }, ['profile', 'posts']);
-
-// Helpers by ID
-const user = await User.updateAndFetchById(1, { name: 'Trinity' }, ['profile']);
-await User.updateById(2, { status: 'active' });
 ```
 
-#### Delete
+Ce comportement est teste dans [tests/PropertyAccess.test.js](tests/PropertyAccess.test.js).
 
-```javascript
-// Instance
-const user = await User.find(1);
-await user.destroy();
+## Requetes et QueryBuilder
 
-// Bulk delete
-await User
-  .where('status', 'banned')
-  .delete();
-```
+Le `QueryBuilder` couvre les usages classiques et plusieurs helpers de parite de style Laravel.
 
-### Query Builder
+### Filtres et clauses de base
 
-```javascript
-// Where clauses
-const users = await User
-  .where('age', '>', 18)
+Methodes courantes:
+
+- `select(...columns)`
+- `columns([...])`
+- `distinct()`
+- `where(column, value)`
+- `where(column, operator, value)`
+- `orWhere(...)`
+- `whereIn()`, `whereNotIn()`
+- `whereNull()`, `whereNotNull()`
+- `whereBetween()`, `whereNotBetween()`
+- `whereLike()`
+- `orderBy()`
+- `limit()`, `offset()`, `skip()`, `take()`
+- `groupBy()`
+- `having()`, `havingRaw()`
+- `join()`, `leftJoin()`, `rightJoin()`, `crossJoin()`
+- `union()`, `unionAll()`
+
+### Chargement et filtres relationnels
+
+- `with(...)`
+- `withCount(...)`
+- `withSum(relation, column)`
+- `withAvg(relation, column)`
+- `withMin(relation, column)`
+- `withMax(relation, column)`
+- `whereHas(relation, callback)`
+- `has(relation, count)`
+- `whereDoesntHave(relation)`
+
+### Recuperation et mutation
+
+- `get()`
+- `first()`
+- `firstOrFail()`
+- `paginate()`
+- `count()`
+- `exists()` / `doesntExist()`
+- `insert()` / `insertGetId()`
+- `update()`
+- `updateAndFetch()`
+- `delete()`
+- `increment()` / `decrement()`
+
+### Helpers pratiques
+
+- `pluck(column)`
+- `pluck(column, keyColumn)`
+- `value(column)`
+- `sum()`, `avg()`, `min()`, `max()`
+- `chunk(size, callback)`
+- `when(condition, callback, fallback)`
+- `tap(callback)`
+- `toSQL()`
+- `dd()`
+- `clone()`
+
+Exemple:
+
+```js
+const rows = await User
   .where('status', 'active')
-  .orWhere('role', 'admin')
+  .whereBetween('created_at', ['2026-01-01', '2026-12-31'])
+  .withCount('posts')
+  .withMax('posts', 'created_at')
+  .orderBy('posts_count', 'desc')
   .get();
-
-// Where In / Not In
-const users = await User.whereIn('id', [1, 2, 3, 4, 5]).get();
-const users = await User.whereNotIn('status', ['banned', 'deleted']).get();
-
-// Where Null / Not Null
-const users = await User.whereNull('deleted_at').get();
-const verified = await User.whereNotNull('email_verified_at').get();
-
-// Where Between / Like
-const adults = await User.whereBetween('age', [18, 65]).get();
-const johns = await User.whereLike('name', '%john%').get();
-
-// Pagination
-const result = await User.paginate(1, 15);
-// { data: [...], total: 100, per_page: 15, current_page: 1, last_page: 7, from: 1, to: 15 }
-
-// Count / Exists
-const count = await User.where('status', 'active').count();
-const hasUsers = await User.where('role', 'admin').exists();
-
-// Joins
-const result = await User
-  .join('profiles', 'users.id', 'profiles.user_id')
-  .leftJoin('countries', 'profiles.country_id', 'countries.id')
-  .select('users.*', 'profiles.bio', 'countries.name as country')
-  .get();
-
-// Aggregations
-const stats = await User
-  .distinct()
-  .groupBy('status')
-  .having('COUNT(*)', '>', 5)
-  .get();
-
-// Atomic increment / decrement
-await User.where('id', 1).increment('login_count');
-await User.where('id', 1).decrement('credits', 10);
 ```
 
-### Relationship filters
+Les usages recents et les helpers de parite sont verifies dans [tests/NewParityFeatures.test.js](tests/NewParityFeatures.test.js), [tests/NewFeatures.test.js](tests/NewFeatures.test.js), [tests/NewEvolutions.test.js](tests/NewEvolutions.test.js) et [tests/QueryBuilderStandalone.test.js](tests/QueryBuilderStandalone.test.js).
 
-```javascript
-// whereHas: Users who have at least one published post
-const authors = await User
-  .whereHas('posts', (q) => {
-    q.where('status', 'published');
-  })
-  .get();
+## Relations et eager loading
 
-// has: At least N children
-const prolific = await User.has('posts', '>=', 10).get();
+Relations supportees par le coeur ORM:
 
-// whereDoesntHave: No children
-const noPostUsers = await User.whereDoesntHave('posts').get();
+- `hasOne`
+- `hasMany`
+- `belongsTo`
+- `belongsToMany`
+- `hasManyThrough`
+- `hasOneThrough`
+- `morphOne`
+- `morphMany`
+- `morphTo`
 
-// withCount: Add a {relation}_count column
-const withCounts = await User.withCount('posts').get();
-// Each user will have: user.posts_count
-```
+Exemple:
 
-## 🔗 Relations
-
-### One to One (hasOne)
-
-```javascript
-const { Model } = require('outlet-orm');
-
-class Profile extends Model { static table = 'profiles'; }
-
+```js
 class User extends Model {
   static table = 'users';
-  
-  profile() {
-    return this.hasOne(Profile, 'user_id');
-  }
-}
+  static connection = db;
 
-const user = await User.find(1);
-const profile = await user.profile().get();
-```
-
-### One to Many (hasMany)
-
-```javascript
-const { Model } = require('outlet-orm');
-
-class Post extends Model { static table = 'posts'; }
-
-class User extends Model {
-  static table = 'users';
-  
   posts() {
-    return this.hasMany(Post, 'user_id');
+    return this.hasMany(Post, 'user_id', 'id');
   }
 }
-
-const user = await User.find(1);
-const posts = await user.posts().get();
-```
-
-### Belongs To (belongsTo)
-
-```javascript
-const { Model } = require('outlet-orm');
-
-class User extends Model { static table = 'users'; }
 
 class Post extends Model {
   static table = 'posts';
-  
+  static connection = db;
+
   author() {
-    return this.belongsTo(User, 'user_id');
+    return this.belongsTo(User, 'user_id', 'id');
   }
 }
 
-const post = await Post.find(1);
-const author = await post.author().get();
+const users = await User.with('posts').get();
 ```
 
-### Many to Many (belongsToMany)
+Capacites complementaires:
 
-```javascript
-const { Model } = require('outlet-orm');
+- eager loading avec contraintes
+- eager loading imbrique via notation pointee
+- `withDefault()` sur les relations
+- `attach()`, `detach()`, `sync()` sur `belongsToMany`
+- morph map via `Model.setMorphMap(...)`
 
-class Role extends Model { static table = 'roles'; }
+Suites de tests associees:
 
-class User extends Model {
-  static table = 'users';
-  
-  roles() {
-    return this.belongsToMany(
-      Role,
-      'user_roles',   // Table pivot
-      'user_id',      // FK vers User
-      'role_id'       // FK vers Role
-    );
-  }
-}
+- [tests/HasManyThrough.test.js](tests/HasManyThrough.test.js)
+- [tests/Polymorphic.test.js](tests/Polymorphic.test.js)
+- [tests/NestedEager.test.js](tests/NestedEager.test.js)
 
-const user = await User.find(1);
-const roles = await user.roles().get();
+## Fonctionnalites avancees des modeles
 
-// Pivot methods
-await user.roles().attach([1, 2]);    // Attach roles
-await user.roles().detach(2);          // Detach a role
-await user.roles().sync([1, 3]);       // Synchronise (replaces all)
-```
+Le package embarque plusieurs comportements utiles qui ne sont pas toujours presents dans les ORMs legers.
 
-### Has Many Through (hasManyThrough)
+### Visibilite et serialization
 
-Access a distant relationship via an intermediate model.
+- `static hidden`
+- `withHidden()`
+- `withoutHidden(show)`
+- `makeVisible()`
+- `makeHidden()`
+- `static appends`
 
-```javascript
-const { Model } = require('outlet-orm');
-
-class User extends Model {
-  // User -> Post -> Comment
-  comments() {
-    return this.hasManyThrough(Comment, Post, 'user_id', 'post_id');
-  }
-}
-
-const user = await User.find(1);
-const allComments = await user.comments().get();
-```
-
-### Has One Through (hasOneThrough)
-
-```javascript
-const { Model } = require('outlet-orm');
-
-class User extends Model {
-  // User -> Profile -> Country
-  country() {
-    return this.hasOneThrough(Country, Profile, 'user_id', 'country_id');
-  }
-}
-
-const user = await User.find(1);
-const country = await user.country().get();
-```
-
-### Polymorphic relationships
-
-Polymorphic relationships allow a model to belong to multiple other models.
-
-```javascript
-const { Model } = require('outlet-orm');
-
-// Set up the morph map
-Model.setMorphMap({
-  'posts': Post,
-  'videos': Video
-});
-
-// Models
-class Post extends Model {
-  comments() {
-    return this.morphMany(Comment, 'commentable');
-  }
-}
-
-class Video extends Model {
-  comments() {
-    return this.morphMany(Comment, 'commentable');
-  }
-}
-
-class Comment extends Model {
-  commentable() {
-    return this.morphTo('commentable');
-  }
-}
-
-// Usage
-const post = await Post.find(1);
-const comments = await post.comments().get();
-
-const comment = await Comment.find(1);
-const parent = await comment.commentable().get(); // Post or Video
-```
-
-**Available polymorphic relationships:**
-- `morphOne(Related, 'morphName')` - One-to-One polymorphic
-- `morphMany(Related, 'morphName')` - One-to-Many polymorphic
-- `morphTo('morphName')` - Inverse polymorphic
-
-### Eager Loading
-
-```javascript
-// Load multiple relationships
-const users = await User.with('posts', 'profile', 'roles').get();
-
-// Load with constraints
-const users = await User.with({
-  posts: (q) => q.where('status', 'published').orderBy('created_at', 'desc')
-}).get();
-
-// Load nested relationships (dot notation)
-const users = await User.with('posts.comments.author').get();
-
-// Load on an existing instance
-const user = await User.find(1);
-await user.load('posts', 'profile');
-await user.load(['roles', 'posts.comments']);
-
-// Access loaded relationships
-users.forEach(user => {
-  console.log(user.relationships.posts);
-  console.log(user.relationships.profile);
-});
-```
-
-## 🎭 Attributs
+Exemple documente aussi dans [examples/hidden-attributes-demo.js](examples/hidden-attributes-demo.js).
 
 ### Casts
 
-Casts automatically convert attributes:
+Types de cast supportes:
 
-```javascript
-const { Model } = require('outlet-orm');
+- `int` / `integer`
+- `float` / `double`
+- `string`
+- `bool` / `boolean`
+- `array`
+- `json`
+- `date`
+- `datetime`
+- `timestamp`
 
-class User extends Model {
-  static casts = {
-    id: 'int',              // ou 'integer'
-    age: 'integer',
-    balance: 'float',       // ou 'double'
-    email_verified: 'boolean', // ou 'bool'
-    metadata: 'json',       // Parse JSON
-    settings: 'array',      // Parse JSON as array
-    birthday: 'date'        // Converts to Date
-  };
-}
+### Accessors, mutators et validation
+
+La couche modele couvre egalement:
+
+- accessors / mutators
+- regles de validation sur `static rules`
+- `validate()` et `validateOrFail()`
+- `fillable` guard sur insert / update
+
+### Events, observers et scopes
+
+Events supportes:
+
+- `creating`, `created`
+- `updating`, `updated`
+- `saving`, `saved`
+- `deleting`, `deleted`
+- `restoring`, `restored`
+
+Vous pouvez utiliser:
+
+- `Model.on(event, callback)`
+- helpers `creating(...)`, `saved(...)`, etc.
+- `Model.observe(MyObserver)`
+- global scopes via `addGlobalScope()` / `withoutGlobalScope()` / `withoutGlobalScopes()`
+- local scopes verifies par [tests/NewEvolutions.test.js](tests/NewEvolutions.test.js)
+
+### Soft deletes
+
+Fonctionnalites soft delete:
+
+- `static softDeletes = true`
+- `static DELETED_AT`
+- `withTrashed()`
+- `onlyTrashed()`
+- `trashed()`
+- `restore()`
+- `forceDelete()`
+
+Le schema builder expose aussi `softDeletes()` pour ajouter `deleted_at`.
+
+## DatabaseConnection et mode standalone
+
+[src/DatabaseConnection.js](src/DatabaseConnection.js) gere:
+
+- la connexion et le pooling
+- l'execution des requetes
+- les transactions
+- le query log
+- les agregats SQL
+- l'utilisation standalone du builder via `from(...)`
+
+Exemple standalone sans modele:
+
+```js
+await db.from('users')
+  .where('status', 'pending')
+  .update({ status: 'active' });
+
+const exists = await db.from('users')
+  .where('email', 'ada@example.com')
+  .exists();
 ```
 
-### Hidden attributes
+Fonctions utiles de bas niveau:
 
-```javascript
-const { Model } = require('outlet-orm');
+- `select()`
+- `insert()` / `insertMany()`
+- `update()`
+- `delete()`
+- `count()`
+- `aggregate()`
+- `executeRawQuery()`
+- `execute()`
+- `increment()` / `decrement()`
 
-class User extends Model {
-  static hidden = ['password', 'secret_token'];
-}
+### Query log
 
-const user = await User.find(1);
-console.log(user.toJSON()); // password and secret_token excluded
+Le log de requetes peut etre active globalement:
+
+```js
+DatabaseConnection.enableQueryLog();
+// ...
+const log = DatabaseConnection.getQueryLog();
+DatabaseConnection.flushQueryLog();
 ```
 
-#### Show hidden attributes
+Le backup journal s'appuie sur ce mecanisme.
 
-```javascript
-// Include hidden attributes
-const user = await User.withHidden().where('email', 'john@example.com').first();
-console.log(user.toJSON()); // password included
+## Schema builder, migrations et seeders
 
-// Control with a boolean
-const user = await User.withoutHidden(true).first(); // true = show
-const user = await User.withoutHidden(false).first(); // false = hide (default)
+Le schema builder est fourni par `Schema` et `Blueprint`.
 
-// Use case: authentication
-const user = await User.withHidden().where('email', email).first();
-if (user && await bcrypt.compare(password, user.password)) {
-  // Authentication successful
-}
-```
+### Operations de schema principales
 
-### Timestamps
+- `schema.create(name, callback)`
+- `schema.table(name, callback)`
+- `schema.rename(from, to)`
+- `schema.drop(name)`
+- `schema.dropIfExists(name)`
+- `schema.hasTable(name)`
+- `schema.hasColumn(table, column)`
+- `schema.hasIndex(table, indexName)` / `indexExists(...)`
 
-```javascript
-const { Model } = require('outlet-orm');
+Le `Blueprint` couvre notamment:
 
-// Enabled by default (created_at, updated_at)
-class User extends Model {
-  static timestamps = true;
-}
+- colonnes numeriques, texte, date, JSON, UUID, binary
+- `timestamps()` avec plusieurs surcharges
+- `softDeletes()`
+- index, unique, full text
+- foreign keys
+- check constraints
 
-// Disable
-class Log extends Model {
-  static timestamps = false;
-}
-```
+Exemple de migration:
 
-## 🔄 Transactions
+```js
+const { Migration } = require('outlet-orm');
 
-Outlet ORM supports transactions to guarantee data integrity:
+class CreateUsersTable extends Migration {
+  async up() {
+    const schema = this.getSchema();
 
-```javascript
-const { DatabaseConnection, Model } = require('outlet-orm');
-
-// Method 1: Automatic callback (recommended)
-const db = Model.connection;
-const result = await db.transaction(async (connection) => {
-  const user = await User.create({ name: 'John', email: 'john@example.com' });
-  await Account.create({ user_id: user.id, balance: 0 });
-  return user;
-});
-// Automatic commit, rollback on error
-
-// Method 2: Manual control
-await db.beginTransaction();
-try {
-  await User.create({ name: 'Jane' });
-  await db.commit();
-} catch (error) {
-  await db.rollback();
-  throw error;
-}
-```
-
-### Savepoints
-
-Partial rollback within a transaction:
-
-```javascript
-await db.beginTransaction();
-await db.execute("INSERT INTO orders (product) VALUES ('A')");
-await db.savepoint('sp1');
-await db.execute("INSERT INTO orders (product) VALUES ('B')");
-await db.rollbackTo('sp1');   // undo 'B'
-await db.releaseSavepoint('sp1');
-await db.commit();            // only 'A' is saved
-```
-
-### Isolation Levels
-
-```javascript
-const { IsolationLevel } = require('outlet-orm');
-
-db.setIsolationLevel(IsolationLevel.SERIALIZABLE); // must be before beginTransaction()
-await db.beginTransaction();
-// …
-await db.commit();
-```
-
-Available: `READ_UNCOMMITTED`, `READ_COMMITTED`, `REPEATABLE_READ`, `SERIALIZABLE`.
-
-## 🗄️ Database Objects (v11.3.0+)
-
-Manage **views**, **triggers**, and **stored procedures/functions** directly from the Schema builder or inside migrations:
-
-```javascript
-const schema = db.getSchema();
-
-// Views
-await schema.createView('active_users', "SELECT * FROM users WHERE status = 'active'");
-await schema.hasView('active_users'); // true
-await schema.dropViewIfExists('active_users');
-
-// Triggers
-await schema.createTrigger({
-  name: 'stamp_updated_at', table: 'orders',
-  timing: 'AFTER', event: 'UPDATE',
-  body: "UPDATE orders SET updated_at = NOW() WHERE id = NEW.id;"
-});
-await schema.dropTriggerIfExists('stamp_updated_at', 'orders');
-
-// Stored procedures & functions (MySQL / PostgreSQL only)
-await schema.createProcedure('greet', 'IN name VARCHAR(100)', "SELECT CONCAT('Hi, ', name);");
-await schema.createFunction('add_tax', 'IN p DECIMAL(10,2)', 'RETURN p * 1.10;', { returns: 'DECIMAL(10,2)' });
-
-// Call at runtime
-await db.callProcedure('greet', ['Alice']);
-await db.callFunction('add_tax', [99.99]);
-```
-
-See [docs/DATABASE_OBJECTS.md](docs/DATABASE_OBJECTS.md) for the complete reference.
-
-
-
-Soft deletion using a `deleted_at` column:
-
-```javascript
-const { Model } = require('outlet-orm');
-
-class Post extends Model {
-  static table = 'posts';
-  static softDeletes = true;
-  // static DELETED_AT = 'deleted_at'; // Customisable
-}
-
-// Queries automatically exclude soft-deleted records
-const posts = await Post.all(); // Only non-deleted records
-
-// Include deleted records
-const allPosts = await Post.withTrashed().get();
-
-// Only deleted records
-const trashedPosts = await Post.onlyTrashed().get();
-
-// Delete (soft delete)
-const post = await Post.find(1);
-await post.destroy(); // Sets deleted_at to the current date
-
-// Check if deleted
-if (post.trashed()) {
-  console.log('This post is deleted');
-}
-
-// Restaurer
-await post.restore();
-
-// Delete permanently
-await post.forceDelete();
-```
-
-## 🔬 Scopes
-
-### Scopes Globaux
-
-Applied automatically to all queries:
-
-```javascript
-const { Model } = require('outlet-orm');
-
-class Post extends Model {
-  static table = 'posts';
-}
-
-// Add a global scope
-Post.addGlobalScope('published', (query) => {
-  query.where('status', 'published');
-});
-
-// All queries filter automatically
-const posts = await Post.all(); // Published only
-
-// Temporarily disable a scope
-const allPosts = await Post.withoutGlobalScope('published').get();
-
-// Disable all scopes
-const rawPosts = await Post.withoutGlobalScopes().get();
-```
-
-## 📣 Events / Hooks
-
-Intercept operations on your models:
-
-```javascript
-const { Model } = require('outlet-orm');
-
-class User extends Model {
-  static table = 'users';
-}
-
-// Before creation
-User.creating((user) => {
-  user.uuid = generateUUID();
-  // Return false to roll back
-});
-
-// After creation
-User.created((user) => {
-  console.log(`User ${user.id} created`);
-});
-
-// Before update
-User.updating((user) => {
-  user.updated_at = new Date();
-});
-
-// After update
-User.updated((user) => {
-  // Notify external systems
-});
-
-// saving/saved events (creation AND update)
-User.saving((user) => {
-  // Data cleanup
-});
-
-User.saved((user) => {
-  // Cache invalidation
-});
-
-// Before/after deletion
-User.deleting((user) => {
-  // Checks before deletion
-});
-
-User.deleted((user) => {
-  // Clean up relationships
-});
-
-// For soft deletes
-User.restoring((user) => {});
-User.restored((user) => {});
-```
-
-## ✅ Validation
-
-Built-in basic validation:
-
-```javascript
-const { Model } = require('outlet-orm');
-
-class User extends Model {
-  static table = 'users';
-  static rules = {
-    name: 'required|string|min:2|max:100',
-    email: 'required|email',
-    age: 'numeric|min:0|max:150',
-    role: 'in:admin,user,guest',
-    password: 'required|min:8'
-  };
-}
-
-const user = new User({
-  name: 'J',
-  email: 'invalid-email',
-  age: 200
-});
-
-// Valider
-const { valid, errors } = user.validate();
-console.log(valid); // false
-console.log(errors);
-// {
-//   name: ['name must be at least 2 characters'],
-//   email: ['email must be a valid email'],
-//   age: ['age must not exceed 150']
-// }
-
-// Validate or throw an error
-try {
-  user.validateOrFail();
-} catch (error) {
-  console.log(error.errors);
-}
-```
-
-### Available rules
-
-| Rule | Description |
-|-------|-------------|
-| `required` | Required field |
-| `string` | Must be a string |
-| `number` / `numeric` | Must be a number |
-| `email` | Valid email format |
-| `boolean` | Must be a boolean |
-| `date` | Valid date |
-| `min:N` | Minimum N (longueur ou value) |
-| `max:N` | Maximum N (longueur ou value) |
-| `in:a,b,c` | Valeur parmi la liste |
-| `regex:pattern` | Match le pattern regex |
-
-## 📊 Query Logging
-
-Debug mode to analyse your queries:
-
-```javascript
-const { Model } = require('outlet-orm');
-
-// Activer le logging
-const db = Model.getConnection();
-db.enableQueryLog();
-
-// Run queries
-await User.where('status', 'active').get();
-await Post.with('author').get();
-
-// Retrieve the log
-const queries = db.getQueryLog();
-console.log(queries);
-// [
-//   { sql: 'SELECT * FROM users WHERE status = ?', params: ['active'], duration: 15, timestamp: Date },
-//   { sql: 'SELECT * FROM posts', params: [], duration: 8, timestamp: Date }
-// ]
-
-// Vider le log
-db.flushQueryLog();
-
-// Disable le logging
-db.disableQueryLog();
-
-// Check if active
-if (db.isLogging()) {
-  console.log('Logging active');
-}
-```
-
-## 📝 API Reference
-
-### DatabaseConnection
-
-| Method | Description |
-|---------|-------------|
-| `new DatabaseConnection(config?)` | Creates a connection (reads `.env` if config is omitted) |
-| `connect()` | Establishes the connection (called automatically) |
-| `beginTransaction()` | Starts a transaction |
-| `commit()` | Commits the transaction |
-| `rollback()` | Rolls back the transaction |
-| `transaction(callback)` | Runs in a transaction (auto commit/rollback) |
-| `select(table, query)` | Runs a SELECT |
-| `insert(table, data)` | Inserts a record |
-| `insertMany(table, data[])` | Inserts multiple records |
-| `update(table, data, query)` | Updates records |
-| `delete(table, query)` | Deletes records |
-| `count(table, query)` | Counts records |
-| `executeRawQuery(sql, params?)` | Raw query (normalised results) |
-| `execute(sql, params?)` | Raw query (native driver results) |
-| `increment(table, column, query, amount?)` | Atomic increment |
-| `decrement(table, column, query, amount?)` | Atomic decrement |
-| `aggregate(table, fn, column, query)` | Execute aggregate function (SUM/AVG/MIN/MAX) |
-| `close()` / `disconnect()` | Closes the connection |
-| **Query Logging (static)** | |
-| `enableQueryLog()` | Enables query logging |
-| `disableQueryLog()` | Disables logging |
-| `getQueryLog()` | Returns the query log |
-| `flushQueryLog()` | Clears the log |
-| `isLogging()` | Checks whether logging is active |
-
-### Model (static methods)
-
-| Method | Description |
-|---------|-------------|
-| `setConnection(db)` | Sets the default connection |
-| `getConnection()` | Gets the connection (v3.0.0+) |
-| `setMorphMap(map)` | Defines polymorphic mapping |
-| `query()` | Returns a QueryBuilder |
-| `all()` | All records |
-| `find(id)` | Finds by ID |
-| `findOrFail(id)` | Finds or throws an error |
-| `first()` | First record |
-| `where(col, op?, val)` | Clause WHERE |
-| `whereIn(col, vals)` | Clause WHERE IN |
-| `whereNull(col)` | Clause WHERE NULL |
-| `whereNotNull(col)` | Clause WHERE NOT NULL |
-| `create(attrs)` | Creates and saves |
-| `insert(data)` | Raw insert |
-| `update(attrs)` | Update bulk |
-| `updateById(id, attrs)` | Update by ID |
-| `updateAndFetchById(id, attrs, rels?)` | Update + fetch with relationships |
-| `delete()` | Delete bulk |
-| `with(...rels)` | Eager loading |
-| `withHidden()` | Includes hidden attributes |
-| `withoutHidden(show?)` | Control attribute visibility |
-| `orderBy(col, dir?)` | Sort |
-| `limit(n)` / `offset(n)` | Limit/Offset |
-| `paginate(page, perPage)` | Pagination |
-| `count()` | Count |
-| **Soft Deletes** | |
-| `withTrashed()` | Includes soft-deleted records |
-| `onlyTrashed()` | Only soft-deleted records |
-| **Scopes** | |
-| `addGlobalScope(name, cb)` | Adds a global scope |
-| `removeGlobalScope(name)` | Removes a scope |
-| `withoutGlobalScope(name)` | Query without one scope |
-| `withoutGlobalScopes()` | Query without all scopes |
-| **Events** | |
-| `on(event, callback)` | Registers a listener |
-| `creating(cb)` / `created(cb)` | Creation events |
-| `updating(cb)` / `updated(cb)` | Update events |
-| `saving(cb)` / `saved(cb)` | Save events |
-| `deleting(cb)` / `deleted(cb)` | Delete events |
-| `restoring(cb)` / `restored(cb)` | Restore events |
-
-### Model (instance methods)
-
-| Method | Description |
-|---------|-------------|
-| `fill(attrs)` | Fills attributes |
-| `setAttribute(key, val)` | Sets an attribute |
-| `getAttribute(key)` | Gets an attribute |
-| `save()` | Save (insert or update) |
-| `destroy()` | Delete the instance (soft if enabled) |
-| `load(...rels)` | Load relationships |
-| `getDirty()` | Modified attributes |
-| `isDirty()` | Has been modified? |
-| `toJSON()` | Convert to plain object |
-| `fresh()` | Reload from DB (new instance) |
-| `refresh()` | Reload in place |
-| `replicate()` | Clone without ID/timestamps |
-| `is(model)` | Same type and primary key? |
-| `isNot(model)` | Negation of `is()` |
-| `only(...keys)` | Subset of attributes |
-| `except(...keys)` | All attributes except listed |
-| `makeVisible(...attrs)` | Unhide attributes for this instance |
-| `makeHidden(...attrs)` | Hide attributes for this instance |
-| `wasChanged(attr?)` | Changed after last `save()`? |
-| `getChanges()` | Attributes changed by last `save()` |
-| **Soft Deletes** | |
-| `trashed()` | Is deleted? |
-| `restore()` | Restore the model |
-| `forceDelete()` | Permanent deletion |
-| **Validation** | |
-| `validate()` | Validate against rules |
-| `validateOrFail()` | Validate or throw error |
-
-### QueryBuilder
-
-| Method | Description |
-|---------|-------------|
-| `select(...cols)` / `columns([...])` | Column selection |
-| `distinct()` | SELECT DISTINCT |
-| `where(col, op?, val)` | Clause WHERE |
-| `whereIn(col, vals)` | WHERE IN |
-| `whereNotIn(col, vals)` | WHERE NOT IN |
-| `whereNull(col)` | WHERE NULL |
-| `whereNotNull(col)` | WHERE NOT NULL |
-| `orWhere(col, op?, val)` | OR WHERE |
-| `whereBetween(col, [min, max])` | WHERE BETWEEN |
-| `whereLike(col, pattern)` | WHERE LIKE |
-| `whereHas(rel, cb?)` | Filter by existence of relation |
-| `has(rel, op?, count)` | Relational existence |
-| `whereDoesntHave(rel)` | Absence of relation |
-| `orderBy(col, dir?)` / `ordrer(...)` | Sort |
-| `limit(n)` / `take(n)` | Limit |
-| `offset(n)` / `skip(n)` | Offset |
-| `groupBy(...cols)` | GROUP BY |
-| `having(col, op, val)` | HAVING |
-| `join(table, first, op?, second)` | INNER JOIN |
-| `leftJoin(table, first, op?, second)` | LEFT JOIN |
-| `with(...rels)` | Eager loading |
-| `withCount(rels)` | Adds `{rel}_count` |
-| `withTrashed()` | Includes soft-deleted records |
-| `onlyTrashed()` | Only soft-deleted records |
-| `withoutGlobalScope(name)` | Without one global scope |
-| `withoutGlobalScopes()` | Without all global scopes |
-| `get()` | Runs and returns all |
-| `first()` | First result |
-| `firstOrFail()` | Premier ou erreur |
-| `paginate(page, perPage)` | Pagination |
-| `count()` | Compte |
-| `exists()` | Checks existence |
-| `insert(data)` | Insert |
-| `update(attrs)` | Update |
-| `updateAndFetch(attrs, rels?)` | Update + fetch |
-| `delete()` | Delete |
-| `increment(col, amount?)` | Atomic increment |
-| `decrement(col, amount?)` | Atomic decrement |
-| `pluck(col, keyCol?)` | Array of values or keyed object |
-| `value(col)` | Single scalar value |
-| `sum(col)` / `avg(col)` | Aggregate sum / average |
-| `min(col)` / `max(col)` | Aggregate min / max |
-| `chunk(size, callback)` | Process results in batches |
-| `when(cond, cb, fallback?)` | Conditional query building |
-| `tap(callback)` | Inspect builder without modifying |
-| `toSQL()` | Returns `{ sql, bindings }` |
-| `dd()` | Dumps SQL + bindings and throws |
-| `clone()` | Clones the query builder |
-
-## 🌐 API Layer (v13.0.0)
-
-Outlet ORM v13 introduces a first-class **API Layer**: use the same Active Record syntax to query REST (and GraphQL) APIs as you already do for SQL databases — no extra dependencies, no new concepts.
-
-```javascript
-const { Api, ApiAdapter } = require('outlet-orm');
-
-// 1. Configure an adapter
-const adapter = new ApiAdapter({
-  baseUrl: 'https://api.example.com',
-  auth: { type: 'bearer', token: process.env.API_TOKEN }
-});
-
-// 2. Define an Api model
-class Post extends Api {
-  static endpoint = 'posts';
-  static adapter  = adapter;
-}
-
-// 3. Use it — same syntax as Model
-const posts = await Post.all();             // GET /posts
-const post  = await Post.find(1);           // GET /posts/1
-const post  = await Post.findOrFail(42);    // throws ApiNotFoundError if missing
-
-const created = await Post.create({ title: 'Hello' }); // POST /posts
-created.title = 'Updated';
-await created.save();                                  // PATCH /posts/{id}
-await created.destroy();                               // DELETE /posts/{id}
-```
-
-### API Layer Quick Example
-
-#### Pagination
-
-```javascript
-// Returns { data: [...], total, per_page, current_page, last_page }
-const page = await Post.all({ page: 2, per_page: 20 });
-```
-
-#### Lifecycle events
-
-```javascript
-Post.on('created', (post) => console.log('Created:', post.id));
-Post.on('deleted', (post) => console.log('Deleted:', post.id));
-```
-
-### API Layer Authentication
-
-```javascript
-const adapter = new ApiAdapter({
-  baseUrl: 'https://api.example.com',
-  auth: {
-    type: 'oauth2',
-    accessToken:   process.env.ACCESS_TOKEN,
-    refreshToken:  process.env.REFRESH_TOKEN,
-    refreshUrl:    'https://api.example.com/auth/refresh',
-    onRefreshFail: () => redirectToLogin()
-  },
-  // Per-request dynamic headers (e.g. tenant ID)
-  dynamicHeaders: (req) => ({ 'X-Tenant-ID': currentTenant() }),
-  timeout: 10000
-});
-```
-
-Supported auth types: `bearer`, `basic`, `apiKey` (header or query), `cookie`, `oauth2` (with auto-refresh).
-
-### API Layer Error Handling
-
-```javascript
-const {
-  ApiNotFoundError,
-  ApiValidationError,
-  ApiRateLimitError,
-  ApiUnauthorizedError
-} = require('outlet-orm');
-
-try {
-  const post = await Post.findOrFail(999);
-} catch (err) {
-  if (err instanceof ApiNotFoundError)   console.log('Not found');
-  if (err instanceof ApiValidationError) console.log(err.errors);
-  if (err instanceof ApiRateLimitError)  console.log('Retry after', err.retryAfter, 's');
-}
-```
-
-Full error hierarchy: `ApiError` → `ApiResponseError` → `ApiNotFoundError` / `ApiValidationError` / `ApiUnauthorizedError` / `ApiForbiddenError` / `ApiServerError` / `ApiRateLimitError`; plus `ApiNetworkError` for timeouts.
-
-### Api Class Reference
-
-| Method | Description |
-|--------|-------------|
-| `Api.find(id)` | `GET {endpoint}/{id}` — returns `null` if 404 |
-| `Api.findOrFail(id)` | Like `find()`, throws `ApiNotFoundError` if not found |
-| `Api.all(params?)` | `GET {endpoint}` — returns array or `[]` on non-array response |
-| `Api.get(params?)` | Alias for `all()` |
-| `Api.create(data)` | `POST {endpoint}` — emits `creating`/`created` |
-| `instance.save()` | `PATCH {endpoint}/{id}` — emits `updating`/`updated` |
-| `instance.destroy()` | `DELETE {endpoint}/{id}` — emits `deleting`/`deleted` |
-| `Api.setDefaultAdapter(a)` | Set the global default adapter |
-| `Api.getDefaultAdapter()` | Get the global default adapter |
-| `Api.usingAdapter(a)` | Per-request adapter override |
-
----
-
-## 🛠️ CLI tools
-
-### outlet (unified CLI)
-
-All CLI commands are available through the single `outlet` entrypoint:
-
-```bash
-outlet --help
-```
-
-```
-outlet - Outlet ORM CLI
-
-Usage:
-  outlet <command> [args]
-
-Commands:
-  init                Project initialization
-  convert             SQL to model converter
-  migrate             Migration manager
-  reverse             Database reverse engineering
-  mcp                 Start MCP server
-  api import          Import API models from docs/specs
-  api diff            Compare API spec and generated models
-```
-
-Each sub-command can also be invoked via its legacy `outlet-<name>` alias (still available, e.g. `outlet-migrate`, `outlet-api-import`).
-
-### outlet init
-
-Initialises a new project with database configuration.
-
-```bash
-outlet init
-```
-
-Generates:
-- Configuration file `database/config.js`
-- `.env` file with settings
-- Example model
-- Usage file
-
-### outlet migrate
-
-Complete migration system.
-
-```bash
-# Create a migration
-outlet migrate make create_users_table
-
-# Run migrations
-outlet migrate migrate
-
-# See migration status
-outlet migrate status
-
-# Roll back the latest migration
-outlet migrate rollback --steps 1
-
-# Reset all migrations
-outlet migrate reset --yes
-
-# Refresh (reset + migrate)
-outlet migrate refresh --yes
-
-# Fresh (drop all + migrate)
-outlet migrate fresh --yes
-
-# Seeders
-outlet migrate make:seed UserSeeder
-outlet migrate seed
-outlet migrate seed --class UserSeeder
-```
-
-**Migration Features:**
-
-- ✅ Creation and management of migrations (create, alter, drop tables)
-- ✅ Column types: id, string, text, integer, boolean, date, datetime, timestamp, decimal, float, json, enum, uuid, foreignId
-- ✅ Modifiers: nullable, default, unique, index, unsigned, autoIncrement, comment, after, first
-- ✅ Foreign keys: foreign(), constrained(), onDelete(), onUpdate(), CASCADE
-- ✅ Index: index(), unique(), fullText()
-- ✅ Manipulation: renameColumn(), dropColumn(), dropTimestamps()
-- ✅ Reversible migrations: up() and down() methods
-- ✅ Batch tracking: Precise rollback by batch
-- ✅ Custom SQL: execute() for advanced commands
-
-### outlet convert
-
-Converts SQL schemas into ORM models.
-
-```bash
-outlet convert
-```
-
-**Options:**
-1. From a local SQL file
-2. From a connected database
-
-**Features:**
-- ✅ Automatic type and cast detection
-- ✅ Automatic generation of ALL relationships (belongsTo, hasMany, hasOne, belongsToMany)
-- ✅ Recursive relationships (auto-relationships)
-- ✅ Detection of sensitive fields (password, token, etc.)
-- ✅ Automatic timestamps support
-- ✅ Class names converted to PascalCase
-
-### outlet reverse
-
-Reverse-engineers a connected database into Outlet ORM models.
-
-```bash
-outlet reverse
-```
-
-### outlet mcp
-
-Starts the MCP server for AI editor integration.
-
-```bash
-outlet mcp
-# or via npx:
-npx outlet-mcp
-```
-
-### outlet api import
-
-Generates `ApiModel` classes from an OpenAPI 3.x spec or hosted documentation page.
-
-```bash
-# From a local OpenAPI spec file
-outlet api import --spec openapi.json --output ./models
-
-# From a remote OpenAPI spec URL
-outlet api import --spec https://api.example.com/openapi.json --output ./models --lang ts
-
-# From reference documentation (crawl + extract)
-outlet api import --doc https://docs.example.com/api --output ./models
-
-# With run-delta to compare against previous import
-outlet api import --doc https://docs.example.com/api --output ./models --run-delta
-```
-
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|--------|
-| `--spec <path\|url>` | OpenAPI 3.x spec (file or URL) | — |
-| `--doc <url>` | Reference documentation URL (crawl mode) | — |
-| `--output <dir>` | Output directory for generated models | `./models` |
-| `--lang [js\|ts]` | Output language | `js` |
-| `--auth [bearer\|basic\|apiKey\|oauth2]` | Auth strategy | — |
-| `--strategy [tag\|resource]` | Model grouping strategy | `tag` |
-| `--max-depth <n>` | Max crawl depth for `--doc` mode | `3` |
-| `--include-official-subdomains` | Include subdomains during crawl | `false` |
-| `--run-delta` | Write `_run-delta.json` comparing successive imports | `false` |
-
-**Artifacts produced** (in `--output` dir):
-- Generated model files (`.js` or `.ts`)
-- `_run-state.json` — state snapshot for incremental imports
-- `_coverage-report.json` — endpoint coverage metrics
-- `_run-delta.json` — diff vs previous run (with `--run-delta`)
-
-### outlet api diff
-
-Compares existing model files against an OpenAPI spec and reports divergences. Exits with code 1 on any divergence.
-
-```bash
-outlet api diff --spec openapi.json --models ./models
-```
-
-**Options:**
-
-| Flag | Description |
-|------|-------------|
-| `--spec <path\|url>` | OpenAPI 3.x spec (file or URL) |
-| `--models <dir>` | Directory containing generated models |
-
-## 🤖 AI Integration
-
-Outlet ORM includes a complete AI subsystem with multi-provider LLM support and ORM-specific AI features.
-
-📚 **[Complete AI documentation available in `/docs`](./docs/AI_BRIDGE.md)**
-
-### AI — Multi-Provider LLM Abstraction
-
-```javascript
-const { AIManager } = require('outlet-orm');
-
-const ai = new AIManager({
-  providers: {
-    openai: { api_key: process.env.OPENAI_API_KEY, model: 'gpt-4o' },
-    claude: { api_key: process.env.ANTHROPIC_API_KEY, model: 'claude-sonnet-4-20250514' },
-    ollama: { endpoint: 'http://localhost:11434', model: 'llama3' }
-  }
-});
-
-// Chat with any provider
-const response = await ai.chat('openai', [
-  { role: 'user', content: 'What is Node.js?' }
-]);
-
-// Fluent TextBuilder
-const { text } = await ai.text()
-  .using('openai', 'gpt-4o')
-  .withSystemPrompt('You are a helpful assistant.')
-  .withPrompt('Explain closures in JavaScript.')
-  .asText();
-
-// Stream responses
-for await (const chunk of ai.stream('claude', messages)) {
-  process.stdout.write(chunk.text || '');
-}
-
-// Embeddings, images, TTS, STT
-const embeddings = await ai.embeddings('openai', ['Hello world']);
-const image = await ai.image('openai', 'A sunset over mountains');
-```
-
-**Supported providers**: OpenAI, Claude, Gemini, Ollama, Grok, Mistral, ONN, Custom OpenAI, OpenRouter
-
-### AI Query Builder — Natural Language → SQL
-
-```javascript
-const { AIQueryBuilder } = require('outlet-orm');
-
-const qb = new AIQueryBuilder(ai, db);
-
-// Ask in natural language, get SQL + results
-const result = await qb.query('How many users signed up last month?');
-console.log(result.sql);     // SELECT COUNT(*) FROM users WHERE ...
-console.log(result.results); // [{ count: 42 }]
-
-// Generate SQL without executing
-const { sql } = await qb.toSql('Show me the top 5 users by post count');
-```
-
-### AI Seeder — Realistic Data Generation
-
-```javascript
-const { AISeeder } = require('outlet-orm');
-
-const seeder = new AISeeder(ai, db);
-
-// Generate and insert realistic data
-await seeder.seed('products', 20, {
-  domain: 'e-commerce',
-  locale: 'fr_FR',
-  description: 'Fashion store for young adults'
-});
-```
-
-### AI Query Optimizer
-
-```javascript
-const { AIQueryOptimizer } = require('outlet-orm');
-
-const optimizer = new AIQueryOptimizer(ai, db);
-const result = await optimizer.optimize(
-  'SELECT * FROM orders WHERE user_id IN (SELECT id FROM users WHERE status = "active")'
-);
-
-console.log(result.optimized);   // Rewritten SQL
-console.log(result.suggestions); // [{ type: 'index', impact: 'high', ... }]
-console.log(result.indexes);     // ['CREATE INDEX idx_...']
-```
-
-### MCP Server — AI Agent Integration
-
-```bash
-# Start MCP server for AI editors
-outlet mcp
-# or via npx:
-npx outlet-mcp
-```
-
-Configure your AI editor:
-
-```json
-{
-  "mcpServers": {
-    "outlet-orm": {
-      "command": "npx",
-      "args": ["outlet-mcp"]
-    }
-  }
-}
-```
-
-**13 MCP tools**: migrations, schema introspection, queries, seeds, backups, AI query, query optimization
-
-📖 Full documentation:
-- [AI Manager](docs/AI_BRIDGE.md) — Multi-provider LLM abstraction
-- [AI Query Builder](docs/AI_QUERY.md) — Natural language to SQL
-- [AI Seeder](docs/AI_SEEDER.md) — Realistic data generation
-- [AI Query Optimizer](docs/AI_OPTIMIZER.md) — SQL optimization
-- [AI Prompt Enhancer](docs/AI_PROMPT.md) — Schema/code generation
-- [MCP Server](docs/MCP.md) — AI agent integration
-- [AI Safety Guardrails](docs/AI_SAFETY.md) — Destructive operation protection
-
-## 📚 Documentation
-
-- [Migrations Guide](docs/MIGRATIONS.md)
-- [Migration Data Safety](docs/MIGRATION_DATA_SAFETY.md) — Auto-backups, drift detection, production gate, transform helpers
-- [SQL Conversion](docs/SQL_CONVERSION.md)
-- [Relation Detection](docs/RELATIONS_DETECTION.md)
-- [Quick Start Guide](docs/QUICKSTART.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [**TypeScript (complete)**](docs/TYPESCRIPT.md)
-- [**AI Integration (complete)**](docs/AI_BRIDGE.md)
-## 📘 TypeScript Support
-
-Outlet ORM v4.0.0 includes complete TypeScript definitions with support for **generics for typed model attributes**.
-
-### Typed models
-
-```typescript
-import { Model, HasManyRelation } from 'outlet-orm';
-
-interface UserAttributes {
-  id: number;
-  name: string;
-  email: string;
-  role: 'admin' | 'user';
-  created_at: Date;
-}
-
-class User extends Model<UserAttributes> {
-  static table = 'users';
-  static fillable = ['name', 'email', 'role'];
-
-  posts(): HasManyRelation<Post> {
-    return this.hasMany(Post, 'user_id');
-  }
-}
-
-// Type-safe property access
-const user = await User.find(1);
-const name: string = user.name;                     // ✅ Inferred type
-const role: 'admin' | 'user' = user.role;
-```
-
-### Migrations typedes
-
-```typescript
-import { MigrationInterface, Schema, TableBuilder } from 'outlet-orm';
-
-export const migration: MigrationInterface = {
-  name: 'create_users_table',
-  
-  async up(): Promise<void> {
-    await Schema.create('users', (table: TableBuilder) => {
+    await schema.create('users', (table) => {
       table.id();
       table.string('name');
       table.string('email').unique();
       table.timestamps();
+      table.softDeletes();
     });
-  },
-
-  async down(): Promise<void> {
-    await Schema.dropIfExists('users');
   }
-};
+
+  async down() {
+    await this.getSchema().dropIfExists('users');
+  }
+}
+
+module.exports = CreateUsersTable;
 ```
 
-📖 [Guide TypeScript complet](docs/TYPESCRIPT.md)
+### Migration base class
 
-## 🤝 Contributions
+La base `Migration` fournit aussi:
 
-Contributions are welcome! Feel free to open an issue or pull request.
+- `getSchema()`
+- `query(table)` / `table(table)` pour un `QueryBuilder` standalone en migration
+- `log()`, `info()`, `warn()` pour les logs structures
+- `shouldRun()` pour sauter une migration
+- `withinTransaction` pour encapsuler `up()` / `down()` dans une transaction
+- helpers de preservation de donnees: `transformData()`, `backupData()`, `restoreData()`
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+### MigrationManager
 
-## 📄 Licence
+`MigrationManager` prend en charge:
 
-MIT - See [LICENSE](LICENSE) for details.
+- installation de la table des migrations
+- execution des migrations pending
+- rollback par batch
+- reset / refresh / fresh
+- deploy non interactif pour CI/CD
+- `resolve --applied` et `resolve --rolled-back`
+- detection de drift via checksum
+- detection de migrations manquantes sur disque
+- colonnes de suivi `_migrations`: `started_at`, `finished_at`, `rolled_back_at`, etc.
+- advisory locks en deploy / resolve sur MySQL et PostgreSQL
 
----
+### Seeder et SeederManager
 
-Created by [omgbwa-yasse](https://github.com/omgbwa-yasse)
+Le package fournit:
+
+- `Seeder`
+- `SeederManager`
+- scaffolding `make:seed`
+- `seed` / `db:seed`
+- ciblage d'une classe via `--seeder` / `--class`
+
+## Backups, restauration et securite des migrations
+
+La partie backup n'est pas un add-on anecdotique: elle est directement integree au cycle des migrations destructives.
+
+### Capacites backup
+
+- backup complet `full`
+- backup partiel `partial`
+- journal SQL base sur le query log `journal`
+- format `sql` ou `json`
+- chiffrement via `BackupEncryption`
+- planification via `BackupScheduler`
+- sockets de commande via `BackupSocketServer` et `BackupSocketClient`
+
+### Securite des migrations destructives
+
+Fonctions prises en charge par le package:
+
+- auto-backup avant `fresh`, `reset`, `refresh`, `rollback`
+- retention des auto-backups par commande
+- restore automatise via `restore:auto`
+- historique de restauration
+- protection production via `OUTLET_PRODUCTION_CONFIRM=1` et confirmation du nom de base
+- `--skip-auto-backup` ignore en production
+- exit codes normalises
+
+Les comportements sont verifies par:
+
+- [tests/Backup.test.js](tests/Backup.test.js)
+- [tests/BackupEncryption.test.js](tests/BackupEncryption.test.js)
+- [tests/BackupSocket.test.js](tests/BackupSocket.test.js)
+- [tests/MigrationDataPreservation.test.js](tests/MigrationDataPreservation.test.js)
+- [tests/MigrationDeployOptions.test.js](tests/MigrationDeployOptions.test.js)
+- [tests/MigrationExtraOptions.test.js](tests/MigrationExtraOptions.test.js)
+
+## Reverse engineering, init et conversion
+
+Le package embarque trois approches complementaires pour accelerer l'adoption.
+
+### `outlet-init`
+
+But:
+
+- initialiser rapidement un projet outlet-orm
+- generer des dossiers, un `.env`, un fichier de config, des migrations et seeders
+- mode interactif classique
+- mode prompt AI via `--prompt`
+
+Exemples:
+
+```bash
+outlet-init
+```
+
+```bash
+outlet-init --prompt "Blog avec utilisateurs, posts, commentaires" --driver sqlite
+```
+
+### `outlet-convert`
+
+But:
+
+- parser du SQL `CREATE TABLE`
+- inferer des casts JS
+- proposer les `fillable`, `hidden` et relations
+- detecter les tables pivot pour `belongsToMany`
+
+### `outlet-reverse`
+
+But:
+
+- introspecter une base existante ou un dump SQL
+- generer des migrations basculees sur le schema builder
+- generer des seeders a partir des donnees
+
+Le reverse engineering couvre MySQL, PostgreSQL et SQLite dans le parseur des `CREATE TABLE`, y compris plusieurs types, defaults et foreign keys. Voir [tests/Reverse.test.js](tests/Reverse.test.js).
+
+## Objets SQL avances et transactions
+
+Le package ne se limite pas aux tables.
+
+### Builders d'objets SQL
+
+Exports publics:
+
+- `View`
+- `Trigger`
+- `Procedure`
+- `Function`
+- `Transaction`
+- `useSchema(schemaOrDb)`
+
+Capacites exposees dans `Schema` et les builders associes:
+
+- `createView`, `createOrReplaceView`, `dropView`, `dropViewIfExists`, `hasView`, `getViews`
+- `createTrigger`, `dropTrigger`, `dropTriggerIfExists`, `hasTrigger`, `getTriggers`
+- `createProcedure`, `dropProcedure`, `dropProcedureIfExists`, `hasProcedure`
+- `createFunction`, `dropFunction`, `dropFunctionIfExists`, `hasFunction`
+
+Exemple: [examples/migrations/create_views_and_triggers.js](examples/migrations/create_views_and_triggers.js).
+
+### Transactions avancees
+
+`DatabaseConnection` et `Transaction` couvrent:
+
+- `beginTransaction()`
+- `commit()`
+- `rollback()`
+- `transaction(callback)`
+- `afterCommit(callback)`
+- `savepoint(name)`
+- `rollbackTo(name)`
+- `releaseSavepoint(name)`
+- `setIsolationLevel(level)`
+
+Constantes exportees:
+
+- `IsolationLevel.READ_UNCOMMITTED`
+- `IsolationLevel.READ_COMMITTED`
+- `IsolationLevel.REPEATABLE_READ`
+- `IsolationLevel.SERIALIZABLE`
+
+En cas de capacite non supportee, le package expose `UnsupportedCapabilityError`.
+
+## API Layer HTTP / GraphQL
+
+La couche API dans [src/Api](src/Api) reproduit une experience proche des modeles SQL, mais au-dessus de HTTP.
+
+### Classes principales
+
+- `Api`
+- `ApiModel`
+- `ApiAdapter`
+- `createAdapter()`
+- `ApiGraphQL`
+- `MockAdapter`
+- `InterceptorManager`
+- `ApiCache`
+- `ApiValidator`
+- `ApiPaginator`
+- `ApiQueryBuilder`
+
+### Capacites REST
+
+- CRUD via `find`, `findOrFail`, `all`, `get`, `create`, `save`, `destroy`
+- query builder HTTP avec `where`, `orWhere`, `whereIn`, `whereNull`, `orderBy`, `limit`, `offset`, `with`, `select`
+- pagination page/cursor/offset et iteration async
+- auth `bearer`, `basic`, `apiKey`, `cookie`, `oauth2`, `dynamicHeaders`
+- logs de requete et `toRequest()` pour debugger sans envoyer
+- upload avec progression quand `XMLHttpRequest` est disponible
+- validation de payload / response
+- hierarchie d'erreurs typee (`ApiError`, `ApiValidationError`, `ApiRateLimitError`, etc.)
+
+### Cache, offline, realtime et tests
+
+Le package ajoute en plus:
+
+- strategies de cache: cache-first, network-first, stale-while-revalidate, cache-only, network-only
+- stores: memory, localStorage, sessionStorage
+- queue offline via `MutationQueue`
+- wrappers de stockage offline
+- watchers / event stream / websocket
+- adapter mock complet pour les tests
+- intercepteurs request / response, retry et circuit breaker
+
+Les suites liees sont visibles dans:
+
+- [tests/ApiLayer.test.js](tests/ApiLayer.test.js)
+- [tests/ApiLayerIntegration.test.js](tests/ApiLayerIntegration.test.js)
+- [tests/ApiCache.test.js](tests/ApiCache.test.js)
+- [tests/ApiOffline.test.js](tests/ApiOffline.test.js)
+- [tests/ApiInterceptors.test.js](tests/ApiInterceptors.test.js)
+- [tests/ApiGraphQL.test.js](tests/ApiGraphQL.test.js)
+- [tests/ApiValidation.test.js](tests/ApiValidation.test.js)
+- [tests/ApiPagination.test.js](tests/ApiPagination.test.js)
+- [tests/ApiMock.test.js](tests/ApiMock.test.js)
+
+## Import et diff de specs API
+
+Le package propose aussi une chaine de generation de modeles API depuis des specs ou de la documentation.
+
+### `outlet api import`
+
+Commande ciblee pour:
+
+- OpenAPI / Swagger
+- Postman Collection
+- GraphQL introspection
+- RAML
+- API Blueprint
+- extraction depuis une documentation de reference via `--doc`
+
+Options notables visibles dans [bin/api/import.js](bin/api/import.js):
+
+- `--spec <path|url>`
+- `--doc <path|url>`
+- `--output <dir>`
+- `--lang js|ts`
+- `--auth bearer|basic|apiKey|oauth2`
+- `--strategy tag|resource`
+- `--format auto|openapi|postman|raml|apiblueprint|graphql`
+- `--max-depth <n>`
+- `--include-official-subdomains true|false`
+- `--run-delta`
+
+Le pipeline gere aussi des artefacts d'execution comme les snapshots, delta de run et diagnostics de couverture.
+
+### `outlet api diff`
+
+Compare un spec OpenAPI et un dossier de modeles generes:
+
+- detection de modeles manquants
+- detection de modeles en trop
+- comparaison des endpoints
+- comparaison des champs `fillable`
+
+## AI, MCP et automatisation
+
+La couche AI couvre deux axes: integration LLM generale et automatisation orientee ORM.
+
+### Exports AI publics
+
+- `AIManager` et son alias `Ai`
+- facade `AIFacade`
+- `TextBuilder`
+- contrats: `ChatProviderContract`, `EmbeddingsProviderContract`, `ImageProviderContract`, `AudioProviderContract`, `ModelsProviderContract`, `ToolContract`
+- providers: `OpenAIProvider`, `OllamaProvider`, `OllamaTurboProvider`, `ClaudeProvider`, `GeminiProvider`, `GrokProvider`, `MistralProvider`, `OnnProvider`, `CustomOpenAIProvider`
+- support: `StreamChunk`, `Message`, `Document`, `ProviderError`, `ToolRegistry`, `ToolChatRunner`, `SystemInfoTool`
+- composants metier: `AIQueryBuilder`, `AISeeder`, `AIQueryOptimizer`, `AIPromptEnhancer`
+- composants historiques / utilitaires: `MCPServer`, `AISafetyGuardrails`, `PromptGenerator`
+
+### Ce que la couche AI sait faire
+
+- chat et generation de texte via providers multiples
+- normalisation chat / embeddings / images / audio
+- tool calling
+- validation JSON schema
+- securisation de fichiers et payloads AI
+- NL->SQL via `AIQueryBuilder`
+- suggestions d'optimisation SQL via `AIQueryOptimizer`
+- generation de donnees realistes via `AISeeder`
+- generation de schema / modele / migration via `AIPromptEnhancer`
+- generation initiale projet / blueprints via `PromptGenerator`
+
+Les suites de reference sont:
+
+- [tests/AI.test.js](tests/AI.test.js)
+- [tests/AiBridge.test.js](tests/AiBridge.test.js)
+
+### MCP Server
+
+`outlet-mcp` demarre le serveur MCP sur stdio.
+
+Options:
+
+- `--project`, `-p <path>`
+- `--no-safety`
+
+Tools exposes par defaut dans [src/AI/MCPServer.js](src/AI/MCPServer.js):
+
+- `migrate_status`
+- `migrate_run`
+- `migrate_rollback`
+- `migrate_reset`
+- `migrate_make`
+- `seed_run`
+- `schema_introspect`
+- `query_execute`
+- `model_list`
+- `backup_create`
+- `backup_restore`
+- `ai_query`
+- `query_optimize`
+
+Les actions destructives sont soumises a des garde-fous de consentement si la securite est activee.
+
+## CLI de reference
+
+### Entree unifiee `outlet`
+
+```bash
+outlet <command> [args]
+```
+
+Sous-commandes routees par [bin/outlet.js](bin/outlet.js):
+
+| Commande | Role |
+| --- | --- |
+| `outlet init` | initialise un projet |
+| `outlet convert` | convertit du SQL vers des modeles |
+| `outlet migrate` | lance le gestionnaire de migrations |
+| `outlet reverse` | reverse engineering DB / SQL |
+| `outlet mcp` | demarre le serveur MCP |
+| `outlet api import` | importe des modeles API depuis specs / docs |
+| `outlet api diff` | compare spec et modeles |
+
+Les aliases historiques restent exposes par `package.json`:
+
+- `outlet-init`
+- `outlet-convert`
+- `outlet-migrate`
+- `outlet-reverse`
+- `outlet-mcp`
+- `outlet-api-import`
+- `outlet-api-diff`
+
+### `outlet-migrate`
+
+Sous-commandes documentees par l'implmentation courante:
+
+| Commande | Role |
+| --- | --- |
+| `install` | cree seulement la table des migrations |
+| `migrate` / `up` | execute les migrations pending |
+| `deploy` | applique les migrations pending sans interaction, pour CI/CD |
+| `resolve --applied=<name>` | marque une migration comme appliquee |
+| `resolve --rolled-back=<name>` | marque une migration comme rollback |
+| `rollback --steps=N` | annule un ou plusieurs batches |
+| `reset --yes` | rollback total |
+| `refresh --yes` | reset + migrate |
+| `fresh --yes` | drop all + migrate |
+| `status` | etat des migrations |
+| `seed` / `db:seed` | execute les seeders |
+| `make <name>` | scaffold migration |
+| `make:seed <name>` | scaffold seeder |
+| `make:transform <name>` | scaffold migration de transformation de donnees |
+| `restore:auto [--backup=<file>]` | restaure un auto-backup |
+| `backups:list [--json]` | liste les auto-backups |
+
+Flags importants:
+
+- `--pretend`
+- `--allow-failed`
+- `--step`
+- `--steps=N` / `-s N`
+- `--batch=N`
+- `--seed`
+- `--seeder=Name` / `--class=Name`
+- `--pending`
+- `--create=<table>`
+- `--table=<table>`
+- `--skip-auto-backup`
+- `--allow-drift`
+- `--backup=<file>`
+- `--json`
+- `--yes` / `-y`
+
+Variables d'environnement utiles:
+
+- `OUTLET_PRODUCTION_CONFIRM=1`
+- `OUTLET_ALLOW_DRIFT=1`
+
+## TypeScript
+
+Le package publie des declarations dans [types/index.d.ts](types/index.d.ts). Les exemples TS sont dans:
+
+- [examples/typescript-example.ts](examples/typescript-example.ts)
+- [examples/typescript-migration.ts](examples/typescript-migration.ts)
+- [examples/typescript-typed-model.ts](examples/typescript-typed-model.ts)
+
+Exemple minimal:
+
+```ts
+import { Model, DatabaseConnection } from 'outlet-orm';
+
+const db = new DatabaseConnection({ driver: 'mysql', host: 'localhost', database: 'app' });
+
+class User extends Model {
+  static readonly table = 'users';
+  static readonly connection = db;
+}
+```
+
+Note pratique: la declaration TypeScript couvre la majeure partie de la surface publique, mais les aides introduites tres recemment cote JavaScript doivent parfois etre verifiees aussi dans [src/QueryBuilder.js](src/QueryBuilder.js) et le [CHANGELOG.md](CHANGELOG.md) si vous utilisez les toutes dernieres additions de parite.
+
+## Exemples et validation
+
+Reperes utiles dans le depot:
+
+- [examples/usage.js](examples/usage.js) : CRUD, relations, eager loading, pagination
+- [examples/hidden-attributes-demo.js](examples/hidden-attributes-demo.js) : `hidden`, `withHidden`, `withoutHidden`
+- [examples/nested-demo.js](examples/nested-demo.js) : relations imbriquees
+- [examples/polymorphic-demo.js](examples/polymorphic-demo.js) : relations polymorphes
+- [examples/relations-usage.js](examples/relations-usage.js) : relations classiques
+- [examples/migrations](examples/migrations) : migrations de reference
+- [examples/simplified-architecture](examples/simplified-architecture) : mini architecture d'exemple
+- [labo/run.js](labo/run.js) : scenario runner laboratoire
+- [tests](tests) : la cartographie comportementale la plus fiable du package
+
+Commandes de validation du depot:
+
+```bash
+npm test --silent
+```
+
+```bash
+npm run test:lab
+```
+
+```bash
+npm run lint
+```
+
+## Notes utiles et limites
+
+- Le package est tres large: pour un usage simple, commencez par `DatabaseConnection`, `Model`, `Schema`, `Migration` et `Seeder`.
+- Les drivers SQL sont charges de maniere lazy: l'erreur d'absence de driver apparait au moment de la connexion, pas a l'installation du package principal.
+- La CLI des migrations sait lire `database/config.js`, mais bascule aussi sur `.env` et `DATABASE_URL`.
+- La couche API HTTP est independante de la couche SQL: vous pouvez utiliser l'une sans l'autre.
+- La couche AI est optionnelle mais intimement integree aux workflows ORM, CLI et MCP.
+- Les operations destructives sont volontairement plus strictes en production.
+- Le changelog est dense et utile: [CHANGELOG.md](CHANGELOG.md) documente finement les ajouts par version, notamment v13+ pour l'API Layer, v14+ pour les migrations avancees et v15+ pour les helpers de compatibilite.

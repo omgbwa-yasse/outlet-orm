@@ -984,7 +984,7 @@ class Blueprint {
    * Add a foreign key constraint
    */
   foreign(columnName) {
-    const foreignKey = new ForeignKeyDefinition(columnName);
+    const foreignKey = new ForeignKeyDefinition(columnName, this.tableName);
     this.commands.push({ type: 'foreign', foreignKey });
     return foreignKey;
   }
@@ -1483,12 +1483,13 @@ class ColumnDefinition {
  * Foreign Key Definition
  */
 class ForeignKeyDefinition {
-  constructor(column) {
+  constructor(column, ownerTable = null) {
     this.column = column;
+    this._ownerTable = ownerTable;
     this._ref = { table: null, column: 'id' };
     this._onDelete = null;
     this._onUpdate = null;
-    this._autoName = null;
+    this._autoName = ownerTable ? `${ownerTable}_${column}_foreign` : null;
     this._customName = null;
   }
 
@@ -1499,7 +1500,9 @@ class ForeignKeyDefinition {
 
   on(table) {
     this._ref.table = table;
-    this._autoName = `${table}_${this.column}_foreign`;
+    if (!this._autoName) {
+      this._autoName = `${table}_${this.column}_foreign`;
+    }
     return this;
   }
 
@@ -1511,7 +1514,9 @@ class ForeignKeyDefinition {
       const pluralize = require('pluralize');
       this._ref.table = pluralize(this.column.replace(/_id$/, ''));
     }
-    this._autoName = `${this._ref.table}_${this.column}_foreign`;
+    if (!this._autoName) {
+      this._autoName = `${this._ref.table}_${this.column}_foreign`;
+    }
     return this;
   }
 

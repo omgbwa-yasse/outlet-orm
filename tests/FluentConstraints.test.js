@@ -155,14 +155,14 @@ describe('Named FK constraint', () => {
     bp.foreign('user_id').references('id').on('users').name('fk_orders_user');
     const sql = bp.getConstraints();
     expect(sql).toContain('CONSTRAINT `fk_orders_user` FOREIGN KEY');
-    expect(sql).not.toContain('users_user_id_foreign');
+    expect(sql).not.toContain('orders_user_id_foreign');
   });
 
   test('auto-name is generated via on() when no custom name set', () => {
     const bp = new Blueprint('orders', mockConn('mysql'));
     bp.foreign('user_id').references('id').on('users');
     const sql = bp.getConstraints();
-    expect(sql).toContain('CONSTRAINT `users_user_id_foreign` FOREIGN KEY');
+    expect(sql).toContain('CONSTRAINT `orders_user_id_foreign` FOREIGN KEY');
   });
 
   test('custom FK name applied in toAlterSql()', () => {
@@ -237,6 +237,14 @@ describe('dropConstraint and dropCheck', () => {
   test('dropConstraint with invalid identifier throws', () => {
     const bp = new Blueprint('orders', mockConn('mysql'));
     expect(() => bp.dropConstraint('bad name!')).toThrow();
+  });
+
+  test('dropForeign uses the owning table auto-name convention', () => {
+    const bp = new Blueprint('orders', mockConn('mysql'));
+    bp.isModifying = true;
+    bp.dropForeign('user_id');
+    const stmts = bp.toAlterSql();
+    expect(stmts[0]).toBe('ALTER TABLE `orders` DROP FOREIGN KEY `orders_user_id_foreign`');
   });
 });
 

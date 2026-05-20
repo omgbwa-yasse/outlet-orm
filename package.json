@@ -1,6 +1,6 @@
 {
   "name": "outlet-orm",
-  "version": "15.1.2",
+  "version": "15.2.0",
   "description": "An Active Record ORM for Node.js with support for MySQL, PostgreSQL, and SQLite",
   "main": "src/index.js",
   "types": "types/index.d.ts",
@@ -31,6 +31,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "lab": "node labo/run.js",
+    "test:lab": "jest tests/Labo.test.js --runInBand",
     "check:version": "node scripts/check-changelog-version.js",
     "prepublishOnly": "npm run check:version",
     "lint": "eslint \"{src,bin}/**/*.js\"",

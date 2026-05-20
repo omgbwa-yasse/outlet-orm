@@ -122,4 +122,130 @@ describe('New bypass / compatibility helpers', () => {
       expect(() => m.warn('hello')).not.toThrow();
     });
   });
+
+  describe('Migration schema guard helpers', () => {
+    test('addColumnIfMissing adds the column and returns true when absent', async () => {
+      const schema = {
+        hasColumn: jest.fn().mockResolvedValue(false),
+        table: jest.fn(async (_tableName, callback) => {
+          const table = { string: jest.fn() };
+          callback(table);
+          expect(table.string).toHaveBeenCalledWith('nickname');
+        })
+      };
+      const m = new Migration({});
+
+      const added = await m.addColumnIfMissing(schema, 'users', 'nickname', (table) => {
+        table.string('nickname');
+      });
+
+      expect(added).toBe(true);
+      expect(schema.hasColumn).toHaveBeenCalledWith('users', 'nickname');
+      expect(schema.table).toHaveBeenCalledWith('users', expect.any(Function));
+    });
+
+    test('addColumnIfMissing skips and returns false when present', async () => {
+      const schema = {
+        hasColumn: jest.fn().mockResolvedValue(true),
+        table: jest.fn()
+      };
+      const m = new Migration({});
+
+      const added = await m.addColumnIfMissing(schema, 'users', 'nickname', () => {});
+
+      expect(added).toBe(false);
+      expect(schema.table).not.toHaveBeenCalled();
+    });
+
+    test('dropColumnIfExists drops the column and returns true when present', async () => {
+      const schema = {
+        hasColumn: jest.fn().mockResolvedValue(true),
+        table: jest.fn(async (_tableName, callback) => {
+          const table = { dropColumn: jest.fn() };
+          callback(table);
+          expect(table.dropColumn).toHaveBeenCalledWith('nickname');
+        })
+      };
+      const m = new Migration({});
+
+      const dropped = await m.dropColumnIfExists(schema, 'users', 'nickname');
+
+      expect(dropped).toBe(true);
+      expect(schema.hasColumn).toHaveBeenCalledWith('users', 'nickname');
+      expect(schema.table).toHaveBeenCalledWith('users', expect.any(Function));
+    });
+
+    test('dropColumnIfExists skips and returns false when absent', async () => {
+      const schema = {
+        hasColumn: jest.fn().mockResolvedValue(false),
+        table: jest.fn()
+      };
+      const m = new Migration({});
+
+      const dropped = await m.dropColumnIfExists(schema, 'users', 'nickname');
+
+      expect(dropped).toBe(false);
+      expect(schema.table).not.toHaveBeenCalled();
+    });
+
+    test('dropForeignIfExists delegates to dropForeign', async () => {
+      const schema = {
+        table: jest.fn(async (_tableName, callback) => {
+          const table = { dropForeign: jest.fn() };
+          callback(table);
+          expect(table.dropForeign).toHaveBeenCalledWith(['user_id']);
+        })
+      };
+      const m = new Migration({});
+
+      await expect(m.dropForeignIfExists(schema, 'posts', ['user_id'])).resolves.toBeUndefined();
+      expect(schema.table).toHaveBeenCalledWith('posts', expect.any(Function));
+    });
+
+    test('dropForeignIfExists ignores common missing-foreign-key errors', async () => {
+      const schema = {
+        table: jest.fn().mockRejectedValue(new Error('Can\'t DROP \'posts_user_id_foreign\'; check that column/key exists'))
+      };
+      const m = new Migration({});
+
+      await expect(m.dropForeignIfExists(schema, 'posts', ['user_id'])).resolves.toBeUndefined();
+    });
+
+    test('dropForeignIfExists rethrows unrelated errors', async () => {
+      const schema = {
+        table: jest.fn().mockRejectedValue(new Error('permission denied'))
+      };
+      const m = new Migration({});
+
+      await expect(m.dropForeignIfExists(schema, 'posts', ['user_id'])).rejects.toThrow('permission denied');
+    });
+
+    test('dropNamedForeignIfExists executes ALTER TABLE DROP FOREIGN KEY', async () => {
+      const connection = {
+        execute: jest.fn().mockResolvedValue(undefined)
+      };
+      const m = new Migration(connection);
+
+      await expect(m.dropNamedForeignIfExists('posts', 'fk_posts_user')).resolves.toBeUndefined();
+      expect(connection.execute).toHaveBeenCalledWith('ALTER TABLE `posts` DROP FOREIGN KEY `fk_posts_user`');
+    });
+
+    test('dropNamedForeignIfExists ignores common missing-foreign-key errors', async () => {
+      const connection = {
+        execute: jest.fn().mockRejectedValue(new Error('Can\'t DROP \'fk_posts_user\'; check that column/key exists'))
+      };
+      const m = new Migration(connection);
+
+      await expect(m.dropNamedForeignIfExists('posts', 'fk_posts_user')).resolves.toBeUndefined();
+    });
+
+    test('dropNamedForeignIfExists rethrows unrelated errors', async () => {
+      const connection = {
+        execute: jest.fn().mockRejectedValue(new Error('permission denied'))
+      };
+      const m = new Migration(connection);
+
+      await expect(m.dropNamedForeignIfExists('posts', 'fk_posts_user')).rejects.toThrow('permission denied');
+    });
+  });
 });

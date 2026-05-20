@@ -59,6 +59,98 @@ class Migration {
   }
 
   /**
+   * Add a column only when it does not already exist.
+   *
+   * @param {object} schema
+   * @param {string} tableName
+   * @param {string} columnName
+   * @param {(table: any) => void} applyColumn
+   * @returns {Promise<boolean>}
+   */
+  async addColumnIfMissing(schema, tableName, columnName, applyColumn) {
+    if (await schema.hasColumn(tableName, columnName)) {
+      return false;
+    }
+
+    await schema.table(tableName, (table) => {
+      applyColumn(table);
+    });
+
+    return true;
+  }
+
+  /**
+   * Drop a column only when it exists.
+   *
+   * @param {object} schema
+   * @param {string} tableName
+   * @param {string} columnName
+   * @returns {Promise<boolean>}
+   */
+  async dropColumnIfExists(schema, tableName, columnName) {
+    if (!(await schema.hasColumn(tableName, columnName))) {
+      return false;
+    }
+
+    await schema.table(tableName, (table) => {
+      table.dropColumn(columnName);
+    });
+
+    return true;
+  }
+
+  /**
+   * Drop a foreign key and ignore the common "already missing" errors emitted
+   * by different drivers.
+   *
+   * @param {object} schema
+   * @param {string} tableName
+   * @param {string|string[]} columns
+   * @returns {Promise<void>}
+   */
+  async dropForeignIfExists(schema, tableName, columns) {
+    try {
+      await schema.table(tableName, (table) => {
+        table.dropForeign(columns);
+      });
+    } catch (error) {
+      if (!error.message || (
+        !error.message.includes('check that column/key exists') &&
+        !error.message.includes('Can\'t DROP') &&
+        !error.message.includes('Unknown') &&
+        !error.message.includes('not found') &&
+        !error.message.includes('does not exist')
+      )) {
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Drop a named foreign key and ignore the common "already missing" errors
+   * emitted by different drivers.
+   *
+   * @param {string} tableName
+   * @param {string} foreignKeyName
+   * @returns {Promise<void>}
+   */
+  async dropNamedForeignIfExists(tableName, foreignKeyName) {
+    try {
+      await this.execute(`ALTER TABLE \`${tableName}\` DROP FOREIGN KEY \`${foreignKeyName}\``);
+    } catch (error) {
+      if (!error.message || (
+        !error.message.includes('check that column/key exists') &&
+        !error.message.includes('Can\'t DROP') &&
+        !error.message.includes('Unknown') &&
+        !error.message.includes('not found') &&
+        !error.message.includes('does not exist')
+      )) {
+        throw error;
+      }
+    }
+  }
+
+  /**
    * Fluent query builder bound to a table — convenience wrapper around
    * `this.connection.from(table)`. Lets migrations run reads/writes without
    * hand-crafting the connection's internal `{ wheres: [{ type: 'basic', ... }] }`

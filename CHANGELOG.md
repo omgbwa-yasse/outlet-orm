@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [15.2.0] — 2026-05-20
+
+### ✨ Safer schema and migration workflows
+
+- Added safer idempotent migration helpers around schema evolution, including conditional column changes and foreign-key removal helpers, to reduce failures when rerunning or backfilling migrations.
+- Improved fluent foreign-key auto-naming so generated constraint names are derived from the owning table, making schema definitions more predictable across migrations.
+- Added the new AI usage logs table update migration to cover the latest schema changes in the AI logging area.
+
+### ✅ Tests and tooling
+
+- Expanded regression coverage for fluent constraints, bypass helpers, and the new labo scenario flow.
+- Added `lab` and `test:lab` scripts to run the local labo harness and its dedicated Jest coverage.
+
+### 📚 Documentation
+
+- Reworked the package documentation and introduced the publishable `skills/outlet-orm` skill set with detailed English references for models, queries, relations, migrations, backups, API, AI, CLI, advanced surfaces, seeds, and TypeScript.
+
 ## [15.1.2] — 2026-05-19
 
 ### ✨ New helper / bypass APIs
