@@ -59,6 +59,43 @@ class Migration {
   }
 
   /**
+   * Fluent query builder bound to a table — convenience wrapper around
+   * `this.connection.from(table)`. Lets migrations run reads/writes without
+   * hand-crafting the connection's internal `{ wheres: [{ type: 'basic', ... }] }`
+   * structure.
+   *
+   *   await this.query('users').where('id', userId).update({ active: 1 });
+   *   const rows = await this.query('users').where('email', 'x@y').get();
+   *
+   * @param {string} tableName
+   * @returns {import('../QueryBuilder')}
+   */
+  query(tableName) {
+    return this.connection.from(tableName);
+  }
+
+  /** Alias of {@link query}. */
+  table(tableName) {
+    return this.connection.from(tableName);
+  }
+
+  /**
+   * Lightweight migration logger. Silent when the process is running under
+   * Jest or `NODE_ENV=test` to keep test output clean. Otherwise prints to
+   * stdout with a `[migration]` tag. Subclasses can override these for custom
+   * formatting.
+   */
+  log(...args) {
+    if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) return;
+    console.log('[migration]', ...args);
+  }
+  info(...args) { this.log(...args); }
+  warn(...args) {
+    if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) return;
+    console.warn('[migration]', ...args);
+  }
+
+  /**
    * Snapshot rows from `table` (optionally a subset of columns) so they can
    * be restored later if a transformation fails. Returns the in-memory array
    * of rows; callers may persist it as JSON if desired.

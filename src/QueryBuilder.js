@@ -991,6 +991,15 @@ class QueryBuilder {
    * @returns {Promise<any>}
    */
   async update(attributes) {
+    if (this._isStandalone) {
+      this._assertNotConsumed();
+      this._consumed = true;
+      return this._standaloneConnection.update(
+        this._standaloneSource,
+        { ...attributes },
+        this.buildQuery()
+      );
+    }
     // Apply fillable guard: only allow fields listed in model.fillable (if defined)
     const fillable = this.model.fillable || [];
     const safeAttributes = fillable.length > 0
@@ -1028,6 +1037,14 @@ class QueryBuilder {
    * @returns {Promise<any>}
    */
   async delete() {
+    if (this._isStandalone) {
+      this._assertNotConsumed();
+      this._consumed = true;
+      return this._standaloneConnection.delete(
+        this._standaloneSource,
+        this.buildQuery()
+      );
+    }
     return this.model.connection.delete(
       this.model.table,
       this.buildQuery()
@@ -1041,6 +1058,16 @@ class QueryBuilder {
    * @returns {Promise<any>}
    */
   async increment(column, amount = 1) {
+    if (this._isStandalone) {
+      this._assertNotConsumed();
+      this._consumed = true;
+      return this._standaloneConnection.increment(
+        this._standaloneSource,
+        column,
+        this.buildQuery(),
+        amount
+      );
+    }
     return this.model.connection.increment(
       this.model.table,
       column,
@@ -1056,6 +1083,16 @@ class QueryBuilder {
    * @returns {Promise<any>}
    */
   async decrement(column, amount = 1) {
+    if (this._isStandalone) {
+      this._assertNotConsumed();
+      this._consumed = true;
+      return this._standaloneConnection.decrement(
+        this._standaloneSource,
+        column,
+        this.buildQuery(),
+        amount
+      );
+    }
     return this.model.connection.decrement(
       this.model.table,
       column,

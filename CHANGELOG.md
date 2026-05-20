@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [15.1.2] — 2026-05-19
+
+### ✨ New helper / bypass APIs
+
+Adds officially-supported alternatives for patterns that previously had to be worked around inside migration files.
+
+- **`Schema.hasIndex(table, indexName)`** (alias **`indexExists`**): driver-aware index existence check for MySQL (`information_schema.statistics`), PostgreSQL (`pg_indexes`) and SQLite (`pragma_index_list`). Removes the need for `try/catch` around `CREATE INDEX` based on MySQL error strings.
+- **`Blueprint.timestamps()` overloads** — three call styles, all backwards-compatible:
+  - `timestamps()` → `CURRENT_TIMESTAMP` defaults on both columns plus `ON UPDATE CURRENT_TIMESTAMP` on `updated_at` (Laravel-style default).
+  - `timestamps(useCurrent, useCurrentOnUpdate)` → Knex-style two-boolean form.
+  - `timestamps({ useCurrent, useCurrentOnUpdate, nullable })` → explicit object form.
+  - `timestamps(true)` (legacy single-boolean nullable form) is preserved.
+- **`Schema.dropIndex({ name: 'idx_literal' })`**: accept a literal index name without the auto-generated `${table}_${cols}_index` convention. String/array forms still work unchanged.
+- **`Migration.query(table)` / `Migration.table(table)`**: shortcut returning a standalone `QueryBuilder` (`this.connection.from(table)`) so migrations can update/insert data with the fluent builder instead of hand-built `{ wheres: [...] }` query objects.
+- **`Migration.log/info/warn(...)`**: structured migration logging that is automatically silenced under Jest (`NODE_ENV=test` or `JEST_WORKER_ID`), so production migrations stay informative without polluting test output.
+- **`QueryBuilder` standalone mode**: `db.from(table).update(...)`, `.delete()`, `.increment()`, `.decrement()` now work without a backing `Model`, enabling data-mutation in migrations and ad-hoc scripts.
+
 ## [15.1.1] — 2026-05-19
 
 ### 🐛 Fixes

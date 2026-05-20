@@ -218,6 +218,60 @@ class Schema {
     return this.hasColumn(tableName, columnName);
   }
 
+  /**
+   * Check if a named index exists on a table.
+   * Useful for guarding `CREATE INDEX` / `DROP INDEX` calls in idempotent
+   * migrations instead of catching dialect-specific error strings.
+   *
+   * @param {string} tableName
+   * @param {string} indexName
+   * @returns {Promise<boolean>}
+   */
+  async hasIndex(tableName, indexName) {
+    const driver = this.connection.config.driver;
+    const RawExpression = require('../RawExpression');
+    let rows;
+
+    switch (driver) {
+    case 'mysql':
+      rows = await this.connection
+        .from('information_schema.statistics')
+        .selectRaw('COUNT(1) AS cnt')
+        .where('table_schema', new RawExpression('DATABASE()'))
+        .where('table_name', tableName)
+        .where('index_name', indexName)
+        .get();
+      break;
+    case 'postgres':
+    case 'postgresql':
+      rows = await this.connection
+        .from('pg_indexes')
+        .selectRaw('COUNT(1) AS cnt')
+        .where('schemaname', 'public')
+        .where('tablename', tableName)
+        .where('indexname', indexName)
+        .get();
+      break;
+    case 'sqlite': {
+      const escapedTableName = String(tableName).replace(/'/g, "''");
+      rows = await this.connection
+        .from(new RawExpression(`pragma_index_list('${escapedTableName}')`))
+        .selectRaw('COUNT(1) AS cnt')
+        .where('name', indexName)
+        .get();
+      break;
+    }
+    default:
+      throw new Error(`Unsupported driver: ${driver}`);
+    }
+
+    return Number(rows[0]?.cnt ?? 0) > 0;
+  }
+
+  async indexExists(tableName, indexName) {
+    return this.hasIndex(tableName, indexName);
+  }
+
   async listTables() {
     const driver = this.connection.config.driver;
     const RawExpression = require('../RawExpression');
@@ -786,12 +840,67 @@ class Blueprint {
   }
 
   /**
-   * Create timestamps (created_at, updated_at)
+   * Create timestamps (created_at, updated_at).
+   *
+   * Two call styles are supported:
+   *
+   *  - `timestamps()`                        → both columns NOT NULL with
+   *                                            CURRENT_TIMESTAMP defaults
+   *                                            (created_at + updated_at ON UPDATE).
+   *  - `timestamps(true)`                    → legacy outlet-orm shorthand for
+   *                                            `nullable: true` (both columns NULL,
+   *                                            no default).
+   *  - `timestamps(useCurrent, useCurrentOnUpdate)` (Knex-style, 2 positional args)
+   *                                          → `useCurrent` sets CURRENT_TIMESTAMP
+   *                                            default on both columns;
+   *                                            `useCurrentOnUpdate` adds
+   *                                            ON UPDATE CURRENT_TIMESTAMP on
+   *                                            updated_at.
+   *  - `timestamps({ useCurrent, useCurrentOnUpdate, nullable })` (object form).
    */
-  timestamps(nullable = false) {
+  timestamps(...args) {
     const createdAt = this.timestamp('created_at');
     const updatedAt = this.timestamp('updated_at');
 
+    // Default (no args): both NOT NULL with CURRENT_TIMESTAMP, updated_at ON UPDATE.
+    if (args.length === 0) {
+      createdAt.useCurrent();
+      updatedAt.useCurrent().useCurrentOnUpdate();
+      return this;
+    }
+
+    // Object form: { useCurrent, useCurrentOnUpdate, nullable }.
+    if (args.length === 1 && args[0] && typeof args[0] === 'object') {
+      const { useCurrent = true, useCurrentOnUpdate = true, nullable = false } = args[0];
+      if (nullable) {
+        createdAt.nullable();
+        updatedAt.nullable();
+      }
+      if (useCurrent) {
+        createdAt.useCurrent();
+        updatedAt.useCurrent();
+      }
+      if (useCurrentOnUpdate) {
+        updatedAt.useCurrentOnUpdate();
+      }
+      return this;
+    }
+
+    // Knex-style 2-arg overload: timestamps(useCurrent, useCurrentOnUpdate).
+    if (args.length >= 2) {
+      const [useCurrent, useCurrentOnUpdate] = args;
+      if (useCurrent) {
+        createdAt.useCurrent();
+        updatedAt.useCurrent();
+      }
+      if (useCurrentOnUpdate) {
+        updatedAt.useCurrentOnUpdate();
+      }
+      return this;
+    }
+
+    // Legacy 1-arg form: timestamps(nullable).
+    const nullable = args[0];
     if (nullable) {
       createdAt.nullable();
       updatedAt.nullable();
@@ -938,11 +1047,25 @@ class Blueprint {
   }
 
   /**
-   * Drop an index
+   * Drop an index.
+   *
+   * Accepts either:
+   *  - a column name or array of column names → index name is derived
+   *    (`<table>_<col1>_<col2>_index`), matching how `index()` names them, or
+   *  - an object `{ name: 'idx_literal' }` → uses that literal index name.
+   *
+   * To drop an index by its literal (custom) name, pass `{ name }` so callers
+   * who created indexes with explicit names (e.g. raw SQL or
+   * `index(cols, 'custom_name')`) can drop them cleanly.
    */
   dropIndex(columns) {
-    const cols = Array.isArray(columns) ? columns : [columns];
-    const indexName = `${this.tableName}_${cols.join('_')}_index`;
+    let indexName;
+    if (columns && typeof columns === 'object' && !Array.isArray(columns) && typeof columns.name === 'string') {
+      indexName = columns.name;
+    } else {
+      const cols = Array.isArray(columns) ? columns : [columns];
+      indexName = `${this.tableName}_${cols.join('_')}_index`;
+    }
     this.commands.push({ type: 'dropIndex', name: indexName });
     return this;
   }
