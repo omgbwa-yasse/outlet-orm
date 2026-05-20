@@ -1293,22 +1293,32 @@ class DatabaseConnection {
       case 'basic': {
         const op = where.operator.toUpperCase();
         if (!ALLOWED_OPERATORS.includes(op)) throw new Error(`Invalid operator: ${where.operator}`);
-        clauses.push(`${boolean} ${col} ${op} ?`);
-        params.push(where.value);
+        if (where.value instanceof RawExpression) {
+          clauses.push(`${boolean} ${col} ${op} ${where.value.value}`);
+        } else {
+          clauses.push(`${boolean} ${col} ${op} ?`);
+          params.push(where.value);
+        }
         break;
       }
 
       case 'in': {
-        const inPlaceholders = where.values.map(() => '?').join(', ');
-        clauses.push(`${boolean} ${col} IN (${inPlaceholders})`);
-        params.push(...where.values);
+        const inParts = where.values.map(v => {
+          if (v instanceof RawExpression) return v.value;
+          params.push(v);
+          return '?';
+        });
+        clauses.push(`${boolean} ${col} IN (${inParts.join(', ')})`);
         break;
       }
 
       case 'notIn': {
-        const notInPlaceholders = where.values.map(() => '?').join(', ');
-        clauses.push(`${boolean} ${col} NOT IN (${notInPlaceholders})`);
-        params.push(...where.values);
+        const notInParts = where.values.map(v => {
+          if (v instanceof RawExpression) return v.value;
+          params.push(v);
+          return '?';
+        });
+        clauses.push(`${boolean} ${col} NOT IN (${notInParts.join(', ')})`);
         break;
       }
 
@@ -1320,19 +1330,29 @@ class DatabaseConnection {
         clauses.push(`${boolean} ${col} IS NOT NULL`);
         break;
 
-      case 'between':
-        clauses.push(`${boolean} ${col} BETWEEN ? AND ?`);
-        params.push(...where.values);
+      case 'between': {
+        const [a, b] = where.values;
+        const aSql = a instanceof RawExpression ? a.value : (params.push(a), '?');
+        const bSql = b instanceof RawExpression ? b.value : (params.push(b), '?');
+        clauses.push(`${boolean} ${col} BETWEEN ${aSql} AND ${bSql}`);
         break;
+      }
 
-      case 'notBetween':
-        clauses.push(`${boolean} ${col} NOT BETWEEN ? AND ?`);
-        params.push(...where.values);
+      case 'notBetween': {
+        const [a, b] = where.values;
+        const aSql = a instanceof RawExpression ? a.value : (params.push(a), '?');
+        const bSql = b instanceof RawExpression ? b.value : (params.push(b), '?');
+        clauses.push(`${boolean} ${col} NOT BETWEEN ${aSql} AND ${bSql}`);
         break;
+      }
 
       case 'like':
-        clauses.push(`${boolean} ${col} LIKE ?`);
-        params.push(where.value);
+        if (where.value instanceof RawExpression) {
+          clauses.push(`${boolean} ${col} LIKE ${where.value.value}`);
+        } else {
+          clauses.push(`${boolean} ${col} LIKE ?`);
+          params.push(where.value);
+        }
         break;
       }
     });

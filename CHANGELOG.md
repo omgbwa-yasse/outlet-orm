@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [15.1.0] — 2026-05-19
+
+### 🐛 Fixes
+
+- **QueryBuilder / DatabaseConnection**: `RawExpression` instances passed as the value of `where()`, `whereIn()`, `whereNotIn()`, `whereBetween()`, `whereNotBetween()`, and `where('col', 'like', …)` are now inlined into the generated SQL instead of being pushed into the parameter bindings. This fixes a regression where `Schema.hasTable()` — and therefore `npx outlet migrate status` — threw `The first argument must be of type string or an instance of Buffer... Received an instance of RawExpression` because `WHERE table_schema = DATABASE()` leaked a `RawExpression` into mysql2's bindings.
+
+### ✅ Tests
+
+- New regression suite `tests/RawExpressionWhere.test.js` covers basic/`IN`/`BETWEEN`/`LIKE` with `RawExpression` against real in-memory SQLite, plus an end-to-end `MigrationManager.status()` run.
+
 ## [15.0.0] — 2026-05-19
 
 ### 🎉 Stable release milestone
