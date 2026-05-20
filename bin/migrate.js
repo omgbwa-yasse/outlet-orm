@@ -418,36 +418,109 @@ function coerce(val) {
 }
 
 /**
- * Run migration commands non-interactively
+ * Load database configuration from the current working directory.
+ *
+ * Resolution order:
+ *   1. `database/config.js` (if present)
+ *   2. `.env` variables — supports DATABASE_URL, DB_DRIVER, or auto-detects
+ *      the driver from other DB_* / SQLITE_* variables.
+ *
+ * @returns {{ ok: true, config: object } | { ok: false, error: string, configPath: string }}
  */
-async function runNonInteractive(cmd, flags) {
-  // Load database configuration
+function loadDbConfigFromCwd() {
   const dbConfigPath = path.join(process.cwd(), 'database', 'config.js');
-
-  // Prefer database/config.js; if missing, allow env-based config via .env
-  let dbConfig;
   try {
-    dbConfig = require(dbConfigPath);
+    return { ok: true, config: require(dbConfigPath) };
   } catch (error) {
-    // Fallback to env-based configuration
-    require('dotenv').config();
+    // Fallback: env-based configuration
+    try { require('dotenv').config(); } catch (_) { /* dotenv optional */ }
     const env = process.env || {};
-    dbConfig = {
-      driver: env.DB_DRIVER || env.DATABASE_DRIVER,
+
+    // 1. DATABASE_URL (e.g. mysql://user:pass@host:3306/db, postgres://..., sqlite:./file.db)
+    const url = env.DATABASE_URL || env.DB_URL;
+    if (url) {
+      const parsed = parseDatabaseUrl(url);
+      if (parsed) return { ok: true, config: parsed };
+    }
+
+    // 2. Explicit DB_DRIVER or auto-detect from other env vars
+    const sqliteFile = env.DB_FILE || env.SQLITE_DB || env.SQLITE_FILENAME || env.SQLITE_PATH;
+    let driver = env.DB_DRIVER || env.DATABASE_DRIVER;
+    if (!driver) {
+      if (sqliteFile) {
+        driver = 'sqlite';
+      } else if (env.DB_HOST || env.DB_PORT || env.DB_USER || env.DB_USERNAME || env.DB_DATABASE || env.DB_NAME) {
+        const port = env.DB_PORT ? Number(env.DB_PORT) : undefined;
+        driver = port === 5432 ? 'pg' : 'mysql';
+      }
+    }
+
+    if (!driver) {
+      return {
+        ok: false,
+        configPath: dbConfigPath,
+        error: error.message
+      };
+    }
+
+    const config = {
+      driver,
       host: env.DB_HOST,
       port: env.DB_PORT ? Number(env.DB_PORT) : undefined,
       user: env.DB_USER || env.DB_USERNAME,
       password: env.DB_PASSWORD,
-      database: env.DB_DATABASE || env.DB_NAME || env.DB_FILE || env.SQLITE_DB || env.SQLITE_FILENAME
+      database: env.DB_DATABASE || env.DB_NAME || sqliteFile
     };
-    if (!dbConfig.driver) {
-      console.error('\nError: Could not load database configuration');
-      console.error(`  Make sure ${dbConfigPath} exists OR provide .env variables like DB_DRIVER, DB_HOST, DB_DATABASE`);
-      console.error('  Run "outlet-init" to create the configuration');
-      console.error(`  Details: ${error.message}`);
-      return;
-    }
+    return { ok: true, config };
   }
+}
+
+/**
+ * Parse a DATABASE_URL connection string into an outlet-orm config object.
+ * Supported schemes: mysql, mysql2, postgres, postgresql, pg, sqlite, file.
+ *
+ * @param {string} url
+ * @returns {object|null}
+ */
+function parseDatabaseUrl(url) {
+  try {
+    // sqlite:./path/to.db or sqlite:///abs/path.db or file:./db.sqlite
+    if (/^(sqlite|file):/i.test(url)) {
+      const file = url.replace(/^(sqlite|file):(\/\/)?/i, '');
+      return { driver: 'sqlite', database: file };
+    }
+    const u = new URL(url);
+    const scheme = u.protocol.replace(/:$/, '').toLowerCase();
+    let driver;
+    if (scheme === 'mysql' || scheme === 'mysql2' || scheme === 'mariadb') driver = 'mysql';
+    else if (scheme === 'postgres' || scheme === 'postgresql' || scheme === 'pg') driver = 'pg';
+    else return null;
+    return {
+      driver,
+      host: u.hostname || undefined,
+      port: u.port ? Number(u.port) : undefined,
+      user: u.username ? decodeURIComponent(u.username) : undefined,
+      password: u.password ? decodeURIComponent(u.password) : undefined,
+      database: u.pathname ? u.pathname.replace(/^\//, '') : undefined
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Run migration commands non-interactively
+ */
+async function runNonInteractive(cmd, flags) {
+  const loaded = loadDbConfigFromCwd();
+  if (!loaded.ok) {
+    console.error('\nError: Could not load database configuration');
+    console.error(`  Make sure ${loaded.configPath} exists OR provide .env variables like DB_DRIVER, DB_HOST, DB_DATABASE`);
+    console.error('  Run "outlet-init" to create the configuration');
+    console.error(`  Details: ${loaded.error}`);
+    return;
+  }
+  const dbConfig = loaded.config;
 
   const { DatabaseConnection, MigrationManager, SeederManager } = require('../src');
 
@@ -732,31 +805,15 @@ async function runMigrationCommands() {
     return;
   }
 
-  // Load database configuration
-  const dbConfigPath = path.join(process.cwd(), 'database', 'config.js');
-
-  let dbConfig;
-  try {
-    dbConfig = require(dbConfigPath);
-  } catch (error) {
-    require('dotenv').config();
-    const env = process.env || {};
-    dbConfig = {
-      driver: env.DB_DRIVER || env.DATABASE_DRIVER,
-      host: env.DB_HOST,
-      port: env.DB_PORT ? Number(env.DB_PORT) : undefined,
-      user: env.DB_USER || env.DB_USERNAME,
-      password: env.DB_PASSWORD,
-      database: env.DB_DATABASE || env.DB_NAME || env.DB_FILE || env.SQLITE_DB || env.SQLITE_FILENAME
-    };
-    if (!dbConfig.driver) {
-      console.error('\nError: Could not load database configuration');
-      console.error(`  Make sure ${dbConfigPath} exists OR provide .env variables like DB_DRIVER, DB_HOST, DB_DATABASE`);
-      console.error('  Run "outlet-init" to create the configuration');
-      console.error(`  Details: ${error.message}`);
-      return;
-    }
+  const loaded = loadDbConfigFromCwd();
+  if (!loaded.ok) {
+    console.error('\nError: Could not load database configuration');
+    console.error(`  Make sure ${loaded.configPath} exists OR provide .env variables like DB_DRIVER, DB_HOST, DB_DATABASE`);
+    console.error('  Run "outlet-init" to create the configuration');
+    console.error(`  Details: ${loaded.error}`);
+    return;
   }
+  const dbConfig = loaded.config;
 
   const { DatabaseConnection, MigrationManager, SeederManager } = require('../src');
 

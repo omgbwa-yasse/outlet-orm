@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [15.1.1] — 2026-05-19
+
+### 🐛 Fixes
+
+- **CLI (`outlet migrate`)**: the config loader no longer hard-fails when `database/config.js` is missing. The `.env` fallback now:
+  - parses a `DATABASE_URL` / `DB_URL` connection string (mysql, mariadb, postgres, sqlite, file schemes),
+  - auto-detects the driver when `DB_DRIVER` is not set — `sqlite` when an `SQLITE_*` / `DB_FILE` var is present, `pg` when `DB_PORT=5432`, otherwise `mysql`,
+  - shares a single `loadDbConfigFromCwd()` helper between the interactive and non-interactive code paths (removes a duplicated block).
+- Fixes "Could not load database configuration / Cannot find module 'database/config.js'" for projects that only ship a `.env` file with `DB_HOST`, `DB_NAME`, `DB_USER`, etc.
+
 ## [15.1.0] — 2026-05-19
 
 ### 🐛 Fixes

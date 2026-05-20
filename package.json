@@ -1,6 +1,6 @@
 {
   "name": "outlet-orm",
-  "version": "15.1.0",
+  "version": "15.1.1",
   "description": "An Active Record ORM for Node.js with support for MySQL, PostgreSQL, and SQLite",
   "main": "src/index.js",
   "types": "types/index.d.ts",
