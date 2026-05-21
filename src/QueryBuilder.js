@@ -18,11 +18,26 @@ function assertIdentifier(value, context = 'identifier') {
   return value;
 }
 
+function assertFromSource(source) {
+  if (
+    source === null ||
+    source === undefined ||
+    (typeof source === 'string' && source.trim() === '') ||
+    (!(source instanceof RawExpression) && typeof source !== 'string')
+  ) {
+    throw new QueryBuilderError(
+      'from() requires a non-empty table name string or a RawExpression instance.'
+    );
+  }
+  return source;
+}
+
 class QueryBuilder {
   constructor(model, options = {}) {
     this.model = model;
     this._standaloneConnection = options.connection || null;
     this._standaloneSource = options.source || null;
+    this._fromSource = null;
     this._consumed = false;
     this._subParams = [];
     this.wheres = [];
@@ -64,6 +79,21 @@ class QueryBuilder {
       return { ...query, params: [...this._subParams, ...(query.params || [])] };
     }
     return query;
+  }
+
+  _getQuerySource() {
+    if (this._isStandalone) {
+      return this._standaloneSource;
+    }
+    return this._fromSource || this.model.table;
+  }
+
+  _getQuerySourceLabel() {
+    const source = this._getQuerySource();
+    if (source instanceof RawExpression) {
+      return source.value;
+    }
+    return String(source);
   }
 
   /**
@@ -143,6 +173,23 @@ class QueryBuilder {
    */
   select(...columns) {
     this.selectedColumns = columns;
+    return this;
+  }
+
+  /**
+   * Override the FROM source for the query.
+   * @param {string|RawExpression} source
+   * @returns {this}
+   */
+  from(source) {
+    const resolved = assertFromSource(source);
+    if (this._isStandalone) {
+      this._assertNotConsumed();
+      this._standaloneSource = resolved;
+      return this;
+    }
+
+    this._fromSource = resolved;
     return this;
   }
 
@@ -750,7 +797,7 @@ class QueryBuilder {
       this._assertNotConsumed();
       this._consumed = true;
       return await this._standaloneConnection.select(
-        this._standaloneSource,
+        this._getQuerySource(),
         this._buildQueryObj()
       );
     }
@@ -760,7 +807,7 @@ class QueryBuilder {
     this._applySoftDeleteConstraints();
 
     const rows = await this.model.connection.select(
-      this.model.table,
+      this._getQuerySource(),
       this.buildQuery()
     );
 
@@ -783,7 +830,7 @@ class QueryBuilder {
       this._consumed = true;
       this.limit(1);
       const rows = await this._standaloneConnection.select(
-        this._standaloneSource,
+        this._getQuerySource(),
         this._buildQueryObj()
       );
       return rows[0] || null;
@@ -801,7 +848,7 @@ class QueryBuilder {
   async firstOrFail() {
     const result = await this.first();
     if (!result) {
-      throw new Error(`Model not found in table ${this.model.table}`);
+      throw new Error(`Model not found in table ${this._getQuerySourceLabel()}`);
     }
     return result;
   }
@@ -929,7 +976,7 @@ class QueryBuilder {
     this._applySoftDeleteConstraints();
 
     const result = await this.model.connection.count(
-      this.model.table,
+      this._getQuerySource(),
       this.buildQuery()
     );
     return result;
@@ -995,7 +1042,7 @@ class QueryBuilder {
       this._assertNotConsumed();
       this._consumed = true;
       return this._standaloneConnection.update(
-        this._standaloneSource,
+        this._getQuerySource(),
         { ...attributes },
         this.buildQuery()
       );
@@ -1011,7 +1058,7 @@ class QueryBuilder {
     }
 
     return this.model.connection.update(
-      this.model.table,
+      this._getQuerySource(),
       safeAttributes,
       this.buildQuery()
     );
@@ -1041,12 +1088,12 @@ class QueryBuilder {
       this._assertNotConsumed();
       this._consumed = true;
       return this._standaloneConnection.delete(
-        this._standaloneSource,
+        this._getQuerySource(),
         this.buildQuery()
       );
     }
     return this.model.connection.delete(
-      this.model.table,
+      this._getQuerySource(),
       this.buildQuery()
     );
   }
@@ -1062,14 +1109,14 @@ class QueryBuilder {
       this._assertNotConsumed();
       this._consumed = true;
       return this._standaloneConnection.increment(
-        this._standaloneSource,
+        this._getQuerySource(),
         column,
         this.buildQuery(),
         amount
       );
     }
     return this.model.connection.increment(
-      this.model.table,
+      this._getQuerySource(),
       column,
       this.buildQuery(),
       amount
@@ -1087,14 +1134,14 @@ class QueryBuilder {
       this._assertNotConsumed();
       this._consumed = true;
       return this._standaloneConnection.decrement(
-        this._standaloneSource,
+        this._getQuerySource(),
         column,
         this.buildQuery(),
         amount
       );
     }
     return this.model.connection.decrement(
-      this.model.table,
+      this._getQuerySource(),
       column,
       this.buildQuery(),
       amount
@@ -1183,13 +1230,24 @@ class QueryBuilder {
 
     const cols = keyColumn ? [column, keyColumn] : [column];
     this.selectedColumns = cols;
-    this._applyGlobalScopes();
-    this._applySoftDeleteConstraints();
+    let rows;
 
-    const rows = await this.model.connection.select(
-      this.model.table,
-      this.buildQuery()
-    );
+    if (this._isStandalone) {
+      this._assertNotConsumed();
+      this._consumed = true;
+      rows = await this._standaloneConnection.select(
+        this._getQuerySource(),
+        this._buildQueryObj()
+      );
+    } else {
+      this._applyGlobalScopes();
+      this._applySoftDeleteConstraints();
+
+      rows = await this.model.connection.select(
+        this._getQuerySource(),
+        this.buildQuery()
+      );
+    }
 
     if (keyColumn) {
       const result = {};
@@ -1209,14 +1267,26 @@ class QueryBuilder {
   async value(column) {
     assertIdentifier(column, 'value column');
     this.selectedColumns = [column];
-    this._applyGlobalScopes();
-    this._applySoftDeleteConstraints();
     this.limitValue = 1;
 
-    const rows = await this.model.connection.select(
-      this.model.table,
-      this.buildQuery()
-    );
+    let rows;
+    if (this._isStandalone) {
+      this._assertNotConsumed();
+      this._consumed = true;
+      rows = await this._standaloneConnection.select(
+        this._getQuerySource(),
+        this._buildQueryObj()
+      );
+    } else {
+      this._applyGlobalScopes();
+      this._applySoftDeleteConstraints();
+
+      rows = await this.model.connection.select(
+        this._getQuerySource(),
+        this.buildQuery()
+      );
+    }
+
     if (rows.length === 0) return null;
     return rows[0][column];
   }
@@ -1283,7 +1353,7 @@ class QueryBuilder {
     this._applySoftDeleteConstraints();
 
     const result = await this.model.connection.aggregate(
-      this.model.table,
+      this._getQuerySource(),
       fn,
       column,
       this.buildQuery()
@@ -1354,10 +1424,12 @@ class QueryBuilder {
    * @returns {Object} Query object with all clauses
    */
   toSQL() {
-    this._applyGlobalScopes();
-    this._applySoftDeleteConstraints();
+    if (!this._isStandalone) {
+      this._applyGlobalScopes();
+      this._applySoftDeleteConstraints();
+    }
     return {
-      table: this.model.table,
+      table: this._getQuerySourceLabel(),
       ...this.buildQuery()
     };
   }
@@ -1389,7 +1461,7 @@ class QueryBuilder {
       tableAlias: this.tableAlias,
       unions: this.unions.map(u => ({
         all: u.all,
-        table: u.qb.model ? u.qb.model.table : null,
+        table: u.qb._getQuerySource(),
         query: u.qb.buildQuery()
       }))
     };
@@ -1424,6 +1496,7 @@ class QueryBuilder {
     cloned._softDeleteApplied = this._softDeleteApplied;
     cloned._standaloneConnection = this._standaloneConnection;
     cloned._standaloneSource = this._standaloneSource;
+    cloned._fromSource = this._fromSource;
     cloned._consumed = this._consumed;
     cloned._subParams = this._subParams ? [...this._subParams] : [];
 

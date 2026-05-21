@@ -148,4 +148,17 @@ describe('v14.9.0 parity features', () => {
 
     expect(() => User.as('bad alias')).toThrow();
   });
+
+  test('Model.select().from() supports an explicit FROM source', async () => {
+    const rows = await User.select()
+      .from('users')
+      .where('name', 'Alice')
+      .where('age', '=', 25)
+      .limit(1)
+      .get();
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toBeInstanceOf(User);
+    expect(rows[0].getAttribute('name')).toBe('Alice');
+  });
 });

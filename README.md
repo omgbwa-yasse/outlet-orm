@@ -1,55 +1,55 @@
 # outlet-orm
 
-`outlet-orm` est un ORM Active Record pour Node.js 18+ qui couvre beaucoup plus que la couche SQL classique. Le package regroupe un noyau ORM relationnel, un schema builder et un moteur de migrations, des seeders, des outils de backup et de reverse engineering, une couche API REST/GraphQL, un pont AI multi-provider, ainsi qu'un serveur MCP pour les agents.
+`outlet-orm` is an Active Record ORM for Node.js 18+ that covers much more than the usual SQL layer. The package bundles a relational ORM core, a schema builder and migration engine, seeders, backup and reverse-engineering tools, a REST/GraphQL API layer, a multi-provider AI bridge, and an MCP server for agents.
 
-Le point d'entree public est [src/index.js](src/index.js). Les signatures TypeScript sont exposees via [types/index.d.ts](types/index.d.ts). La surface reelle est egalement confirmee par les suites de tests dans [tests](tests) et les exemples dans [examples](examples).
+The public entry point is [src/index.js](src/index.js). TypeScript signatures are published through [types/index.d.ts](types/index.d.ts). The real surface is also confirmed by the test suites in [tests](tests) and the examples in [examples](examples).
 
-## Table des matieres
+## Table of Contents
 
-- [Positionnement](#positionnement)
+- [Positioning](#positioning)
 - [Installation](#installation)
-- [Demarrage rapide](#demarrage-rapide)
-- [Modele Active Record](#modele-active-record)
-- [Requetes et QueryBuilder](#requetes-et-querybuilder)
-- [Relations et eager loading](#relations-et-eager-loading)
-- [Fonctionnalites avancees des modeles](#fonctionnalites-avancees-des-modeles)
-- [DatabaseConnection et mode standalone](#databaseconnection-et-mode-standalone)
-- [Schema builder, migrations et seeders](#schema-builder-migrations-et-seeders)
-- [Backups, restauration et securite des migrations](#backups-restauration-et-securite-des-migrations)
-- [Reverse engineering, init et conversion](#reverse-engineering-init-et-conversion)
-- [Objets SQL avances et transactions](#objets-sql-avances-et-transactions)
-- [API Layer HTTP / GraphQL](#api-layer-http--graphql)
-- [Import et diff de specs API](#import-et-diff-de-specs-api)
-- [AI, MCP et automatisation](#ai-mcp-et-automatisation)
-- [CLI de reference](#cli-de-reference)
+- [Quick Start](#quick-start)
+- [Active Record Model](#active-record-model)
+- [Queries and QueryBuilder](#queries-and-querybuilder)
+- [Relationships and Eager Loading](#relationships-and-eager-loading)
+- [Advanced Model Features](#advanced-model-features)
+- [DatabaseConnection and Standalone Mode](#databaseconnection-and-standalone-mode)
+- [Schema Builder, Migrations, and Seeders](#schema-builder-migrations-and-seeders)
+- [Backups, Restore, and Migration Safety](#backups-restore-and-migration-safety)
+- [Reverse Engineering, Init, and Conversion](#reverse-engineering-init-and-conversion)
+- [Advanced SQL Objects and Transactions](#advanced-sql-objects-and-transactions)
+- [HTTP / GraphQL API Layer](#http--graphql-api-layer)
+- [API Spec Import and Diff](#api-spec-import-and-diff)
+- [AI, MCP, and Automation](#ai-mcp-and-automation)
+- [CLI Reference](#cli-reference)
 - [TypeScript](#typescript)
-- [Exemples et validation](#exemples-et-validation)
-- [Notes utiles et limites](#notes-utiles-et-limites)
+- [Examples and Validation](#examples-and-validation)
+- [Useful Notes and Limits](#useful-notes-and-limits)
 
-## Positionnement
+## Positioning
 
-`outlet-orm` n'est pas seulement un ORM CRUD. Le package couvre 8 blocs complementaires:
+`outlet-orm` is not just a CRUD ORM. The package spans 8 complementary areas:
 
-| Domaine | Exports / commandes principales | Ce que cela apporte |
+| Area | Main exports / commands | What it provides |
 | --- | --- | --- |
-| ORM SQL | `Model`, `QueryBuilder`, `DatabaseConnection` | Active Record, requetes fluentes, transactions, casts, validation |
-| Relations | `hasOne`, `hasMany`, `belongsTo`, `belongsToMany`, `hasManyThrough`, `hasOneThrough`, `morph*` | Navigation relationnelle et eager loading |
-| Schema / migrations | `Schema`, `Blueprint`, `Migration`, `MigrationManager`, `Seeder`, `SeederManager` | Evolution de schema, seeders, workflows de deploiement |
-| DB objects | `View`, `Trigger`, `Procedure`, `Function`, `Transaction`, `useSchema` | Vues, triggers, procedures, savepoints, isolation level |
-| Backups | `BackupManager`, `BackupScheduler`, `BackupEncryption`, `BackupSocketServer`, `BackupSocketClient` | Sauvegarde SQL/JSON, chiffrement, planification, restore |
-| API Layer | `Api`, `ApiGraphQL`, `ApiAdapter`, `MockAdapter`, cache, offline, realtime | Meme style de modelisation, mais au-dessus de HTTP |
-| AI bridge | `AIManager`, `Ai`, providers, `TextBuilder`, `AIQueryBuilder`, `AISeeder`, `AIPromptEnhancer` | Chat, tools, NL->SQL, seeds AI, generation guidee |
-| CLI / MCP | `outlet`, `outlet-migrate`, `outlet-reverse`, `outlet-mcp`, `outlet api import`, `outlet api diff` | Initialisation, conversion, reverse engineering, MCP agent |
+| SQL ORM | `Model`, `QueryBuilder`, `DatabaseConnection` | Active Record, fluent queries, transactions, casts, validation |
+| Relationships | `hasOne`, `hasMany`, `belongsTo`, `belongsToMany`, `hasManyThrough`, `hasOneThrough`, `morph*` | Relational navigation and eager loading |
+| Schema / migrations | `Schema`, `Blueprint`, `Migration`, `MigrationManager`, `Seeder`, `SeederManager` | Schema evolution, seeders, deployment workflows |
+| DB objects | `View`, `Trigger`, `Procedure`, `Function`, `Transaction`, `useSchema` | Views, triggers, procedures, savepoints, isolation levels |
+| Backups | `BackupManager`, `BackupScheduler`, `BackupEncryption`, `BackupSocketServer`, `BackupSocketClient` | SQL/JSON backups, encryption, scheduling, restore |
+| API Layer | `Api`, `ApiGraphQL`, `ApiAdapter`, `MockAdapter`, cache, offline, realtime | The same modeling style, but over HTTP |
+| AI bridge | `AIManager`, `Ai`, providers, `TextBuilder`, `AIQueryBuilder`, `AISeeder`, `AIPromptEnhancer` | Chat, tools, NL->SQL, AI seeds, guided generation |
+| CLI / MCP | `outlet`, `outlet-migrate`, `outlet-reverse`, `outlet-mcp`, `outlet api import`, `outlet api diff` | Project init, conversion, reverse engineering, MCP agent integration |
 
 ## Installation
 
-Installation de base:
+Base installation:
 
 ```bash
 npm install outlet-orm
 ```
 
-Installez ensuite seulement le driver dont vous avez besoin:
+Then install only the driver you need:
 
 ```bash
 npm install mysql2
@@ -63,17 +63,17 @@ npm install pg
 npm install sqlite3
 ```
 
-Dependances et prerequis utiles:
+Useful dependencies and prerequisites:
 
 - Node.js `>= 18.0.0`
-- package principal en CommonJS (`require` / `module.exports`)
-- `mysql2`, `pg`, `sqlite3` sont des peer dependencies optionnelles et chargees a la demande
-- `graphql-ws` est optionnelle si vous utilisez les subscriptions GraphQL
-- le package inclut ses types via `types/index.d.ts`
+- the main package is CommonJS (`require` / `module.exports`)
+- `mysql2`, `pg`, and `sqlite3` are optional peer dependencies loaded on demand
+- `graphql-ws` is optional if you use GraphQL subscriptions
+- the package ships its own types through `types/index.d.ts`
 
-## Demarrage rapide
+## Quick Start
 
-### 1. Configurer une connexion
+### 1. Configure a connection
 
 ```js
 const { DatabaseConnection } = require('outlet-orm');
@@ -86,19 +86,19 @@ const db = new DatabaseConnection({
 await db.connect();
 ```
 
-Les drivers supportes dans la couche coeur sont:
+The core layer supports these drivers:
 
 - `mysql`
 - `postgres` / `postgresql`
 - `sqlite`
 
-La configuration peut venir:
+Configuration can come from:
 
-- directement du constructeur `new DatabaseConnection({...})`
-- de `.env` (`DB_DRIVER`, `DB_HOST`, `DB_DATABASE`, `DB_FILE`, `DATABASE_URL`, etc.)
-- de `database/config.js` pour la CLI de migration
+- `new DatabaseConnection({...})` directly
+- `.env` (`DB_DRIVER`, `DB_HOST`, `DB_DATABASE`, `DB_FILE`, `DATABASE_URL`, and others)
+- `database/config.js` for the migration CLI
 
-### 2. Definir un modele
+### 2. Define a model
 
 ```js
 const { Model } = require('outlet-orm');
@@ -115,7 +115,7 @@ class User extends Model {
 }
 ```
 
-### 3. Utiliser le modele
+### 3. Use the model
 
 ```js
 const user = await User.create({
@@ -132,9 +132,9 @@ const activeUsers = await User
   .get();
 ```
 
-## Modele Active Record
+## Active Record Model
 
-Le coeur ORM repose sur [src/Model.js](src/Model.js). Un modele declare typiquement:
+The ORM core is built around [src/Model.js](src/Model.js). A model typically declares:
 
 - `static table`
 - `static primaryKey`
@@ -147,17 +147,17 @@ Le coeur ORM repose sur [src/Model.js](src/Model.js). Un modele declare typiquem
 - `static softDeletes`
 - `static rules`
 
-Capacites principales du modele:
+Main model capabilities:
 
-- CRUD statique: `all()`, `find()`, `findOrFail()`, `create()`, `insert()`, `update()`, `delete()`
-- helpers de recherche: `first()`, `firstOrCreate()`, `firstOrNew()`, `updateOrCreate()`, `upsert()`
+- static CRUD: `all()`, `find()`, `findOrFail()`, `create()`, `insert()`, `update()`, `delete()`
+- lookup helpers: `first()`, `firstOrCreate()`, `firstOrNew()`, `updateOrCreate()`, `upsert()`
 - pagination: `paginate(page, perPage)`
 - streaming: `cursor(chunkSize)`
 - serialization: `toJSON()`, `only()`, `except()`
-- cycle de vie: `save()`, `destroy()`, `fresh()`, `refresh()`, `replicate()`
-- tracking: `getDirty()`, `isDirty()`, `wasChanged()`, `getChanges()`
+- lifecycle: `save()`, `destroy()`, `fresh()`, `refresh()`, `replicate()`
+- change tracking: `getDirty()`, `isDirty()`, `wasChanged()`, `getChanges()`
 
-Particularite utile: les instances sont enveloppees dans un `Proxy`, ce qui permet l'acces style propriete:
+Useful detail: instances are wrapped in a `Proxy`, which enables property-style access:
 
 ```js
 const user = await User.find(1);
@@ -167,15 +167,15 @@ user.name = 'Grace';
 await user.save();
 ```
 
-Ce comportement est teste dans [tests/PropertyAccess.test.js](tests/PropertyAccess.test.js).
+This behavior is covered by [tests/PropertyAccess.test.js](tests/PropertyAccess.test.js).
 
-## Requetes et QueryBuilder
+## Queries and QueryBuilder
 
-Le `QueryBuilder` couvre les usages classiques et plusieurs helpers de parite de style Laravel.
+`QueryBuilder` covers the standard cases plus a number of Laravel-style parity helpers.
 
-### Filtres et clauses de base
+### Basic filters and clauses
 
-Methodes courantes:
+Common methods:
 
 - `select(...columns)`
 - `columns([...])`
@@ -194,7 +194,7 @@ Methodes courantes:
 - `join()`, `leftJoin()`, `rightJoin()`, `crossJoin()`
 - `union()`, `unionAll()`
 
-### Chargement et filtres relationnels
+### Relationship loading and relational filters
 
 - `with(...)`
 - `withCount(...)`
@@ -206,7 +206,7 @@ Methodes courantes:
 - `has(relation, count)`
 - `whereDoesntHave(relation)`
 
-### Recuperation et mutation
+### Retrieval and mutation
 
 - `get()`
 - `first()`
@@ -220,7 +220,7 @@ Methodes courantes:
 - `delete()`
 - `increment()` / `decrement()`
 
-### Helpers pratiques
+### Useful helpers
 
 - `pluck(column)`
 - `pluck(column, keyColumn)`
@@ -233,7 +233,7 @@ Methodes courantes:
 - `dd()`
 - `clone()`
 
-Exemple:
+Example:
 
 ```js
 const rows = await User
@@ -245,11 +245,11 @@ const rows = await User
   .get();
 ```
 
-Les usages recents et les helpers de parite sont verifies dans [tests/NewParityFeatures.test.js](tests/NewParityFeatures.test.js), [tests/NewFeatures.test.js](tests/NewFeatures.test.js), [tests/NewEvolutions.test.js](tests/NewEvolutions.test.js) et [tests/QueryBuilderStandalone.test.js](tests/QueryBuilderStandalone.test.js).
+Recent behaviors and parity helpers are covered by [tests/NewParityFeatures.test.js](tests/NewParityFeatures.test.js), [tests/NewFeatures.test.js](tests/NewFeatures.test.js), [tests/NewEvolutions.test.js](tests/NewEvolutions.test.js), and [tests/QueryBuilderStandalone.test.js](tests/QueryBuilderStandalone.test.js).
 
-## Relations et eager loading
+## Relationships and Eager Loading
 
-Relations supportees par le coeur ORM:
+Relationships supported by the ORM core:
 
 - `hasOne`
 - `hasMany`
@@ -261,7 +261,7 @@ Relations supportees par le coeur ORM:
 - `morphMany`
 - `morphTo`
 
-Exemple:
+Example:
 
 ```js
 class User extends Model {
@@ -285,25 +285,25 @@ class Post extends Model {
 const users = await User.with('posts').get();
 ```
 
-Capacites complementaires:
+Additional capabilities:
 
-- eager loading avec contraintes
-- eager loading imbrique via notation pointee
-- `withDefault()` sur les relations
-- `attach()`, `detach()`, `sync()` sur `belongsToMany`
-- morph map via `Model.setMorphMap(...)`
+- constrained eager loading
+- nested eager loading through dot notation
+- `withDefault()` on relationships
+- `attach()`, `detach()`, `sync()` on `belongsToMany`
+- morph map support through `Model.setMorphMap(...)`
 
-Suites de tests associees:
+Related test suites:
 
 - [tests/HasManyThrough.test.js](tests/HasManyThrough.test.js)
 - [tests/Polymorphic.test.js](tests/Polymorphic.test.js)
 - [tests/NestedEager.test.js](tests/NestedEager.test.js)
 
-## Fonctionnalites avancees des modeles
+## Advanced Model Features
 
-Le package embarque plusieurs comportements utiles qui ne sont pas toujours presents dans les ORMs legers.
+The package includes several behaviors that are not always present in lightweight ORMs.
 
-### Visibilite et serialization
+### Visibility and serialization
 
 - `static hidden`
 - `withHidden()`
@@ -312,11 +312,11 @@ Le package embarque plusieurs comportements utiles qui ne sont pas toujours pres
 - `makeHidden()`
 - `static appends`
 
-Exemple documente aussi dans [examples/hidden-attributes-demo.js](examples/hidden-attributes-demo.js).
+Also demonstrated in [examples/hidden-attributes-demo.js](examples/hidden-attributes-demo.js).
 
 ### Casts
 
-Types de cast supportes:
+Supported cast types:
 
 - `int` / `integer`
 - `float` / `double`
@@ -328,18 +328,18 @@ Types de cast supportes:
 - `datetime`
 - `timestamp`
 
-### Accessors, mutators et validation
+### Accessors, mutators, and validation
 
-La couche modele couvre egalement:
+The model layer also covers:
 
 - accessors / mutators
-- regles de validation sur `static rules`
-- `validate()` et `validateOrFail()`
-- `fillable` guard sur insert / update
+- validation rules through `static rules`
+- `validate()` and `validateOrFail()`
+- `fillable` guarding on insert / update
 
-### Events, observers et scopes
+### Events, observers, and scopes
 
-Events supportes:
+Supported events:
 
 - `creating`, `created`
 - `updating`, `updated`
@@ -347,17 +347,17 @@ Events supportes:
 - `deleting`, `deleted`
 - `restoring`, `restored`
 
-Vous pouvez utiliser:
+You can use:
 
 - `Model.on(event, callback)`
-- helpers `creating(...)`, `saved(...)`, etc.
+- helper methods such as `creating(...)`, `saved(...)`, and others
 - `Model.observe(MyObserver)`
 - global scopes via `addGlobalScope()` / `withoutGlobalScope()` / `withoutGlobalScopes()`
-- local scopes verifies par [tests/NewEvolutions.test.js](tests/NewEvolutions.test.js)
+- local scopes verified by [tests/NewEvolutions.test.js](tests/NewEvolutions.test.js)
 
 ### Soft deletes
 
-Fonctionnalites soft delete:
+Soft-delete features:
 
 - `static softDeletes = true`
 - `static DELETED_AT`
@@ -367,20 +367,20 @@ Fonctionnalites soft delete:
 - `restore()`
 - `forceDelete()`
 
-Le schema builder expose aussi `softDeletes()` pour ajouter `deleted_at`.
+The schema builder also exposes `softDeletes()` to add `deleted_at`.
 
-## DatabaseConnection et mode standalone
+## DatabaseConnection and Standalone Mode
 
-[src/DatabaseConnection.js](src/DatabaseConnection.js) gere:
+[src/DatabaseConnection.js](src/DatabaseConnection.js) handles:
 
-- la connexion et le pooling
-- l'execution des requetes
-- les transactions
-- le query log
-- les agregats SQL
-- l'utilisation standalone du builder via `from(...)`
+- connection and pooling
+- query execution
+- transactions
+- query logging
+- SQL aggregates
+- standalone builder usage through `from(...)`
 
-Exemple standalone sans modele:
+Standalone example without a model:
 
 ```js
 await db.from('users')
@@ -392,7 +392,7 @@ const exists = await db.from('users')
   .exists();
 ```
 
-Fonctions utiles de bas niveau:
+Useful low-level functions:
 
 - `select()`
 - `insert()` / `insertMany()`
@@ -406,7 +406,7 @@ Fonctions utiles de bas niveau:
 
 ### Query log
 
-Le log de requetes peut etre active globalement:
+Query logging can be enabled globally:
 
 ```js
 DatabaseConnection.enableQueryLog();
@@ -415,13 +415,13 @@ const log = DatabaseConnection.getQueryLog();
 DatabaseConnection.flushQueryLog();
 ```
 
-Le backup journal s'appuie sur ce mecanisme.
+The journal backup flow relies on this mechanism.
 
-## Schema builder, migrations et seeders
+## Schema Builder, Migrations, and Seeders
 
-Le schema builder est fourni par `Schema` et `Blueprint`.
+The schema builder is provided by `Schema` and `Blueprint`.
 
-### Operations de schema principales
+### Primary schema operations
 
 - `schema.create(name, callback)`
 - `schema.table(name, callback)`
@@ -432,16 +432,16 @@ Le schema builder est fourni par `Schema` et `Blueprint`.
 - `schema.hasColumn(table, column)`
 - `schema.hasIndex(table, indexName)` / `indexExists(...)`
 
-Le `Blueprint` couvre notamment:
+`Blueprint` notably covers:
 
-- colonnes numeriques, texte, date, JSON, UUID, binary
-- `timestamps()` avec plusieurs surcharges
+- numeric, text, date, JSON, UUID, and binary columns
+- `timestamps()` with multiple overloads
 - `softDeletes()`
-- index, unique, full text
+- indexes, unique indexes, full text
 - foreign keys
 - check constraints
 
-Exemple de migration:
+Migration example:
 
 ```js
 const { Migration } = require('outlet-orm');
@@ -469,67 +469,67 @@ module.exports = CreateUsersTable;
 
 ### Migration base class
 
-La base `Migration` fournit aussi:
+The `Migration` base class also provides:
 
 - `getSchema()`
-- `query(table)` / `table(table)` pour un `QueryBuilder` standalone en migration
-- `log()`, `info()`, `warn()` pour les logs structures
-- `shouldRun()` pour sauter une migration
-- `withinTransaction` pour encapsuler `up()` / `down()` dans une transaction
-- helpers de preservation de donnees: `transformData()`, `backupData()`, `restoreData()`
+- `query(table)` / `table(table)` for a standalone `QueryBuilder` inside migrations
+- `log()`, `info()`, `warn()` for structured logging
+- `shouldRun()` to skip a migration
+- `withinTransaction` to wrap `up()` / `down()` in a transaction
+- data-preservation helpers: `transformData()`, `backupData()`, `restoreData()`
 
 ### MigrationManager
 
-`MigrationManager` prend en charge:
+`MigrationManager` handles:
 
-- installation de la table des migrations
-- execution des migrations pending
-- rollback par batch
+- installation of the migrations table
+- execution of pending migrations
+- rollback by batch
 - reset / refresh / fresh
-- deploy non interactif pour CI/CD
-- `resolve --applied` et `resolve --rolled-back`
-- detection de drift via checksum
-- detection de migrations manquantes sur disque
-- colonnes de suivi `_migrations`: `started_at`, `finished_at`, `rolled_back_at`, etc.
-- advisory locks en deploy / resolve sur MySQL et PostgreSQL
+- non-interactive deploy for CI/CD
+- `resolve --applied` and `resolve --rolled-back`
+- drift detection through checksums
+- detection of migrations missing from disk
+- `_migrations` tracking columns: `started_at`, `finished_at`, `rolled_back_at`, and others
+- advisory locks for deploy / resolve on MySQL and PostgreSQL
 
-### Seeder et SeederManager
+### Seeder and SeederManager
 
-Le package fournit:
+The package provides:
 
 - `Seeder`
 - `SeederManager`
-- scaffolding `make:seed`
+- `make:seed` scaffolding
 - `seed` / `db:seed`
-- ciblage d'une classe via `--seeder` / `--class`
+- class targeting through `--seeder` / `--class`
 
-## Backups, restauration et securite des migrations
+## Backups, Restore, and Migration Safety
 
-La partie backup n'est pas un add-on anecdotique: elle est directement integree au cycle des migrations destructives.
+The backup subsystem is not a minor add-on: it is directly integrated into the destructive migration lifecycle.
 
-### Capacites backup
+### Backup capabilities
 
-- backup complet `full`
-- backup partiel `partial`
-- journal SQL base sur le query log `journal`
-- format `sql` ou `json`
-- chiffrement via `BackupEncryption`
-- planification via `BackupScheduler`
-- sockets de commande via `BackupSocketServer` et `BackupSocketClient`
+- full `full` backup
+- partial `partial` backup
+- query-log-based SQL journal `journal`
+- `sql` or `json` format
+- encryption through `BackupEncryption`
+- scheduling through `BackupScheduler`
+- command sockets through `BackupSocketServer` and `BackupSocketClient`
 
-### Securite des migrations destructives
+### Safety for destructive migrations
 
-Fonctions prises en charge par le package:
+Features built into the package:
 
-- auto-backup avant `fresh`, `reset`, `refresh`, `rollback`
-- retention des auto-backups par commande
-- restore automatise via `restore:auto`
-- historique de restauration
-- protection production via `OUTLET_PRODUCTION_CONFIRM=1` et confirmation du nom de base
-- `--skip-auto-backup` ignore en production
-- exit codes normalises
+- auto-backup before `fresh`, `reset`, `refresh`, and `rollback`
+- retention of auto-backups per command
+- automated restore through `restore:auto`
+- restore history
+- production protection through `OUTLET_PRODUCTION_CONFIRM=1` and explicit database-name confirmation
+- `--skip-auto-backup` is ignored in production
+- normalized exit codes
 
-Les comportements sont verifies par:
+These behaviors are verified by:
 
 - [tests/Backup.test.js](tests/Backup.test.js)
 - [tests/BackupEncryption.test.js](tests/BackupEncryption.test.js)
@@ -538,55 +538,55 @@ Les comportements sont verifies par:
 - [tests/MigrationDeployOptions.test.js](tests/MigrationDeployOptions.test.js)
 - [tests/MigrationExtraOptions.test.js](tests/MigrationExtraOptions.test.js)
 
-## Reverse engineering, init et conversion
+## Reverse Engineering, Init, and Conversion
 
-Le package embarque trois approches complementaires pour accelerer l'adoption.
+The package includes three complementary approaches to speed up adoption.
 
 ### `outlet-init`
 
-But:
+Purpose:
 
-- initialiser rapidement un projet outlet-orm
-- generer des dossiers, un `.env`, un fichier de config, des migrations et seeders
-- mode interactif classique
-- mode prompt AI via `--prompt`
+- quickly initialize an outlet-orm project
+- generate folders, a `.env`, a config file, migrations, and seeders
+- classic interactive mode
+- AI prompt mode through `--prompt`
 
-Exemples:
+Examples:
 
 ```bash
 outlet-init
 ```
 
 ```bash
-outlet-init --prompt "Blog avec utilisateurs, posts, commentaires" --driver sqlite
+outlet-init --prompt "Blog with users, posts, comments" --driver sqlite
 ```
 
 ### `outlet-convert`
 
-But:
+Purpose:
 
-- parser du SQL `CREATE TABLE`
-- inferer des casts JS
-- proposer les `fillable`, `hidden` et relations
-- detecter les tables pivot pour `belongsToMany`
+- parse SQL `CREATE TABLE`
+- infer JavaScript casts
+- suggest `fillable`, `hidden`, and relationships
+- detect pivot tables for `belongsToMany`
 
 ### `outlet-reverse`
 
-But:
+Purpose:
 
-- introspecter une base existante ou un dump SQL
-- generer des migrations basculees sur le schema builder
-- generer des seeders a partir des donnees
+- introspect an existing database or SQL dump
+- generate schema-builder-based migrations
+- generate seeders from existing data
 
-Le reverse engineering couvre MySQL, PostgreSQL et SQLite dans le parseur des `CREATE TABLE`, y compris plusieurs types, defaults et foreign keys. Voir [tests/Reverse.test.js](tests/Reverse.test.js).
+Reverse engineering covers MySQL, PostgreSQL, and SQLite in the `CREATE TABLE` parser, including many types, defaults, and foreign keys. See [tests/Reverse.test.js](tests/Reverse.test.js).
 
-## Objets SQL avances et transactions
+## Advanced SQL Objects and Transactions
 
-Le package ne se limite pas aux tables.
+The package goes beyond tables.
 
-### Builders d'objets SQL
+### SQL object builders
 
-Exports publics:
+Public exports:
 
 - `View`
 - `Trigger`
@@ -595,18 +595,18 @@ Exports publics:
 - `Transaction`
 - `useSchema(schemaOrDb)`
 
-Capacites exposees dans `Schema` et les builders associes:
+Capabilities exposed through `Schema` and the related builders:
 
 - `createView`, `createOrReplaceView`, `dropView`, `dropViewIfExists`, `hasView`, `getViews`
 - `createTrigger`, `dropTrigger`, `dropTriggerIfExists`, `hasTrigger`, `getTriggers`
 - `createProcedure`, `dropProcedure`, `dropProcedureIfExists`, `hasProcedure`
 - `createFunction`, `dropFunction`, `dropFunctionIfExists`, `hasFunction`
 
-Exemple: [examples/migrations/create_views_and_triggers.js](examples/migrations/create_views_and_triggers.js).
+Example: [examples/migrations/create_views_and_triggers.js](examples/migrations/create_views_and_triggers.js).
 
-### Transactions avancees
+### Advanced transactions
 
-`DatabaseConnection` et `Transaction` couvrent:
+`DatabaseConnection` and `Transaction` cover:
 
 - `beginTransaction()`
 - `commit()`
@@ -618,20 +618,20 @@ Exemple: [examples/migrations/create_views_and_triggers.js](examples/migrations/
 - `releaseSavepoint(name)`
 - `setIsolationLevel(level)`
 
-Constantes exportees:
+Exported constants:
 
 - `IsolationLevel.READ_UNCOMMITTED`
 - `IsolationLevel.READ_COMMITTED`
 - `IsolationLevel.REPEATABLE_READ`
 - `IsolationLevel.SERIALIZABLE`
 
-En cas de capacite non supportee, le package expose `UnsupportedCapabilityError`.
+When a capability is not supported, the package exposes `UnsupportedCapabilityError`.
 
-## API Layer HTTP / GraphQL
+## HTTP / GraphQL API Layer
 
-La couche API dans [src/Api](src/Api) reproduit une experience proche des modeles SQL, mais au-dessus de HTTP.
+The API layer in [src/Api](src/Api) reproduces a model-like experience, but over HTTP.
 
-### Classes principales
+### Main classes
 
 - `Api`
 - `ApiModel`
@@ -645,30 +645,30 @@ La couche API dans [src/Api](src/Api) reproduit une experience proche des modele
 - `ApiPaginator`
 - `ApiQueryBuilder`
 
-### Capacites REST
+### REST capabilities
 
-- CRUD via `find`, `findOrFail`, `all`, `get`, `create`, `save`, `destroy`
-- query builder HTTP avec `where`, `orWhere`, `whereIn`, `whereNull`, `orderBy`, `limit`, `offset`, `with`, `select`
-- pagination page/cursor/offset et iteration async
-- auth `bearer`, `basic`, `apiKey`, `cookie`, `oauth2`, `dynamicHeaders`
-- logs de requete et `toRequest()` pour debugger sans envoyer
-- upload avec progression quand `XMLHttpRequest` est disponible
-- validation de payload / response
-- hierarchie d'erreurs typee (`ApiError`, `ApiValidationError`, `ApiRateLimitError`, etc.)
+- CRUD through `find`, `findOrFail`, `all`, `get`, `create`, `save`, `destroy`
+- HTTP query builder with `where`, `orWhere`, `whereIn`, `whereNull`, `orderBy`, `limit`, `offset`, `with`, `select`
+- page/cursor/offset pagination and async iteration
+- `bearer`, `basic`, `apiKey`, `cookie`, `oauth2`, and `dynamicHeaders` auth
+- request logs and `toRequest()` for debugging without sending
+- upload with progress when `XMLHttpRequest` is available
+- payload / response validation
+- typed error hierarchy (`ApiError`, `ApiValidationError`, `ApiRateLimitError`, and others)
 
-### Cache, offline, realtime et tests
+### Cache, offline, realtime, and tests
 
-Le package ajoute en plus:
+The package also adds:
 
-- strategies de cache: cache-first, network-first, stale-while-revalidate, cache-only, network-only
+- cache strategies: cache-first, network-first, stale-while-revalidate, cache-only, network-only
 - stores: memory, localStorage, sessionStorage
-- queue offline via `MutationQueue`
-- wrappers de stockage offline
+- offline queue through `MutationQueue`
+- offline storage wrappers
 - watchers / event stream / websocket
-- adapter mock complet pour les tests
-- intercepteurs request / response, retry et circuit breaker
+- a complete mock adapter for tests
+- request / response interceptors, retry, and circuit breaker
 
-Les suites liees sont visibles dans:
+Related suites are visible in:
 
 - [tests/ApiLayer.test.js](tests/ApiLayer.test.js)
 - [tests/ApiLayerIntegration.test.js](tests/ApiLayerIntegration.test.js)
@@ -680,22 +680,22 @@ Les suites liees sont visibles dans:
 - [tests/ApiPagination.test.js](tests/ApiPagination.test.js)
 - [tests/ApiMock.test.js](tests/ApiMock.test.js)
 
-## Import et diff de specs API
+## API Spec Import and Diff
 
-Le package propose aussi une chaine de generation de modeles API depuis des specs ou de la documentation.
+The package also provides a pipeline for generating API models from specs or reference documentation.
 
 ### `outlet api import`
 
-Commande ciblee pour:
+Targeted command for:
 
 - OpenAPI / Swagger
 - Postman Collection
 - GraphQL introspection
 - RAML
 - API Blueprint
-- extraction depuis une documentation de reference via `--doc`
+- extraction from reference documentation through `--doc`
 
-Options notables visibles dans [bin/api/import.js](bin/api/import.js):
+Notable options visible in [bin/api/import.js](bin/api/import.js):
 
 - `--spec <path|url>`
 - `--doc <path|url>`
@@ -708,60 +708,60 @@ Options notables visibles dans [bin/api/import.js](bin/api/import.js):
 - `--include-official-subdomains true|false`
 - `--run-delta`
 
-Le pipeline gere aussi des artefacts d'execution comme les snapshots, delta de run et diagnostics de couverture.
+The pipeline also handles execution artifacts such as snapshots, run deltas, and coverage diagnostics.
 
 ### `outlet api diff`
 
-Compare un spec OpenAPI et un dossier de modeles generes:
+Compares an OpenAPI spec with a directory of generated models:
 
-- detection de modeles manquants
-- detection de modeles en trop
-- comparaison des endpoints
-- comparaison des champs `fillable`
+- detects missing models
+- detects extra models
+- compares endpoints
+- compares `fillable` fields
 
-## AI, MCP et automatisation
+## AI, MCP, and Automation
 
-La couche AI couvre deux axes: integration LLM generale et automatisation orientee ORM.
+The AI layer covers two areas: general LLM integration and ORM-oriented automation.
 
-### Exports AI publics
+### Public AI exports
 
-- `AIManager` et son alias `Ai`
-- facade `AIFacade`
+- `AIManager` and its alias `Ai`
+- `AIFacade`
 - `TextBuilder`
-- contrats: `ChatProviderContract`, `EmbeddingsProviderContract`, `ImageProviderContract`, `AudioProviderContract`, `ModelsProviderContract`, `ToolContract`
+- contracts: `ChatProviderContract`, `EmbeddingsProviderContract`, `ImageProviderContract`, `AudioProviderContract`, `ModelsProviderContract`, `ToolContract`
 - providers: `OpenAIProvider`, `OllamaProvider`, `OllamaTurboProvider`, `ClaudeProvider`, `GeminiProvider`, `GrokProvider`, `MistralProvider`, `OnnProvider`, `CustomOpenAIProvider`
 - support: `StreamChunk`, `Message`, `Document`, `ProviderError`, `ToolRegistry`, `ToolChatRunner`, `SystemInfoTool`
-- composants metier: `AIQueryBuilder`, `AISeeder`, `AIQueryOptimizer`, `AIPromptEnhancer`
-- composants historiques / utilitaires: `MCPServer`, `AISafetyGuardrails`, `PromptGenerator`
+- domain components: `AIQueryBuilder`, `AISeeder`, `AIQueryOptimizer`, `AIPromptEnhancer`
+- historical / utility components: `MCPServer`, `AISafetyGuardrails`, `PromptGenerator`
 
-### Ce que la couche AI sait faire
+### What the AI layer can do
 
-- chat et generation de texte via providers multiples
-- normalisation chat / embeddings / images / audio
+- chat and text generation across multiple providers
+- normalization for chat / embeddings / images / audio
 - tool calling
-- validation JSON schema
-- securisation de fichiers et payloads AI
-- NL->SQL via `AIQueryBuilder`
-- suggestions d'optimisation SQL via `AIQueryOptimizer`
-- generation de donnees realistes via `AISeeder`
-- generation de schema / modele / migration via `AIPromptEnhancer`
-- generation initiale projet / blueprints via `PromptGenerator`
+- JSON schema validation
+- protection for AI-related files and payloads
+- NL->SQL through `AIQueryBuilder`
+- SQL optimization suggestions through `AIQueryOptimizer`
+- realistic data generation through `AISeeder`
+- schema / model / migration generation through `AIPromptEnhancer`
+- initial project / blueprint generation through `PromptGenerator`
 
-Les suites de reference sont:
+Reference suites:
 
 - [tests/AI.test.js](tests/AI.test.js)
 - [tests/AiBridge.test.js](tests/AiBridge.test.js)
 
 ### MCP Server
 
-`outlet-mcp` demarre le serveur MCP sur stdio.
+`outlet-mcp` starts the MCP server on stdio.
 
 Options:
 
 - `--project`, `-p <path>`
 - `--no-safety`
 
-Tools exposes par defaut dans [src/AI/MCPServer.js](src/AI/MCPServer.js):
+Tools exposed by default in [src/AI/MCPServer.js](src/AI/MCPServer.js):
 
 - `migrate_status`
 - `migrate_run`
@@ -777,29 +777,29 @@ Tools exposes par defaut dans [src/AI/MCPServer.js](src/AI/MCPServer.js):
 - `ai_query`
 - `query_optimize`
 
-Les actions destructives sont soumises a des garde-fous de consentement si la securite est activee.
+Destructive actions are protected by consent guardrails when safety is enabled.
 
-## CLI de reference
+## CLI Reference
 
-### Entree unifiee `outlet`
+### Unified entry point `outlet`
 
 ```bash
 outlet <command> [args]
 ```
 
-Sous-commandes routees par [bin/outlet.js](bin/outlet.js):
+Subcommands routed by [bin/outlet.js](bin/outlet.js):
 
-| Commande | Role |
+| Command | Role |
 | --- | --- |
-| `outlet init` | initialise un projet |
-| `outlet convert` | convertit du SQL vers des modeles |
-| `outlet migrate` | lance le gestionnaire de migrations |
-| `outlet reverse` | reverse engineering DB / SQL |
-| `outlet mcp` | demarre le serveur MCP |
-| `outlet api import` | importe des modeles API depuis specs / docs |
-| `outlet api diff` | compare spec et modeles |
+| `outlet init` | initializes a project |
+| `outlet convert` | converts SQL into models |
+| `outlet migrate` | runs the migration manager |
+| `outlet reverse` | reverse engineers a DB / SQL source |
+| `outlet mcp` | starts the MCP server |
+| `outlet api import` | imports API models from specs / docs |
+| `outlet api diff` | compares a spec and generated models |
 
-Les aliases historiques restent exposes par `package.json`:
+Historical aliases remain exposed through `package.json`:
 
 - `outlet-init`
 - `outlet-convert`
@@ -811,28 +811,28 @@ Les aliases historiques restent exposes par `package.json`:
 
 ### `outlet-migrate`
 
-Sous-commandes documentees par l'implmentation courante:
+Subcommands documented by the current implementation:
 
-| Commande | Role |
+| Command | Role |
 | --- | --- |
-| `install` | cree seulement la table des migrations |
-| `migrate` / `up` | execute les migrations pending |
-| `deploy` | applique les migrations pending sans interaction, pour CI/CD |
-| `resolve --applied=<name>` | marque une migration comme appliquee |
-| `resolve --rolled-back=<name>` | marque une migration comme rollback |
-| `rollback --steps=N` | annule un ou plusieurs batches |
-| `reset --yes` | rollback total |
+| `install` | creates only the migrations table |
+| `migrate` / `up` | executes pending migrations |
+| `deploy` | applies pending migrations without interaction, for CI/CD |
+| `resolve --applied=<name>` | marks a migration as applied |
+| `resolve --rolled-back=<name>` | marks a migration as rolled back |
+| `rollback --steps=N` | rolls back one or more batches |
+| `reset --yes` | full rollback |
 | `refresh --yes` | reset + migrate |
 | `fresh --yes` | drop all + migrate |
-| `status` | etat des migrations |
-| `seed` / `db:seed` | execute les seeders |
-| `make <name>` | scaffold migration |
-| `make:seed <name>` | scaffold seeder |
-| `make:transform <name>` | scaffold migration de transformation de donnees |
-| `restore:auto [--backup=<file>]` | restaure un auto-backup |
-| `backups:list [--json]` | liste les auto-backups |
+| `status` | migration status |
+| `seed` / `db:seed` | executes seeders |
+| `make <name>` | scaffolds a migration |
+| `make:seed <name>` | scaffolds a seeder |
+| `make:transform <name>` | scaffolds a data-transformation migration |
+| `restore:auto [--backup=<file>]` | restores an auto-backup |
+| `backups:list [--json]` | lists auto-backups |
 
-Flags importants:
+Important flags:
 
 - `--pretend`
 - `--allow-failed`
@@ -850,20 +850,20 @@ Flags importants:
 - `--json`
 - `--yes` / `-y`
 
-Variables d'environnement utiles:
+Useful environment variables:
 
 - `OUTLET_PRODUCTION_CONFIRM=1`
 - `OUTLET_ALLOW_DRIFT=1`
 
 ## TypeScript
 
-Le package publie des declarations dans [types/index.d.ts](types/index.d.ts). Les exemples TS sont dans:
+The package publishes declarations in [types/index.d.ts](types/index.d.ts). TypeScript examples live in:
 
 - [examples/typescript-example.ts](examples/typescript-example.ts)
 - [examples/typescript-migration.ts](examples/typescript-migration.ts)
 - [examples/typescript-typed-model.ts](examples/typescript-typed-model.ts)
 
-Exemple minimal:
+Minimal example:
 
 ```ts
 import { Model, DatabaseConnection } from 'outlet-orm';
@@ -876,23 +876,23 @@ class User extends Model {
 }
 ```
 
-Note pratique: la declaration TypeScript couvre la majeure partie de la surface publique, mais les aides introduites tres recemment cote JavaScript doivent parfois etre verifiees aussi dans [src/QueryBuilder.js](src/QueryBuilder.js) et le [CHANGELOG.md](CHANGELOG.md) si vous utilisez les toutes dernieres additions de parite.
+Practical note: the TypeScript declarations cover most of the public surface, but helpers introduced very recently on the JavaScript side may still need to be cross-checked in [src/QueryBuilder.js](src/QueryBuilder.js) and [CHANGELOG.md](CHANGELOG.md) if you are using the latest parity additions.
 
-## Exemples et validation
+## Examples and Validation
 
-Reperes utiles dans le depot:
+Useful reference points in the repository:
 
-- [examples/usage.js](examples/usage.js) : CRUD, relations, eager loading, pagination
+- [examples/usage.js](examples/usage.js) : CRUD, relationships, eager loading, pagination
 - [examples/hidden-attributes-demo.js](examples/hidden-attributes-demo.js) : `hidden`, `withHidden`, `withoutHidden`
-- [examples/nested-demo.js](examples/nested-demo.js) : relations imbriquees
-- [examples/polymorphic-demo.js](examples/polymorphic-demo.js) : relations polymorphes
-- [examples/relations-usage.js](examples/relations-usage.js) : relations classiques
-- [examples/migrations](examples/migrations) : migrations de reference
-- [examples/simplified-architecture](examples/simplified-architecture) : mini architecture d'exemple
-- [labo/run.js](labo/run.js) : scenario runner laboratoire
-- [tests](tests) : la cartographie comportementale la plus fiable du package
+- [examples/nested-demo.js](examples/nested-demo.js) : nested relationships
+- [examples/polymorphic-demo.js](examples/polymorphic-demo.js) : polymorphic relationships
+- [examples/relations-usage.js](examples/relations-usage.js) : standard relationships
+- [examples/migrations](examples/migrations) : reference migrations
+- [examples/simplified-architecture](examples/simplified-architecture) : small reference architecture
+- [labo/run.js](labo/run.js) : lab scenario runner
+- [tests](tests) : the most reliable behavior map of the package
 
-Commandes de validation du depot:
+Repository validation commands:
 
 ```bash
 npm test --silent
@@ -906,12 +906,12 @@ npm run test:lab
 npm run lint
 ```
 
-## Notes utiles et limites
+## Useful Notes and Limits
 
-- Le package est tres large: pour un usage simple, commencez par `DatabaseConnection`, `Model`, `Schema`, `Migration` et `Seeder`.
-- Les drivers SQL sont charges de maniere lazy: l'erreur d'absence de driver apparait au moment de la connexion, pas a l'installation du package principal.
-- La CLI des migrations sait lire `database/config.js`, mais bascule aussi sur `.env` et `DATABASE_URL`.
-- La couche API HTTP est independante de la couche SQL: vous pouvez utiliser l'une sans l'autre.
-- La couche AI est optionnelle mais intimement integree aux workflows ORM, CLI et MCP.
-- Les operations destructives sont volontairement plus strictes en production.
-- Le changelog est dense et utile: [CHANGELOG.md](CHANGELOG.md) documente finement les ajouts par version, notamment v13+ pour l'API Layer, v14+ pour les migrations avancees et v15+ pour les helpers de compatibilite.
+- The package is very broad: for a simple use case, start with `DatabaseConnection`, `Model`, `Schema`, `Migration`, and `Seeder`.
+- SQL drivers are loaded lazily: a missing-driver error appears at connection time, not when the main package is installed.
+- The migration CLI can read `database/config.js`, but it also falls back to `.env` and `DATABASE_URL`.
+- The HTTP API layer is independent from the SQL layer: you can use one without the other.
+- The AI layer is optional, but tightly integrated with ORM, CLI, and MCP workflows.
+- Destructive operations are intentionally stricter in production.
+- The changelog is dense and useful: [CHANGELOG.md](CHANGELOG.md) documents additions in detail by version, especially v13+ for the API layer, v14+ for advanced migrations, and v15+ for compatibility helpers.

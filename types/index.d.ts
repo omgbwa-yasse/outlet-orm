@@ -184,6 +184,7 @@ declare module 'outlet-orm' {
     constructor(model: typeof Model | null, options?: { connection?: DatabaseConnection; source?: string | RawExpression | QueryBuilder });
 
     select(...columns: string[]): this;
+    from(source: string | RawExpression): this;
     /** Convenience alias to pass an array of columns */
     columns(cols: string[]): this;
     distinct(): this;
@@ -396,6 +397,7 @@ declare module 'outlet-orm' {
     /** Get the active database connection (v3.0.0+) */
     static getConnection(): DatabaseConnection;
     static query<T extends Model>(this: new () => T): QueryBuilder<T>;
+    static select<T extends Model>(this: new () => T, ...columns: string[]): QueryBuilder<T>;
     static all<T extends Model>(this: new () => T): Promise<T[]>;
     static find<T extends Model>(this: new () => T, id: any): Promise<T | null>;
     static findOrFail<T extends Model>(this: new () => T, id: any): Promise<T>;

@@ -541,6 +541,15 @@ class Model {
   }
 
   /**
+   * Begin querying the model with an explicit select clause.
+   * @param {...string} columns
+   * @returns {QueryBuilder}
+   */
+  static select(...columns) {
+    return this.query().select(...columns);
+  }
+
+  /**
    * Get all records
    * @returns {Promise<Array<Model>>}
    */
