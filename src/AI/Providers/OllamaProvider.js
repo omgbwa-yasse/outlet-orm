@@ -5,6 +5,7 @@ const path = require('path');
 const DocumentAttachmentMapper = require('../Support/DocumentAttachmentMapper');
 const FileSecurity = require('../Support/FileSecurity');
 const ProviderError = require('../Support/Exceptions/ProviderError');
+const { fetchWithTimeout } = require('../Support/Fetch');
 
 /**
  * OllamaProvider
@@ -31,8 +32,8 @@ class OllamaProvider {
   async _post(url, body, stream = false) {
     const headers = this._decorateHeaders({ 'Content-Type': 'application/json' });
     const fetchOpts = { method: 'POST', headers, body: JSON.stringify(body) };
-    if (stream) return fetch(url, fetchOpts);
-    const res = await fetch(url, fetchOpts);
+    if (stream) return fetchWithTimeout(url, fetchOpts);
+    const res = await fetchWithTimeout(url, fetchOpts);
     return res.json();
   }
 

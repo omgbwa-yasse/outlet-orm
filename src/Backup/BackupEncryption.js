@@ -27,8 +27,11 @@ const crypto = require('crypto');
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const MAGIC = 'OUTLET_ENC_V1';
+const MAGIC_V2 = 'OUTLET_ENC_V2';
 const IV_LENGTH = 12;          // bytes – GCM recommended
 const SALT_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const V2_SALT_BYTES = 16;
+const V2_SCRYPT = { N: 65536, r: 8, p: 1, maxmem: 128 * 1024 * 1024 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -97,6 +100,125 @@ function encrypt(plaintext, password, saltLength = 6) {
 }
 
 /**
+ * Derive the V2 256-bit key with a stronger scrypt work factor.
+ * @param {string} password
+ * @param {string} saltHex
+ * @returns {Buffer}
+ */
+function deriveKeyV2(password, saltHex) {
+  return crypto.scryptSync(
+    password,
+    Buffer.from(saltHex, 'hex'),
+    32,
+    V2_SCRYPT
+  );
+}
+
+/**
+ * Encrypt a payload using the V2 format:
+ *   OUTLET_ENC_V2
+ *   salt_hex (16 bytes)
+ *   N / r / p
+ *   iv_hex
+ *   authTag_hex
+ *   hmac_hex (integrity over all preceding lines)
+ *   ciphertext_base64
+ *
+ * @param {string} plaintext
+ * @param {string} password
+ * @returns {{ encryptedContent: string, salt: string }}
+ */
+function encryptV2(plaintext, password) {
+  if (!password || typeof password !== 'string') {
+    throw new TypeError('BackupEncryption.encryptV2: password must be a non-empty string');
+  }
+
+  const salt = crypto.randomBytes(V2_SALT_BYTES).toString('hex');
+  const key = deriveKeyV2(password, salt);
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const encrypted = Buffer.concat([
+    cipher.update(plaintext, 'utf8'),
+    cipher.final()
+  ]);
+  const authTag = cipher.getAuthTag();
+
+  const header = [
+    MAGIC_V2,
+    salt,
+    String(V2_SCRYPT.N),
+    String(V2_SCRYPT.r),
+    String(V2_SCRYPT.p),
+    iv.toString('hex'),
+    authTag.toString('hex')
+  ];
+  const ciphertextB64 = encrypted.toString('base64');
+  const hmac = crypto.createHmac('sha256', key)
+    .update([...header, ciphertextB64].join('\n'))
+    .digest('hex');
+
+  return {
+    encryptedContent: [...header, hmac, ciphertextB64].join('\n'),
+    salt
+  };
+}
+
+/**
+ * Decrypt a V2 payload and verify its HMAC before GCM decryption.
+ * @param {string[]} lines
+ * @param {string} password
+ * @returns {string}
+ */
+function decryptV2(lines, password) {
+  if (lines.length < 8) {
+    throw new Error('BackupEncryption.decrypt: invalid V2 encrypted backup format');
+  }
+  const [, salt, nRaw, rRaw, pRaw, ivHex, tagHex, hmacHex, ...rest] = lines;
+  const ciphertextB64 = rest.join('\n');
+  if (!/^[0-9a-f]{32}$/i.test(salt)) {
+    throw new Error('BackupEncryption.decrypt: invalid V2 salt');
+  }
+
+  // Bound KDF parameters to prevent a malicious file from forcing a huge
+  // memory/CPU allocation (DoS).
+  const N = Number(nRaw);
+  const r = Number(rRaw);
+  const p = Number(pRaw);
+  if (!Number.isInteger(N) || N < 16384 || N > 131072 || r !== 8 || p < 1 || p > 2) {
+    throw new Error('BackupEncryption.decrypt: unsafe V2 KDF parameters');
+  }
+
+  const key = crypto.scryptSync(
+    password,
+    Buffer.from(salt, 'hex'),
+    32,
+    { N, r, p, maxmem: 256 * 1024 * 1024 }
+  );
+
+  const header = [MAGIC_V2, salt, nRaw, rRaw, pRaw, ivHex, tagHex];
+  const expected = crypto.createHmac('sha256', key)
+    .update([...header, ciphertextB64].join('\n'))
+    .digest();
+  const provided = Buffer.from(hmacHex, 'hex');
+  if (provided.length !== expected.length ||
+      !crypto.timingSafeEqual(provided, expected)) {
+    throw new Error('BackupEncryption.decrypt: integrity check failed');
+  }
+
+  const iv = Buffer.from(ivHex, 'hex');
+  const authTag = Buffer.from(tagHex, 'hex');
+  const ciphertext = Buffer.from(ciphertextB64, 'base64');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(authTag);
+
+  try {
+    return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
+  } catch (_) {
+    throw new Error('BackupEncryption.decrypt: authentication failed – wrong password or corrupted data');
+  }
+}
+
+/**
  * Decrypt a previously encrypted backup payload.
  *
  * @param {string} encryptedContent  The raw file content (as written by encrypt())
@@ -110,6 +232,10 @@ function decrypt(encryptedContent, password) {
   }
 
   const lines = encryptedContent.split('\n');
+
+  if (lines[0] === MAGIC_V2) {
+    return decryptV2(lines, password);
+  }
 
   if (lines.length < 5 || lines[0] !== MAGIC) {
     throw new Error('BackupEncryption.decrypt: invalid or unrecognised encrypted backup format');
@@ -147,7 +273,8 @@ function decrypt(encryptedContent, password) {
  * @returns {boolean}
  */
 function isEncrypted(content) {
-  return typeof content === 'string' && content.startsWith(MAGIC + '\n');
+  return typeof content === 'string' &&
+    (content.startsWith(MAGIC + '\n') || content.startsWith(MAGIC_V2 + '\n'));
 }
 
-module.exports = { encrypt, decrypt, isEncrypted, generateSalt };
+module.exports = { encrypt, encryptV2, decrypt, isEncrypted, generateSalt };

@@ -40,6 +40,9 @@ Main exports:
 - `MockAdapter`
 - `InterceptorManager`
 - `ApiCache`
+- `CacheMemoryStore`
+- `CacheLocalStorageStore`
+- `CacheSessionStorageStore`
 - `ApiValidator`
 - `ApiPaginator`
 - `ApiQueryBuilder`
@@ -163,6 +166,9 @@ Typed errors:
 Cache:
 
 - `ApiCache`
+- `CacheMemoryStore`
+- `CacheLocalStorageStore`
+- `CacheSessionStorageStore`
 - memory/localStorage/sessionStorage stores
 - cache-first, network-first, stale-while-revalidate, cache-only, network-only strategies
 

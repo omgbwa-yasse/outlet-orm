@@ -1,5 +1,7 @@
 'use strict';
 
+const { fetchWithTimeout } = require('../Support/Fetch');
+
 /**
  * GrokProvider
  * Prompt-based chat with simulated streaming (80-char chunks).
@@ -20,7 +22,7 @@ class GrokProvider {
       prompt: joined,
       model: options.model || 'grok-default',
     };
-    const res = await fetch(this.endpoint, {
+    const res = await fetchWithTimeout(this.endpoint, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,

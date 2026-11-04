@@ -48,6 +48,21 @@ class Api extends EventEmitter {
   static get endpoint() { return this._endpoint || null; }
   static set endpoint(v) { this._endpoint = v; }
 
+  /**
+   * Optional cache namespace (user id, tenant id, role...). Include this when
+   * the same process serves multiple identities, otherwise cached responses
+   * could leak across users.
+   */
+  static cacheScope = null;
+
+  /** @private */
+  static _cacheKey(path) {
+    const scope = this.cacheScope
+      || (this._config && this._config.cacheScope)
+      || '';
+    return scope ? `${scope}:${path}` : path;
+  }
+
   // ── Cache helpers (T041-T043) ─────────────────────────────────────
   static _getCache() {
     if (this._cacheInstance) return this._cacheInstance;
@@ -84,7 +99,7 @@ class Api extends EventEmitter {
     if (!ep) throw new Error(this.name + '.endpoint is not defined.');
     const path = ep + '/' + encodeURIComponent(id);
     const cache = !fresh && this._getCache();
-    const cacheKey = path;
+    const cacheKey = this._cacheKey(path);
 
     const fetcher = async () => {
       try {
@@ -121,7 +136,7 @@ class Api extends EventEmitter {
     const qs = params ? new URLSearchParams(params).toString() : '';
     const path = qs ? ep + '?' + qs : ep;
     const cache = !fresh && this._getCache();
-    const cacheKey = path;
+    const cacheKey = this._cacheKey(path);
 
     const fetcher = async () => {
       const data = await adapter.request('GET', path);
@@ -258,17 +273,17 @@ class Api extends EventEmitter {
     const cast = this._casts[key];
     if (!cast) return value;
     switch (cast) {
-      case 'int':
-      case 'integer': return value != null ? parseInt(value, 10) : value;
-      case 'float':
-      case 'number': return value != null ? parseFloat(value) : value;
-      case 'bool':
-      case 'boolean': return value != null ? Boolean(value) : value;
-      case 'string': return value != null ? String(value) : value;
-      case 'array': return Array.isArray(value) ? value : (value ? JSON.parse(value) : []);
-      case 'object': return value && typeof value === 'string' ? JSON.parse(value) : (value || {});
-      case 'date': return value ? new Date(value) : value;
-      default: return value;
+    case 'int':
+    case 'integer': return value != null ? parseInt(value, 10) : value;
+    case 'float':
+    case 'number': return value != null ? parseFloat(value) : value;
+    case 'bool':
+    case 'boolean': return value != null ? Boolean(value) : value;
+    case 'string': return value != null ? String(value) : value;
+    case 'array': return Array.isArray(value) ? value : (value ? JSON.parse(value) : []);
+    case 'object': return value && typeof value === 'string' ? JSON.parse(value) : (value || {});
+    case 'date': return value ? new Date(value) : value;
+    default: return value;
     }
   }
 

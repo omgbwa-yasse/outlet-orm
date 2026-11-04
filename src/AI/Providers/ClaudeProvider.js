@@ -1,5 +1,7 @@
 'use strict';
 
+const { fetchWithTimeout } = require('../Support/Fetch');
+
 /**
  * ClaudeProvider
  * Anthropic Messages API. System messages are converted to user role.
@@ -39,7 +41,7 @@ class ClaudeProvider {
     };
     if (options.temperature !== undefined) payload.temperature = options.temperature;
 
-    const res = await fetch(this.endpoint, {
+    const res = await fetchWithTimeout(this.endpoint, {
       method: 'POST',
       headers: this._headers(),
       body: JSON.stringify(payload),

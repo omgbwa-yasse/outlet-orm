@@ -195,7 +195,7 @@ class Schema {
         .get();
       break;
     case 'sqlite': {
-      const escapedTableName = String(tableName).replace(/'/g, "''");
+      const escapedTableName = String(tableName).replace(/'/g, '\'\'');
       rows = await this.connection
         .from(new RawExpression(`pragma_table_info('${escapedTableName}')`))
         .selectRaw('COUNT(1) AS cnt')
@@ -253,7 +253,7 @@ class Schema {
         .get();
       break;
     case 'sqlite': {
-      const escapedTableName = String(tableName).replace(/'/g, "''");
+      const escapedTableName = String(tableName).replace(/'/g, '\'\'');
       rows = await this.connection
         .from(new RawExpression(`pragma_index_list('${escapedTableName}')`))
         .selectRaw('COUNT(1) AS cnt')
@@ -298,7 +298,7 @@ class Schema {
         .from('sqlite_master')
         .select('name')
         .where('type', 'table')
-        .whereRaw("name NOT LIKE 'sqlite_%'")
+        .whereRaw('name NOT LIKE \'sqlite_%\'')
         .orderBy('name')
         .get();
       break;
@@ -1131,9 +1131,34 @@ class Blueprint {
 
     // Add new columns
     const driver = this.connection.config.driver;
-    for (const column of this.columns) {
-      let sql = `ALTER TABLE ${quoteIdentifier(this.tableName)} ADD COLUMN ${column.toSql(driver)}`;
+    const changedColumns = this.columns.filter(col => col.isChange);
+    const addedColumns = this.columns.filter(col => !col.isChange);
+    for (const column of addedColumns) {
+      const sql = `ALTER TABLE ${quoteIdentifier(this.tableName)} ADD COLUMN ${column.toSql(driver)}`;
       statements.push(sql);
+    }
+
+    // Alter existing columns (`.change()`).
+    for (const column of changedColumns) {
+      if (driver === 'sqlite') {
+        throw new UnsupportedCapabilityError('sqlite', 'changing existing columns');
+      }
+      const table = quoteId(this.tableName, driver);
+      const name = quoteId(column.name, driver);
+      if (driver === 'mysql') {
+        statements.push(`ALTER TABLE ${table} MODIFY COLUMN ${column.toSql('mysql')}`);
+        continue;
+      }
+      const type = column.getTypeDefinition('postgres');
+      statements.push(`ALTER TABLE ${table} ALTER COLUMN ${name} TYPE ${type} USING ${name}::${type}`);
+      statements.push(`ALTER TABLE ${table} ALTER COLUMN ${name} ${column.isNullable ? 'DROP' : 'SET'} NOT NULL`);
+      if (column.useCurrentTimestamp) {
+        statements.push(`ALTER TABLE ${table} ALTER COLUMN ${name} SET DEFAULT CURRENT_TIMESTAMP`);
+      } else if (column.defaultValue !== null) {
+        statements.push(`ALTER TABLE ${table} ALTER COLUMN ${name} SET DEFAULT ${column.formatDefaultValue()}`);
+      } else {
+        statements.push(`ALTER TABLE ${table} ALTER COLUMN ${name} DROP DEFAULT`);
+      }
     }
 
     // Process commands
@@ -1348,6 +1373,7 @@ class ColumnDefinition {
     this.isFirst = false;
     this.useCurrentTimestamp = false;
     this.useCurrentOnUpdateTimestamp = false;
+    this.isChange = false;
   }
 
   primary() {
@@ -1392,6 +1418,15 @@ class ColumnDefinition {
 
   first() {
     this.isFirst = true;
+    return this;
+  }
+
+  /**
+   * Mark this column as an existing column to alter (ALTER TABLE ... MODIFY /
+   * ALTER COLUMN). Not supported on SQLite.
+   */
+  change() {
+    this.isChange = true;
     return this;
   }
 

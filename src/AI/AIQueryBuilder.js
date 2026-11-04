@@ -1,6 +1,54 @@
 'use strict';
 
 /**
+ * Strip SQL strings and comments before keyword checks.
+ * @param {string} sql
+ * @returns {string}
+ */
+function stripSqlLiteralsAndComments(sql) {
+  let out = '';
+  let i = 0;
+  let single = false;
+  let double = false;
+  let lineComment = false;
+  let blockComment = false;
+  while (i < sql.length) {
+    const ch = sql[i];
+    const next = sql[i + 1];
+    if (lineComment) { if (ch === '\n') { lineComment = false; out += '\n'; } i++; continue; }
+    if (blockComment) { if (ch === '*' && next === '/') { blockComment = false; i += 2; } else i++; continue; }
+    if (single) {
+      if (ch === '\'' && next === '\'') { i += 2; continue; }
+      if (ch === '\'') single = false;
+      i++; continue;
+    }
+    if (double) {
+      if (ch === '"' && next === '"') { i += 2; continue; }
+      if (ch === '"') double = false;
+      i++; continue;
+    }
+    if (ch === '-' && next === '-') { lineComment = true; i += 2; continue; }
+    if (ch === '/' && next === '*') { blockComment = true; i += 2; continue; }
+    if (ch === '\'') { single = true; i++; continue; }
+    if (ch === '"') { double = true; i++; continue; }
+    out += ch;
+    i++;
+  }
+  return out;
+}
+
+/**
+ * Return true only for a single read-only SELECT/CTE statement.
+ * @param {string} sql
+ * @returns {boolean}
+ */
+function isReadOnlySql(sql) {
+  const cleaned = stripSqlLiteralsAndComments(String(sql || '')).trim();
+  if (!/^(SELECT|WITH)\b/i.test(cleaned)) return false;
+  return !/\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|REPLACE|GRANT|REVOKE|MERGE|COPY|CALL|EXECUTE)\b/i.test(cleaned);
+}
+
+/**
  * AIQueryBuilder
  * Natural Language → SQL conversion using any AI provider.
  * Introspects the database schema, sends it with the NL prompt to an LLM,
@@ -80,19 +128,23 @@ class AIQueryBuilder {
     const res = await this._manager.chat(this._provider, messages, chatOptions);
     const parsed = this._extractSqlFromResponse(res);
 
-    // Safety check
-    if (this._safeMode && parsed.sql) {
-      const upper = parsed.sql.trim().toUpperCase();
-      if (!upper.startsWith('SELECT') && !upper.startsWith('WITH')) {
-        throw new Error(`AIQueryBuilder safe mode: only SELECT/WITH queries are allowed. Got: ${upper.slice(0, 20)}...`);
-      }
+    // Safety check: reject write keywords anywhere in the statement, including
+    // data-modifying CTEs such as `WITH x AS (DELETE ...) SELECT ...`.
+    if (this._safeMode && parsed.sql && !isReadOnlySql(parsed.sql)) {
+      throw new Error(
+        'AIQueryBuilder safe mode: only a single read-only SELECT/WITH query is allowed.'
+      );
     }
 
     // Execute the query
     let results = [];
     if (parsed.sql && this._connection) {
       try {
-        results = await this._connection.raw(parsed.sql, parsed.params || []);
+        const params = Array.isArray(parsed.params) ? parsed.params : [];
+        const runner = typeof this._connection.executeRawQuery === 'function'
+          ? this._connection.executeRawQuery.bind(this._connection)
+          : this._connection.raw.bind(this._connection);
+        results = await runner(parsed.sql, params);
       } catch (err) {
         return { sql: parsed.sql, params: parsed.params || [], results: [], error: err.message, raw_response: res };
       }

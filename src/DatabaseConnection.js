@@ -1,10 +1,25 @@
-// Load environment variables from .env if present
-require('dotenv').config();
+// Load environment variables from .env if present. Set OUTLET_NO_DOTENV=1 in
+// applications that load their own configuration to avoid a library side effect.
+if (process.env.OUTLET_NO_DOTENV !== '1') {
+  require('dotenv').config();
+}
 
 // Lazy driver holders
 let mysql;
 let PgPool;
 let sqlite3;
+
+const { AsyncLocalStorage } = require('async_hooks');
+
+/**
+ * Per-async-context transaction state.
+ *
+ * Keeping transaction state on the DatabaseConnection instance is unsafe for
+ * servers: two concurrent requests would overwrite each other's connection and
+ * could commit/rollback the wrong transaction. AsyncLocalStorage gives each
+ * async execution chain its own transaction context.
+ */
+const transactionStorage = new AsyncLocalStorage();
 
 // Query log storage
 let queryLog = [];
@@ -49,6 +64,21 @@ function sanitizeIdentifier(identifier) {
 }
 
 /**
+ * Return a redacted copy of query parameters when the SQL touches sensitive
+ * columns. This keeps the query log useful for debugging without persisting
+ * passwords, tokens or other credentials.
+ * @param {string} sql
+ * @param {Array} params
+ * @returns {Array}
+ */
+function redactLogParams(sql, params) {
+  if (!params || params.length === 0) return params || [];
+  const sensitive = /\b(password|passwd|pwd|secret|token|api[_-]?key|authorization|credit[_-]?card|ssn|pin)\b/i;
+  if (!sensitive.test(String(sql))) return params;
+  return params.map(() => '[REDACTED]');
+}
+
+/**
  * Log a query if logging is enabled
  * @param {string} sql
  * @param {Array} params
@@ -58,7 +88,7 @@ function logQuery(sql, params, duration) {
   if (queryLoggingEnabled) {
     queryLog.push({
       sql,
-      params: params || [],
+      params: redactLogParams(sql, params),
       duration,
       timestamp: new Date()
     });
@@ -123,6 +153,29 @@ class DatabaseConnection {
       connectionLimit: cfg.connectionLimit || coerceNumber(env.DB_POOL_MAX) || 10
     };
 
+    // Connection options that must be forwarded to the driver. Previously
+    // these were silently dropped, which made TLS impossible to configure and
+    // caused production connections to fall back to plaintext.
+    const passthrough = [
+      'ssl', 'ca', 'cert', 'key', 'pfx', 'passphrase',
+      'rejectUnauthorized', 'minVersion', 'maxVersion',
+      'socketPath', 'charset', 'timezone', 'connectTimeout',
+      'queryTimeout', 'statementTimeout', 'applicationName',
+      'busyTimeout', 'enableKeepAlive', 'foreignKeys'
+    ];
+    for (const key of passthrough) {
+      if (cfg[key] !== undefined) resolved[key] = cfg[key];
+    }
+
+    // Environment-driven TLS. DB_SSL=true enables TLS with certificate
+    // verification; DB_SSL_REJECT_UNAUTHORIZED=false is an explicit opt-out.
+    if (resolved.ssl === undefined && env.DB_SSL === 'true') {
+      resolved.ssl = { rejectUnauthorized: env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' };
+    }
+    if (resolved.rejectUnauthorized === undefined && env.DB_SSL_REJECT_UNAUTHORIZED !== undefined) {
+      resolved.rejectUnauthorized = env.DB_SSL_REJECT_UNAUTHORIZED !== 'false';
+    }
+
     if (driver === 'sqlite' && !resolved.database) {
       resolved.database = env.DB_FILE || env.SQLITE_DB || env.SQLITE_FILENAME || ':memory:';
     }
@@ -131,11 +184,18 @@ class DatabaseConnection {
     this.driver = driver || 'mysql';
     this.connection = null;
     this.pool = null;
+    this._connectPromise = null;
+    // Legacy fields kept for backwards compatibility with direct callers.
     this._transactionConnection = null;
     this._pendingIsolationLevel = null;
     this._pgVersionNum = null;
     this._sqliteInTransaction = false;
     this._afterCommitHooks = [];
+    // Fallback context for the legacy explicit beginTransaction()/commit() API.
+    // transaction() always uses AsyncLocalStorage, which is concurrency-safe.
+    this._explicitTxContext = null;
+    // Serializes SQLite transactions (single connection).
+    this._sqliteTxLock = Promise.resolve();
   }
 
   // ==================== Query Logging ====================
@@ -190,23 +250,32 @@ class DatabaseConnection {
    */
   async connect() {
     if (this.pool || this.connection) return;
+    if (this._connectPromise) return this._connectPromise;
 
-    switch (this.driver) {
-    case 'mysql':
-      ensureDriver('mysql');
-      await this.connectMySQL();
-      break;
-    case 'postgres':
-    case 'postgresql':
-      ensureDriver('postgres');
-      await this.connectPostgreSQL();
-      break;
-    case 'sqlite':
-      ensureDriver('sqlite');
-      await this.connectSQLite();
-      break;
-    default:
-      throw new Error(`Unsupported database driver: ${this.driver}`);
+    this._connectPromise = (async () => {
+      switch (this.driver) {
+      case 'mysql':
+        ensureDriver('mysql');
+        await this.connectMySQL();
+        break;
+      case 'postgres':
+      case 'postgresql':
+        ensureDriver('postgres');
+        await this.connectPostgreSQL();
+        break;
+      case 'sqlite':
+        ensureDriver('sqlite');
+        await this.connectSQLite();
+        break;
+      default:
+        throw new Error(`Unsupported database driver: ${this.driver}`);
+      }
+    })();
+
+    try {
+      await this._connectPromise;
+    } finally {
+      this._connectPromise = null;
     }
   }
 
@@ -215,7 +284,7 @@ class DatabaseConnection {
    * @private
    */
   async connectMySQL() {
-    this.pool = mysql.createPool({
+    const options = {
       host: this.config.host || 'localhost',
       port: this.config.port || 3306,
       user: this.config.user,
@@ -224,7 +293,27 @@ class DatabaseConnection {
       waitForConnections: true,
       connectionLimit: this.config.connectionLimit,
       queueLimit: 0
-    });
+    };
+    for (const key of [
+      'ssl', 'socketPath', 'charset', 'timezone',
+      'connectTimeout', 'enableKeepAlive'
+    ]) {
+      if (this.config[key] !== undefined) options[key] = this.config[key];
+    }
+    if (this.config.rejectUnauthorized !== undefined ||
+        this.config.ca !== undefined ||
+        this.config.cert !== undefined ||
+        this.config.key !== undefined) {
+      options.ssl = Object.assign({}, typeof options.ssl === 'object' ? options.ssl : {}, {
+        ...(this.config.rejectUnauthorized !== undefined
+          ? { rejectUnauthorized: this.config.rejectUnauthorized }
+          : {}),
+        ...(this.config.ca !== undefined ? { ca: this.config.ca } : {}),
+        ...(this.config.cert !== undefined ? { cert: this.config.cert } : {}),
+        ...(this.config.key !== undefined ? { key: this.config.key } : {})
+      });
+    }
+    this.pool = mysql.createPool(options);
   }
 
   /**
@@ -232,14 +321,39 @@ class DatabaseConnection {
    * @private
    */
   async connectPostgreSQL() {
-    this.pool = new PgPool({
+    const options = {
       host: this.config.host || 'localhost',
       port: this.config.port || 5432,
       user: this.config.user,
       password: this.config.password,
       database: this.config.database,
       max: this.config.connectionLimit
-    });
+    };
+    for (const key of [
+      'ssl', 'applicationName', 'statementTimeout',
+      'queryTimeout', 'connectTimeout'
+    ]) {
+      if (this.config[key] !== undefined) options[key] = this.config[key];
+    }
+    if (this.config.rejectUnauthorized !== undefined ||
+        this.config.ca !== undefined ||
+        this.config.cert !== undefined ||
+        this.config.key !== undefined) {
+      options.ssl = Object.assign({}, typeof options.ssl === 'object' ? options.ssl : {}, {
+        ...(this.config.rejectUnauthorized !== undefined
+          ? { rejectUnauthorized: this.config.rejectUnauthorized }
+          : {}),
+        ...(this.config.ca !== undefined ? { ca: this.config.ca } : {}),
+        ...(this.config.cert !== undefined ? { cert: this.config.cert } : {}),
+        ...(this.config.key !== undefined ? { key: this.config.key } : {})
+      });
+    }
+    this.pool = new PgPool(options);
+    if (this.config.statementTimeout) {
+      this.pool.on('connect', (client) => {
+        client.query(`SET statement_timeout = ${Number(this.config.statementTimeout)}`).catch(() => {});
+      });
+    }
 
     // Cache the server version number (e.g. 110012 for 11.0.12) for feature gating.
     // Defaults to 110000 (PG 11.0) if the query fails — safe fallback assuming ≥11.
@@ -267,8 +381,20 @@ class DatabaseConnection {
       this.connection = new sqlite3.Database(
         this.config.database || ':memory:',
         (err) => {
-          if (err) reject(new Error(err.message || String(err)));
-          else resolve();
+          if (err) {
+            reject(new Error(err.message || String(err)));
+            return;
+          }
+          const busyTimeout = this.config.busyTimeout || this.config.queryTimeout || 5000;
+          try { this.connection.configure('busyTimeout', busyTimeout); } catch (_) { /* best effort */ }
+          // WAL improves concurrent read/write behaviour for file databases.
+          if (this.config.database && this.config.database !== ':memory:') {
+            this.connection.run('PRAGMA journal_mode = WAL', () => {});
+          }
+          if (this.config.foreignKeys === true) {
+            this.connection.run('PRAGMA foreign_keys = ON', () => {});
+          }
+          resolve();
         }
       );
     });
@@ -277,90 +403,229 @@ class DatabaseConnection {
   // ==================== Transactions ====================
 
   /**
-   * Begin a transaction
+   * Return the transaction context attached to the current async execution.
+   * @private
+   */
+  _txContext() {
+    return transactionStorage.getStore() || null;
+  }
+
+  /**
+   * Resolve the active transaction for legacy explicit begin/commit calls.
+   * @private
+   */
+  _activeTxContext() {
+    return this._txContext() || this._explicitTxContext || null;
+  }
+
+  /**
+   * Acquire a dedicated connection for a top-level transaction.
+   * SQLite uses a serialized lock because it exposes a single connection.
+   * @private
+   */
+  async _acquireTxClient() {
+    if (this.driver === 'sqlite') {
+      const release = await this._acquireSqliteLock();
+      return { client: this.connection, release, sqliteLock: true };
+    }
+    if (this.driver === 'mysql') {
+      const client = await this.pool.getConnection();
+      return { client, release: () => client.release(), sqliteLock: false };
+    }
+    const client = await this.pool.connect();
+    return { client, release: () => client.release(), sqliteLock: false };
+  }
+
+  /**
+   * Serialize SQLite transactions so concurrent callers wait instead of
+   * throwing "cannot start a transaction within a transaction".
+   * @private
+   */
+  async _acquireSqliteLock() {
+    let release;
+    const previous = this._sqliteTxLock;
+    this._sqliteTxLock = new Promise((resolve) => { release = resolve; });
+    await previous;
+    return release;
+  }
+
+  /**
+   * Acquire a dedicated driver client for session-scoped operations such as
+   * advisory locks. The caller must release it with the returned function.
+   * @returns {Promise<{client: any, release: Function}>}
+   */
+  async acquireDedicatedClient() {
+    await this.connect();
+    if (this.driver === 'sqlite') {
+      return { client: this.connection, release: () => {} };
+    }
+    if (this.driver === 'mysql') {
+      const client = await this.pool.getConnection();
+      return { client, release: () => client.release() };
+    }
+    const client = await this.pool.connect();
+    return { client, release: () => client.release() };
+  }
+
+  /**
+   * Execute SQL on a specific dedicated client.
+   * @param {any} client
+   * @param {string} sql
+   * @param {Array} [params]
+   * @returns {Promise<any>}
+   */
+  async executeOnClient(client, sql, params = []) {
+    if (this.driver === 'mysql') {
+      const [rows] = await client.execute(sql, params);
+      return rows;
+    }
+    if (this.driver === 'postgres' || this.driver === 'postgresql') {
+      const result = await client.query(this.convertToDriverPlaceholder(sql), params);
+      return result.rows;
+    }
+    return new Promise((resolve, reject) => {
+      client.all(sql, params, (err, rows) => {
+        if (err) reject(new Error(err.message || String(err)));
+        else resolve(rows || []);
+      });
+    });
+  }
+
+  /**
+   * Begin a transaction. Nested calls create a SAVEPOINT.
    * @returns {Promise<void>}
    */
   async beginTransaction() {
     await this.connect();
 
-    switch (this.driver) {
-    case 'mysql': {
-      this._transactionConnection = await this.pool.getConnection();
-      if (this._pendingIsolationLevel) {
-        await this._transactionConnection.execute(
-          `SET TRANSACTION ISOLATION LEVEL ${this._pendingIsolationLevel}`
-        );
-        this._pendingIsolationLevel = null;
-      }
-      await this._transactionConnection.beginTransaction();
-      break;
+    const parent = this._txContext();
+    if (parent) {
+      const name = `outlet_sp_${++parent.savepointCounter}`;
+      await this.execute(`SAVEPOINT ${name}`);
+      const child = {
+        connection: parent.connection,
+        driver: this.driver,
+        parent,
+        savepointName: name,
+        afterCommitHooks: [],
+        sqliteRelease: null,
+        savepointCounter: 0,
+        depth: parent.depth + 1
+      };
+      transactionStorage.enterWith(child);
+      this._explicitTxContext = child;
+      return child;
     }
 
-    case 'postgres':
-    case 'postgresql': {
-      this._transactionConnection = await this.pool.connect();
-      await this._transactionConnection.query('BEGIN');
-      if (this._pendingIsolationLevel) {
-        await this._transactionConnection.query(
-          `SET TRANSACTION ISOLATION LEVEL ${this._pendingIsolationLevel}`
-        );
-        this._pendingIsolationLevel = null;
-      }
-      break;
-    }
+    const acquired = await this._acquireTxClient();
+    const ctx = {
+      connection: acquired.client,
+      driver: this.driver,
+      parent: null,
+      savepointName: null,
+      afterCommitHooks: [],
+      sqliteRelease: acquired.sqliteLock ? acquired.release : null,
+      savepointCounter: 0,
+      depth: 0
+    };
 
-    case 'sqlite':
-      await new Promise((resolve, reject) => {
-        this.connection.run('BEGIN TRANSACTION', (err) => {
-          if (err) reject(new Error(err.message || String(err)));
-          else resolve();
+    // Legacy fields kept in sync for direct callers that inspect them.
+    this._transactionConnection = acquired.client;
+    this._sqliteInTransaction = this.driver === 'sqlite';
+
+    try {
+      if (this.driver === 'mysql') {
+        if (this._pendingIsolationLevel) {
+          await acquired.client.execute(
+            `SET TRANSACTION ISOLATION LEVEL ${this._pendingIsolationLevel}`
+          );
+          this._pendingIsolationLevel = null;
+        }
+        await acquired.client.beginTransaction();
+      } else if (this.driver === 'postgres' || this.driver === 'postgresql') {
+        await acquired.client.query('BEGIN');
+        if (this._pendingIsolationLevel) {
+          await acquired.client.query(
+            `SET TRANSACTION ISOLATION LEVEL ${this._pendingIsolationLevel}`
+          );
+          this._pendingIsolationLevel = null;
+        }
+      } else {
+        await new Promise((resolve, reject) => {
+          this.connection.run('BEGIN TRANSACTION', (err) => {
+            if (err) reject(new Error(err.message || String(err)));
+            else resolve();
+          });
         });
-      });
-      this._sqliteInTransaction = true;
-      break;
+      }
+      transactionStorage.enterWith(ctx);
+      this._explicitTxContext = ctx;
+      return ctx;
+    } catch (error) {
+      this._transactionConnection = null;
+      this._sqliteInTransaction = false;
+      this._explicitTxContext = null;
+      acquired.release();
+      throw error;
     }
   }
 
   /**
-   * Commit the current transaction
+   * Commit the current transaction.
    * @returns {Promise<void>}
    */
   async commit() {
-    switch (this.driver) {
-    case 'mysql':
-      if (this._transactionConnection) {
-        try {
-          await this._transactionConnection.commit();
-        } finally {
-          this._transactionConnection.release();
-          this._transactionConnection = null;
-        }
-      }
-      break;
+    const ctx = this._activeTxContext();
 
-    case 'postgres':
-    case 'postgresql':
-      if (this._transactionConnection) {
-        try {
-          await this._transactionConnection.query('COMMIT');
-        } finally {
-          this._transactionConnection.release();
-          this._transactionConnection = null;
-        }
-      }
-      break;
-
-    case 'sqlite':
-      await new Promise((resolve, reject) => {
-        this.connection.run('COMMIT', (err) => {
-          if (err) reject(new Error(err.message || String(err)));
-          else resolve();
+    if (!ctx) {
+      // Legacy fallback for callers that set the private field directly.
+      if (this._sqliteInTransaction) {
+        await new Promise((resolve, reject) => {
+          this.connection.run('COMMIT', (err) => {
+            if (err) reject(new Error(err.message || String(err)));
+            else resolve();
+          });
         });
-      });
-      this._sqliteInTransaction = false;
-      break;
+        this._sqliteInTransaction = false;
+      } else if (this._transactionConnection && typeof this._transactionConnection.commit === 'function') {
+        try { await this._transactionConnection.commit(); }
+        finally { this._transactionConnection.release(); this._transactionConnection = null; }
+      }
+      return;
     }
-    await this._fireAfterCommitHooks();
+
+    if (ctx.parent) {
+      await this.execute(`RELEASE SAVEPOINT ${ctx.savepointName}`);
+      // Nested afterCommit hooks fire with the outermost transaction.
+      ctx.parent.afterCommitHooks.push(...ctx.afterCommitHooks);
+      transactionStorage.enterWith(ctx.parent);
+      this._explicitTxContext = ctx.parent;
+      return;
+    }
+
+    try {
+      if (this.driver === 'mysql') {
+        await ctx.connection.commit();
+      } else if (this.driver === 'postgres' || this.driver === 'postgresql') {
+        await ctx.connection.query('COMMIT');
+      } else {
+        await new Promise((resolve, reject) => {
+          this.connection.run('COMMIT', (err) => {
+            if (err) reject(new Error(err.message || String(err)));
+            else resolve();
+          });
+        });
+      }
+    } finally {
+      this._transactionConnection = null;
+      this._sqliteInTransaction = false;
+      this._explicitTxContext = null;
+      if (ctx.sqliteRelease) ctx.sqliteRelease();
+      else if (!ctx.parent) ctx.connection.release();
+      transactionStorage.enterWith(null);
+    }
+
+    await this._fireAfterCommitHooks(ctx);
   }
 
   /**
@@ -371,61 +636,76 @@ class DatabaseConnection {
    */
   afterCommit(cb) {
     if (typeof cb !== 'function') return;
-    if (this._transactionConnection !== null || this._sqliteInTransaction) {
-      this._afterCommitHooks.push(cb);
+    const ctx = this._activeTxContext();
+    if (ctx) {
+      ctx.afterCommitHooks.push(cb);
       return;
     }
     return cb();
   }
 
-  async _fireAfterCommitHooks() {
-    const hooks = this._afterCommitHooks;
-    this._afterCommitHooks = [];
+  async _fireAfterCommitHooks(ctx) {
+    const hooks = (ctx && ctx.afterCommitHooks) || [];
+    if (ctx) ctx.afterCommitHooks = [];
     for (const cb of hooks) {
       await cb();
     }
   }
 
   /**
-   * Rollback the current transaction
+   * Rollback the current transaction (or nested savepoint).
    * @returns {Promise<void>}
    */
   async rollback() {
-    switch (this.driver) {
-    case 'mysql':
-      if (this._transactionConnection) {
-        try {
-          await this._transactionConnection.rollback();
-        } finally {
-          this._transactionConnection.release();
-          this._transactionConnection = null;
-        }
-      }
-      break;
+    const ctx = this._activeTxContext();
 
-    case 'postgres':
-    case 'postgresql':
-      if (this._transactionConnection) {
-        try {
-          await this._transactionConnection.query('ROLLBACK');
-        } finally {
-          this._transactionConnection.release();
-          this._transactionConnection = null;
-        }
-      }
-      break;
-
-    case 'sqlite':
-      await new Promise((resolve, reject) => {
-        this.connection.run('ROLLBACK', (err) => {
-          if (err) reject(new Error(err.message || String(err)));
-          else resolve();
+    if (!ctx) {
+      if (this._sqliteInTransaction) {
+        await new Promise((resolve, reject) => {
+          this.connection.run('ROLLBACK', (err) => {
+            if (err) reject(new Error(err.message || String(err)));
+            else resolve();
+          });
         });
-      });
-      this._sqliteInTransaction = false;
-      break;
+        this._sqliteInTransaction = false;
+      } else if (this._transactionConnection && typeof this._transactionConnection.rollback === 'function') {
+        try { await this._transactionConnection.rollback(); }
+        finally { this._transactionConnection.release(); this._transactionConnection = null; }
+      }
+      this._afterCommitHooks = [];
+      return;
     }
-    this._afterCommitHooks = [];
+
+    if (ctx.parent) {
+      // PostgreSQL/MySQL keep the savepoint after ROLLBACK TO; release it.
+      await this.execute(`ROLLBACK TO SAVEPOINT ${ctx.savepointName}`);
+      await this.execute(`RELEASE SAVEPOINT ${ctx.savepointName}`);
+      transactionStorage.enterWith(ctx.parent);
+      this._explicitTxContext = ctx.parent;
+      return;
+    }
+
+    try {
+      if (this.driver === 'mysql') {
+        await ctx.connection.rollback();
+      } else if (this.driver === 'postgres' || this.driver === 'postgresql') {
+        await ctx.connection.query('ROLLBACK');
+      } else {
+        await new Promise((resolve, reject) => {
+          this.connection.run('ROLLBACK', (err) => {
+            if (err) reject(new Error(err.message || String(err)));
+            else resolve();
+          });
+        });
+      }
+    } finally {
+      this._transactionConnection = null;
+      this._sqliteInTransaction = false;
+      this._explicitTxContext = null;
+      if (ctx.sqliteRelease) ctx.sqliteRelease();
+      else if (!ctx.parent) ctx.connection.release();
+      transactionStorage.enterWith(null);
+    }
   }
 
   /**
@@ -434,15 +714,19 @@ class DatabaseConnection {
    * @returns {Promise<any>} - Result of the callback
    */
   async transaction(callback) {
-    await this.beginTransaction();
-    try {
-      const result = await callback(this);
-      await this.commit();
-      return result;
-    } catch (error) {
-      await this.rollback();
-      throw error;
-    }
+    const ctx = await this.beginTransaction();
+    // Run the callback inside an explicit AsyncLocalStorage scope. This is what
+    // makes concurrent transactions on the same DatabaseConnection safe.
+    return transactionStorage.run(ctx, async () => {
+      try {
+        const result = await callback(this);
+        await this.commit();
+        return result;
+      } catch (error) {
+        await this.rollback();
+        throw error;
+      }
+    });
   }
 
   // ==================== Savepoints ====================
@@ -458,7 +742,7 @@ class DatabaseConnection {
     await this.connect();
     const safeName = sanitizeIdentifier(name);
     if (this.driver === 'mysql' || this.driver === 'postgres') {
-      if (!this._transactionConnection) {
+      if (!this._activeTxContext()) {
         throw new Error('No active transaction. Call beginTransaction() first.');
       }
     }
@@ -502,7 +786,7 @@ class DatabaseConnection {
    * @returns {void}
    */
   setIsolationLevel(level) {
-    if (this._transactionConnection !== null || this._sqliteInTransaction) {
+    if (this._activeTxContext() || this._transactionConnection !== null || this._sqliteInTransaction) {
       throw new Error('Cannot set isolation level inside an active transaction');
     }
     if (this.driver === 'sqlite') {
@@ -571,7 +855,9 @@ class DatabaseConnection {
    * @private
    */
   _getConnection() {
-    return this._transactionConnection || this.pool || this.connection;
+    const ctx = this._activeTxContext();
+    if (ctx) return ctx.connection;
+    return this.pool || this.connection;
   }
 
   /**
@@ -652,7 +938,12 @@ class DatabaseConnection {
         `${this.convertToDriverPlaceholder(sql)} RETURNING *`,
         values
       );
-      result = { insertId: pgResult.rows[0]?.id, affectedRows: pgResult.rowCount };
+      const firstRow = pgResult.rows[0] || {};
+      result = {
+        insertId: firstRow.id !== undefined ? firstRow.id : Object.values(firstRow)[0],
+        affectedRows: pgResult.rowCount,
+        row: firstRow
+      };
       break;
     }
 
@@ -1376,11 +1667,104 @@ class DatabaseConnection {
    * @private
    */
   convertToDriverPlaceholder(sql, driver = this.driver) {
-    if (driver === 'postgres' || driver === 'postgresql') {
-      let index = 1;
-      return sql.replace(/\?/g, () => `$${index++}`);
+    if (driver !== 'postgres' && driver !== 'postgresql') return sql;
+
+    // Convert `?` placeholders to `$1..$N` without touching question marks
+    // inside string literals, comments, dollar-quoted blocks, or PostgreSQL
+    // JSONB operators (`?`, `?|`, `?&`).
+    let out = '';
+    let index = 1;
+    let single = false;
+    let double = false;
+    let lineComment = false;
+    let blockComment = false;
+    let dollarTag = null;
+
+    for (let i = 0; i < sql.length; i++) {
+      const ch = sql[i];
+      const next = sql[i + 1];
+
+      if (lineComment) {
+        out += ch;
+        if (ch === '\n') lineComment = false;
+        continue;
+      }
+      if (blockComment) {
+        out += ch;
+        if (ch === '*' && next === '/') { out += '/'; i++; blockComment = false; }
+        continue;
+      }
+      if (dollarTag) {
+        if (ch === '$' && sql.startsWith(dollarTag, i)) {
+          out += dollarTag;
+          i += dollarTag.length - 1;
+          dollarTag = null;
+        } else {
+          out += ch;
+        }
+        continue;
+      }
+      if (single) {
+        out += ch;
+        if (ch === '\'') {
+          if (next === '\'') { out += '\''; i++; }
+          else single = false;
+        }
+        continue;
+      }
+      if (double) {
+        out += ch;
+        if (ch === '"') {
+          if (next === '"') { out += '"'; i++; }
+          else double = false;
+        }
+        continue;
+      }
+
+      if (ch === '-' && next === '-') { out += '--'; i++; lineComment = true; continue; }
+      if (ch === '/' && next === '*') { out += '/*'; i++; blockComment = true; continue; }
+      if (ch === '\'') { out += ch; single = true; continue; }
+      if (ch === '"') { out += ch; double = true; continue; }
+      if (ch === '$') {
+        const match = sql.slice(i).match(/^\$[A-Za-z_][A-Za-z0-9_]*\$|^\$\$/);
+        if (match) {
+          dollarTag = match[0];
+          out += dollarTag;
+          i += dollarTag.length - 1;
+          continue;
+        }
+      }
+      if (ch === '?' && (next === '|' || next === '&' || next === '?')) {
+        out += ch;
+        continue;
+      }
+      if (ch === '?') {
+        // A bare `?` is ambiguous in PostgreSQL: it is both a placeholder and
+        // the JSONB "key exists" operator. Treat it as an operator when it is
+        // surrounded by a value expression and a quoted/identifier operand
+        // (e.g. `data ? 'key'`), otherwise as a bind placeholder.
+        let p = i - 1;
+        while (p >= 0 && /\s/.test(sql[p])) p--;
+        let n = i + 1;
+        while (n < sql.length && /\s/.test(sql[n])) n++;
+        const prev = p >= 0 ? sql[p] : '';
+        const nextNonSpace = n < sql.length ? sql[n] : '';
+        const looksLikeJsonOperator =
+          /[A-Za-z0-9_)"']/.test(prev) &&
+          /['"A-Za-z0-9_$]/.test(nextNonSpace) &&
+          !/[=<>!+\-*/%,(]/.test(prev);
+        if (looksLikeJsonOperator) {
+          out += ch;
+          continue;
+        }
+        out += `$${index++}`;
+        continue;
+      }
+
+      out += ch;
     }
-    return sql;
+
+    return out;
   }
 
   /**
@@ -1388,7 +1772,7 @@ class DatabaseConnection {
    * @returns {Promise<void>}
    */
   async close() {
-    if (this._transactionConnection) {
+    if (this._activeTxContext() || this._transactionConnection || this._sqliteInTransaction) {
       try {
         await this.rollback();
       } catch (e) {

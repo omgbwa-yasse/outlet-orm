@@ -31,11 +31,20 @@ This document covers:
 
 - `Schema`
 - `Blueprint`
+- `ColumnDefinition`
+- `ForeignKeyDefinition`
+- `CheckConstraintDefinition`
 - `Migration`
 - `MigrationManager`
 - related migration commands
 
 ## Schema builder
+
+Exported schema definition helpers:
+
+- `ColumnDefinition`
+- `ForeignKeyDefinition`
+- `CheckConstraintDefinition`
 
 Main entry points:
 

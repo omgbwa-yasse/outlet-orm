@@ -118,115 +118,115 @@ class ApiValidator {
    */
   static _applyRule(ruleName, ruleArg, field, value, attrs) {
     switch (ruleName) {
-      case 'required': {
-        const missing = value === undefined || value === null || value === '';
-        return missing ? 'The ' + field + ' field is required.' : null;
+    case 'required': {
+      const missing = value === undefined || value === null || value === '';
+      return missing ? 'The ' + field + ' field is required.' : null;
+    }
+    case 'string': {
+      if (value === undefined || value === null) return null; // absent = pass (pair with required)
+      return typeof value !== 'string' ? 'The ' + field + ' field must be a string.' : null;
+    }
+    case 'integer': {
+      if (value === undefined || value === null) return null;
+      return (!Number.isInteger(Number(value)) || typeof value === 'boolean')
+        ? 'The ' + field + ' field must be an integer.'
+        : null;
+    }
+    case 'numeric': {
+      if (value === undefined || value === null) return null;
+      return isNaN(Number(value)) ? 'The ' + field + ' field must be numeric.' : null;
+    }
+    case 'boolean': {
+      if (value === undefined || value === null) return null;
+      return typeof value !== 'boolean' ? 'The ' + field + ' field must be a boolean.' : null;
+    }
+    case 'array': {
+      if (value === undefined || value === null) return null;
+      return !Array.isArray(value) ? 'The ' + field + ' field must be an array.' : null;
+    }
+    case 'email': {
+      if (value === undefined || value === null) return null;
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return !emailRe.test(String(value)) ? 'The ' + field + ' field must be a valid email address.' : null;
+    }
+    case 'url': {
+      if (value === undefined || value === null) return null;
+      try {
+        new URL(String(value));
+        return null;
+      } catch (e) {
+        return 'The ' + field + ' field must be a valid URL.';
       }
-      case 'string': {
-        if (value === undefined || value === null) return null; // absent = pass (pair with required)
-        return typeof value !== 'string' ? 'The ' + field + ' field must be a string.' : null;
+    }
+    case 'uuid': {
+      if (value === undefined || value === null) return null;
+      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      return !uuidRe.test(String(value)) ? 'The ' + field + ' field must be a valid UUID.' : null;
+    }
+    case 'json': {
+      if (value === undefined || value === null) return null;
+      try { JSON.parse(value); return null; } catch (e) {
+        return 'The ' + field + ' field must be valid JSON.';
       }
-      case 'integer': {
-        if (value === undefined || value === null) return null;
-        return (!Number.isInteger(Number(value)) || typeof value === 'boolean')
-          ? 'The ' + field + ' field must be an integer.'
+    }
+    case 'phone': {
+      if (value === undefined || value === null) return null;
+      const phoneRe = /^\+?[0-9\s\-().]{7,20}$/;
+      return !phoneRe.test(String(value)) ? 'The ' + field + ' field must be a valid phone number.' : null;
+    }
+    case 'min': {
+      if (value === undefined || value === null) return null;
+      const minVal = Number(ruleArg);
+      if (typeof value === 'string' || Array.isArray(value)) {
+        return value.length < minVal
+          ? 'The ' + field + ' field must be at least ' + minVal + ' characters.'
           : null;
       }
-      case 'numeric': {
-        if (value === undefined || value === null) return null;
-        return isNaN(Number(value)) ? 'The ' + field + ' field must be numeric.' : null;
-      }
-      case 'boolean': {
-        if (value === undefined || value === null) return null;
-        return typeof value !== 'boolean' ? 'The ' + field + ' field must be a boolean.' : null;
-      }
-      case 'array': {
-        if (value === undefined || value === null) return null;
-        return !Array.isArray(value) ? 'The ' + field + ' field must be an array.' : null;
-      }
-      case 'email': {
-        if (value === undefined || value === null) return null;
-        const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return !emailRe.test(String(value)) ? 'The ' + field + ' field must be a valid email address.' : null;
-      }
-      case 'url': {
-        if (value === undefined || value === null) return null;
-        try {
-          new URL(String(value));
-          return null;
-        } catch (e) {
-          return 'The ' + field + ' field must be a valid URL.';
-        }
-      }
-      case 'uuid': {
-        if (value === undefined || value === null) return null;
-        const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        return !uuidRe.test(String(value)) ? 'The ' + field + ' field must be a valid UUID.' : null;
-      }
-      case 'json': {
-        if (value === undefined || value === null) return null;
-        try { JSON.parse(value); return null; } catch (e) {
-          return 'The ' + field + ' field must be valid JSON.';
-        }
-      }
-      case 'phone': {
-        if (value === undefined || value === null) return null;
-        const phoneRe = /^\+?[0-9\s\-().]{7,20}$/;
-        return !phoneRe.test(String(value)) ? 'The ' + field + ' field must be a valid phone number.' : null;
-      }
-      case 'min': {
-        if (value === undefined || value === null) return null;
-        const minVal = Number(ruleArg);
-        if (typeof value === 'string' || Array.isArray(value)) {
-          return value.length < minVal
-            ? 'The ' + field + ' field must be at least ' + minVal + ' characters.'
-            : null;
-        }
-        return Number(value) < minVal
-          ? 'The ' + field + ' field must be at least ' + minVal + '.'
+      return Number(value) < minVal
+        ? 'The ' + field + ' field must be at least ' + minVal + '.'
+        : null;
+    }
+    case 'max': {
+      if (value === undefined || value === null) return null;
+      const maxVal = Number(ruleArg);
+      if (typeof value === 'string' || Array.isArray(value)) {
+        return value.length > maxVal
+          ? 'The ' + field + ' field must not exceed ' + maxVal + ' characters.'
           : null;
       }
-      case 'max': {
-        if (value === undefined || value === null) return null;
-        const maxVal = Number(ruleArg);
-        if (typeof value === 'string' || Array.isArray(value)) {
-          return value.length > maxVal
-            ? 'The ' + field + ' field must not exceed ' + maxVal + ' characters.'
-            : null;
-        }
-        return Number(value) > maxVal
-          ? 'The ' + field + ' field must not exceed ' + maxVal + '.'
-          : null;
-      }
-      case 'in': {
-        if (value === undefined || value === null) return null;
-        const allowed = ruleArg ? ruleArg.split(',') : [];
-        return !allowed.includes(String(value))
-          ? 'The ' + field + ' field must be one of: ' + allowed.join(', ') + '.'
-          : null;
-      }
-      case 'not_in': {
-        if (value === undefined || value === null) return null;
-        const forbidden = ruleArg ? ruleArg.split(',') : [];
-        return forbidden.includes(String(value))
-          ? 'The ' + field + ' field must not be one of: ' + forbidden.join(', ') + '.'
-          : null;
-      }
-      case 'confirmed': {
-        if (value === undefined || value === null) return null;
-        const confirmation = attrs[field + '_confirmation'];
-        return value !== confirmation
-          ? 'The ' + field + ' confirmation does not match.'
-          : null;
-      }
-      case 'nullable': {
-        return null; // Always passes — just marks field as nullable
-      }
-      case 'sometimes': {
-        return null; // Always passes — conditional validation marker
-      }
-      default:
-        return null; // Unknown rules pass silently
+      return Number(value) > maxVal
+        ? 'The ' + field + ' field must not exceed ' + maxVal + '.'
+        : null;
+    }
+    case 'in': {
+      if (value === undefined || value === null) return null;
+      const allowed = ruleArg ? ruleArg.split(',') : [];
+      return !allowed.includes(String(value))
+        ? 'The ' + field + ' field must be one of: ' + allowed.join(', ') + '.'
+        : null;
+    }
+    case 'not_in': {
+      if (value === undefined || value === null) return null;
+      const forbidden = ruleArg ? ruleArg.split(',') : [];
+      return forbidden.includes(String(value))
+        ? 'The ' + field + ' field must not be one of: ' + forbidden.join(', ') + '.'
+        : null;
+    }
+    case 'confirmed': {
+      if (value === undefined || value === null) return null;
+      const confirmation = attrs[field + '_confirmation'];
+      return value !== confirmation
+        ? 'The ' + field + ' confirmation does not match.'
+        : null;
+    }
+    case 'nullable': {
+      return null; // Always passes — just marks field as nullable
+    }
+    case 'sometimes': {
+      return null; // Always passes — conditional validation marker
+    }
+    default:
+      return null; // Unknown rules pass silently
     }
   }
 }

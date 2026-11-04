@@ -11,6 +11,7 @@
 const { EventEmitter } = require('events');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 // ─── Tool Definitions ────────────────────────────────────────────
 
@@ -144,15 +145,79 @@ const TOOL_DEFINITIONS = [
 
 // ─── AI Safety Guardrails ────────────────────────────────────────
 
-const DESTRUCTIVE_TOOLS = new Set(['migrate_reset', 'backup_restore']);
+const DESTRUCTIVE_TOOLS = new Set([
+  'migrate_run',
+  'migrate_reset',
+  'migrate_rollback',
+  'seed_run',
+  'backup_create',
+  'backup_restore'
+]);
 
-function isWriteQuery(sql) {
-  const upper = sql.trim().toUpperCase();
-  return /^(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|REPLACE)\b/.test(upper);
+function stripSqlLiteralsAndComments(sql) {
+  let out = '';
+  let i = 0;
+  let single = false;
+  let double = false;
+  let lineComment = false;
+  let blockComment = false;
+  while (i < sql.length) {
+    const ch = sql[i];
+    const next = sql[i + 1];
+    if (lineComment) {
+      if (ch === '\n') { lineComment = false; out += '\n'; }
+      i++;
+      continue;
+    }
+    if (blockComment) {
+      if (ch === '*' && next === '/') { blockComment = false; i += 2; }
+      else i++;
+      continue;
+    }
+    if (single) {
+      if (ch === '\'' && next === '\'') { i += 2; continue; }
+      if (ch === '\'') single = false;
+      i++;
+      continue;
+    }
+    if (double) {
+      if (ch === '"' && next === '"') { i += 2; continue; }
+      if (ch === '"') double = false;
+      i++;
+      continue;
+    }
+    if (ch === '-' && next === '-') { lineComment = true; i += 2; continue; }
+    if (ch === '/' && next === '*') { blockComment = true; i += 2; continue; }
+    if (ch === '\'') { single = true; i++; continue; }
+    if (ch === '"') { double = true; i++; continue; }
+    out += ch;
+    i++;
+  }
+  return out;
 }
 
+function isWriteQuery(sql) {
+  const cleaned = stripSqlLiteralsAndComments(String(sql || '')).toUpperCase();
+  return /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|REPLACE|GRANT|REVOKE|MERGE|COPY|CALL|EXECUTE|ATTACH|DETACH|PRAGMA)\b/.test(cleaned) ||
+    /\bINTO\s+(OUTFILE|DUMPFILE)\b/i.test(cleaned) ||
+    /\b(pg_read_file|pg_read_binary_file|lo_import|load_file)\b/i.test(cleaned);
+}
+
+const CONSENT_PHRASE = 'I understand the risk and authorize this operation';
+
 function validateConsent(consent) {
-  return typeof consent === 'string' && consent.trim().length > 0;
+  if (typeof consent !== 'string' || consent.trim().length === 0) return false;
+
+  // Preferred: an out-of-band token that the human copies from the CLI/UI.
+  const requiredToken = process.env.OUTLET_AI_CONSENT_TOKEN;
+  if (requiredToken) {
+    const a = Buffer.from(consent.trim());
+    const b = Buffer.from(requiredToken);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  }
+
+  // Fallback: require the explicit confirmation phrase, not a generic "yes".
+  return consent.trim().toLowerCase() === CONSENT_PHRASE.toLowerCase();
 }
 
 // ─── MCP Server ──────────────────────────────────────────────────
@@ -297,7 +362,7 @@ class MCPServer extends EventEmitter {
             `⚠️ SAFETY GUARDRAIL: "${name}" is a destructive operation.\n` +
             'This action can irreversibly destroy data.\n' +
             'You MUST obtain explicit user consent before proceeding.\n' +
-            'Pass the user\'s consent text in the "consent" parameter.');
+            `Pass consent="${CONSENT_PHRASE}" or set OUTLET_AI_CONSENT_TOKEN and use that token.`);
         }
       }
 
@@ -463,6 +528,9 @@ class MCPServer extends EventEmitter {
 
   async _toolMigrateMake(args) {
     if (!args.name) throw new Error('Migration name is required');
+    if (!/^[a-z][a-z0-9_]*$/.test(args.name)) {
+      throw new Error('Migration name must match /^[a-z][a-z0-9_]*$/');
+    }
 
     const migrationsDir = path.join(this.projectDir, 'database', 'migrations');
     try { fs.mkdirSync(migrationsDir, { recursive: true }); } catch { /* */ }
@@ -474,6 +542,9 @@ class MCPServer extends EventEmitter {
 
     const fileName = `${timestamp}_${args.name}.js`;
     const filePath = path.join(migrationsDir, fileName);
+    if (!path.resolve(filePath).startsWith(path.resolve(migrationsDir) + path.sep)) {
+      throw new Error('Refusing to write a migration outside the migrations directory');
+    }
 
     const isCreate = args.name.includes('create_');
     const tableName = this._extractTableName(args.name);
@@ -551,6 +622,9 @@ class MCPServer extends EventEmitter {
 
   async _toolQueryExecute(args) {
     if (!args.sql) throw new Error('SQL query is required');
+    if (args.params !== undefined && !Array.isArray(args.params)) {
+      throw new Error('"params" must be an array of bound values');
+    }
 
     // Safety guardrail for write queries
     if (this.safetyGuardrails && isWriteQuery(args.sql)) {
@@ -558,7 +632,7 @@ class MCPServer extends EventEmitter {
         throw new Error(
           '⚠️ SAFETY GUARDRAIL: This is a write query that modifies data.\n' +
           'You MUST obtain explicit user consent before proceeding.\n' +
-          'Pass the user\'s consent text in the "consent" parameter.'
+          `Pass consent="${CONSENT_PHRASE}" or set OUTLET_AI_CONSENT_TOKEN and use that token.`
         );
       }
     }
@@ -611,14 +685,20 @@ class MCPServer extends EventEmitter {
     const backupDir = path.join(this.projectDir, 'database', 'backups');
     try { fs.mkdirSync(backupDir, { recursive: true }); } catch { /* */ }
 
-    const backupManager = new BackupManager(conn, { outputDir: backupDir, format: args.format || 'sql' });
+    const backupManager = new BackupManager(conn, {
+      backupPath: backupDir,
+      encrypt: Boolean(args.encrypt),
+      encryptionPassword: args.encryptionPassword,
+      saltLength: args.saltLength,
+      encryptionVersion: args.encryptionVersion
+    });
     const type = args.type || 'full';
     let result;
 
     if (type === 'full') {
-      result = await backupManager.full();
+      result = await backupManager.full({ format: args.format || 'sql' });
     } else if (type === 'partial') {
-      result = await backupManager.partial(args.tables || []);
+      result = await backupManager.partial(args.tables || [], { format: args.format || 'sql' });
     } else if (type === 'journal') {
       result = await backupManager.journal();
     } else {

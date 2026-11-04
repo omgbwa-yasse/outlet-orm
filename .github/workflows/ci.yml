@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        node: [18, 20]
+        node: [20, 22, 24]
 
     steps:
       - name: Checkout
@@ -31,6 +31,12 @@ jobs:
       - name: Lint
         run: npm run -s lint
 
+      - name: Security gate (secrets / dynamic code)
+        run: npm run -s check:security
+
+      - name: Dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Test
         run: npm -s test
 
@@ -42,3 +48,67 @@ jobs:
           node bin/migrate.js status
           node bin/migrate.js rollback --steps 1
           node bin/migrate.js status
+
+  mysql-smoke:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: outlet_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci
+      - name: MySQL driver smoke test
+        env:
+          DB_DRIVER: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: root
+          DB_DATABASE: outlet_test
+        run: node scripts/db-smoke.js
+
+  postgres-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: outlet_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci
+      - name: PostgreSQL driver smoke test
+        env:
+          DB_DRIVER: postgres
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_DATABASE: outlet_test
+        run: node scripts/db-smoke.js

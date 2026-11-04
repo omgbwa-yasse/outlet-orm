@@ -323,6 +323,7 @@ export interface ApiConfig {
 export class Api<T extends Record<string, unknown> = Record<string, unknown>> {
   // Static configuration
   static endpoint: string;
+  static cacheScope: string | null;
   static primaryKey: string;
   static fillable: string[];
   static hidden: string[];
@@ -425,7 +426,13 @@ export interface QueuedMutation {
 }
 
 export class MutationQueue {
-  constructor(store?: StorageAdapter);
+  constructor(opts?: {
+    store?: StorageAdapter;
+    adapter?: ApiAdapter;
+    onConflict?: (operation: QueuedMutation, error: unknown) => unknown;
+    encrypt?: (value: unknown) => unknown | Promise<unknown>;
+    decrypt?: (value: unknown) => unknown | Promise<unknown>;
+  });
   enqueue(method: string, endpoint: string, data: unknown): Promise<QueuedMutation>;
   dequeue(): Promise<QueuedMutation | null>;
   peek(): Promise<QueuedMutation | null>;

@@ -1,5 +1,7 @@
 'use strict';
 
+const { fetchWithTimeout } = require('../Support/Fetch');
+
 /**
  * GeminiProvider
  * Google Generative Language API. Supports chat, simulated streaming, and embeddings.
@@ -16,7 +18,12 @@ class GeminiProvider {
   }
 
   /** @private */
-  _keyQuery() { return `?key=${this.apiKey}`; }
+  _headers() {
+    return {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': this.apiKey
+    };
+  }
 
   async chat(messages, _options = {}) {
     const userTexts = messages
@@ -27,9 +34,9 @@ class GeminiProvider {
       contents: [{ parts: [{ text: userTexts.join('\n') }] }],
     };
 
-    const res = await fetch(this.chatEndpoint + this._keyQuery(), {
+    const res = await fetchWithTimeout(this.chatEndpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this._headers(),
       body: JSON.stringify(payload),
     });
     const data = await res.json();
@@ -53,9 +60,9 @@ class GeminiProvider {
         model: 'text-embedding-004',
         content: { parts: [{ text: input }] },
       };
-      const res = await fetch(this.embedEndpoint + this._keyQuery(), {
+      const res = await fetchWithTimeout(this.embedEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this._headers(),
         body: JSON.stringify(payload),
       });
       const data = await res.json();

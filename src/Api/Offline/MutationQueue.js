@@ -19,6 +19,11 @@ class MutationQueue {
     this._adapter = opts.adapter || null;
     this._conflictHandler = opts.onConflict || null;
     this._listeners = { sync: [], error: [], conflict: [] };
+    this._encrypt = opts.encrypt || null;
+    this._decrypt = opts.decrypt || null;
+    if (Boolean(this._encrypt) !== Boolean(this._decrypt)) {
+      throw new Error('MutationQueue: encrypt and decrypt must be provided together');
+    }
   }
 
   // ── Event emitter (minimal) ──────────────────────────────────────
@@ -29,7 +34,7 @@ class MutationQueue {
 
   _emit(event, data) {
     (this._listeners[event] || []).forEach(fn => {
-      try { fn(data); } catch (_) {}
+      try { fn(data); } catch (_) { /* listener errors must not break the queue */ }
     });
   }
 
@@ -45,10 +50,21 @@ class MutationQueue {
   // ── Queue management ─────────────────────────────────────────────
   async _load() {
     const raw = await this._store.get(QUEUE_KEY);
+    if (raw && raw.__outletEncrypted) {
+      const decrypted = await this._decrypt(raw.payload);
+      return Array.isArray(decrypted) ? decrypted : [];
+    }
     return Array.isArray(raw) ? raw : [];
   }
 
   async _save(queue) {
+    if (this._encrypt) {
+      await this._store.set(QUEUE_KEY, {
+        __outletEncrypted: true,
+        payload: await this._encrypt(queue)
+      });
+      return;
+    }
     await this._store.set(QUEUE_KEY, queue);
   }
 

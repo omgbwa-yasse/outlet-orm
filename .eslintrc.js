@@ -4,6 +4,15 @@ module.exports = {
     es2022: true,
     jest: true
   },
+  globals: {
+    // Browser APIs referenced behind `typeof` guards in the API client.
+    window: 'readonly',
+    WebSocket: 'readonly',
+    EventSource: 'readonly',
+    localStorage: 'readonly',
+    sessionStorage: 'readonly',
+    XMLHttpRequest: 'readonly'
+  },
   extends: 'eslint:recommended',
   parserOptions: {
     ecmaVersion: 2022,

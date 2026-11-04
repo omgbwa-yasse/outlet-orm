@@ -31,6 +31,8 @@ class MigrationManager extends EventEmitter {
     this.connection = connection;
     this.migrationsPath = path.resolve(process.cwd(), migrationsPath);
     this.migrationsTable = migrationsTable;
+    this._lockHeld = false;
+    this._lockClient = null;
 
     // ── Safety config (feature 003) ────────────────────────────────────────
     const incoming = options.migrations || options.safety || {};
@@ -651,7 +653,7 @@ class MigrationManager extends EventEmitter {
       if (failed.length > 0) {
         const err = new Error(
           `Cannot deploy: ${failed.length} failed migration(s) found. ` +
-          `Run "outlet-migrate resolve --rolled-back=<name>" first, or pass --allow-failed.`
+          'Run "outlet-migrate resolve --rolled-back=<name>" first, or pass --allow-failed.'
         );
         err.code = 'EOUTLET_FAILED_MIGRATIONS';
         throw err;
@@ -664,7 +666,7 @@ class MigrationManager extends EventEmitter {
       if (drifted.length > 0) {
         const err = new Error(
           `Cannot deploy: ${drifted.length} migration(s) drifted from recorded checksum. ` +
-          `Investigate or pass --allow-drift.`
+          'Investigate or pass --allow-drift.'
         );
         err.code = 'EOUTLET_DRIFT';
         throw err;
@@ -818,18 +820,34 @@ class MigrationManager extends EventEmitter {
     const driver = this.connection?.config?.driver;
     try {
       if (driver === 'postgres' || driver === 'postgresql') {
-        await this.connection.execute('SELECT pg_advisory_lock($1)', [this._lockId()]);
+        // Advisory locks are session-scoped: use a dedicated client so the
+        // lock is acquired and released on the same physical connection.
+        this._lockClient = await this.connection.acquireDedicatedClient();
+        await this.connection.executeOnClient(
+          this._lockClient.client,
+          'SELECT pg_advisory_lock($1)',
+          [this._lockId()]
+        );
         return true;
       }
       if (driver === 'mysql') {
+        this._lockClient = await this.connection.acquireDedicatedClient();
         const lockName = `outlet_${this.migrationsTable}`;
-        const rows = await this.connection.execute('SELECT GET_LOCK(?, ?) AS got', [lockName, 10]);
+        const rows = await this.connection.executeOnClient(
+          this._lockClient.client,
+          'SELECT GET_LOCK(?, ?) AS got',
+          [lockName, 10]
+        );
         if (rows && rows[0] && Number(rows[0].got) === 1) return true;
         const err = new Error('Could not acquire migration advisory lock (another migration is running?)');
         err.code = 'EOUTLET_LOCK_BUSY';
         throw err;
       }
     } catch (e) {
+      if (this._lockClient) {
+        try { this._lockClient.release(); } catch (_) { /* ignore */ }
+        this._lockClient = null;
+      }
       if (e.code === 'EOUTLET_LOCK_BUSY') throw e;
       // Non-fatal: drivers without advisory-lock support degrade silently.
       return false;
@@ -839,11 +857,25 @@ class MigrationManager extends EventEmitter {
 
   async _releaseLock() {
     const driver = this.connection?.config?.driver;
-    if (driver === 'postgres' || driver === 'postgresql') {
-      await this.connection.execute('SELECT pg_advisory_unlock($1)', [this._lockId()]);
-    } else if (driver === 'mysql') {
-      const lockName = `outlet_${this.migrationsTable}`;
-      await this.connection.execute('SELECT RELEASE_LOCK(?)', [lockName]);
+    if (!this._lockClient) return;
+    try {
+      if (driver === 'postgres' || driver === 'postgresql') {
+        await this.connection.executeOnClient(
+          this._lockClient.client,
+          'SELECT pg_advisory_unlock($1)',
+          [this._lockId()]
+        );
+      } else if (driver === 'mysql') {
+        const lockName = `outlet_${this.migrationsTable}`;
+        await this.connection.executeOnClient(
+          this._lockClient.client,
+          'SELECT RELEASE_LOCK(?)',
+          [lockName]
+        );
+      }
+    } finally {
+      try { this._lockClient.release(); } catch (_) { /* ignore */ }
+      this._lockClient = null;
     }
   }
 
@@ -902,8 +934,8 @@ class MigrationManager extends EventEmitter {
     if (!process.stdin.isTTY) {
       const err = new Error(
         `Found ${stuck.length} interrupted migration(s): ${names}. ` +
-        `Run interactively to resolve, or manually update the migrations ` +
-        `table to status='completed' or DELETE the row.`
+        'Run interactively to resolve, or manually update the migrations ' +
+        'table to status=\'completed\' or DELETE the row.'
       );
       err.code = 'EOUTLET_INTERRUPTED';
       throw err;
@@ -957,7 +989,7 @@ class MigrationManager extends EventEmitter {
     if (env === 'production' && !this.safetyConfig.allowDrift) {
       const err = new Error(
         `Migration drift detected in production for: ${names}. ` +
-        `Set OUTLET_ALLOW_DRIFT=1 to override.`
+        'Set OUTLET_ALLOW_DRIFT=1 to override.'
       );
       err.code = 'EOUTLET_DRIFT';
       throw err;
@@ -988,12 +1020,19 @@ class MigrationManager extends EventEmitter {
    * = 'EOUTLET_PRODUCTION' otherwise. CLI callers should map to exit code 2.
    */
   _assertProductionGate(command) {
-    if (this.safetyConfig.environment !== 'production') return;
+    const indicators = this.safetyConfig.productionIndicators || {};
+    const host = String(this.connection?.config?.host || '').toLowerCase();
+    const database = String(this.connection?.config?.database || '').toLowerCase();
+    const looksLikeProduction =
+      (indicators.hosts || []).some(h => host.includes(String(h).toLowerCase())) ||
+      (indicators.databasePatterns || []).some(p => database.includes(String(p).toLowerCase()));
+    const isProduction = this.safetyConfig.environment === 'production' || looksLikeProduction;
+    if (!isProduction) return;
     if (!this.safetyConfig.requireProductionConfirm) return;
     if (process.env.OUTLET_PRODUCTION_CONFIRM === '1') return;
     const err = new Error(
       `Refusing to run "${command}" in production. ` +
-      `Set OUTLET_PRODUCTION_CONFIRM=1 (and run interactively) to proceed.`
+      'Set OUTLET_PRODUCTION_CONFIRM=1 (and run interactively) to proceed.'
     );
     err.code = 'EOUTLET_PRODUCTION';
     throw err;
@@ -1039,6 +1078,7 @@ class MigrationManager extends EventEmitter {
     await fs.mkdir(backupDir, { recursive: true });
     // Disambiguate within the same second
     let suffix = 0;
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       try {
         await fs.access(path.join(backupDir, filename));
@@ -1136,13 +1176,18 @@ class MigrationManager extends EventEmitter {
       target = backups[backups.length - 1];
     }
     const fullPath = path.join(dir, target);
+    if (path.basename(target) !== target || !path.resolve(fullPath).startsWith(dir + path.sep)) {
+      throw new Error('Refusing to restore a backup outside the configured backup directory');
+    }
     await fs.access(fullPath); // throws ENOENT if missing
 
     // Drop all existing user tables so CREATE/INSERT in the backup replay cleanly.
     try {
+      const { Schema } = require('../Schema/Schema');
+      const schema = new Schema(this.connection);
       const existing = await this.getAllTables();
       for (const t of existing) {
-        await this.connection.execute(`DROP TABLE IF EXISTS ${t}`).catch(() => {});
+        await schema.dropIfExists(t).catch(() => {});
       }
     } catch (e) { /* best-effort */ }
 

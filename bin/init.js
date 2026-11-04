@@ -488,15 +488,20 @@ main();
     // Optionally skip package init/install in non-interactive or test context
     const skipInstall = process.env.OUTLET_INIT_NO_INSTALL === '1';
     if (!skipInstall) {
+      const { spawnSync } = require('child_process');
+      const npmBin = process.platform === 'win32' ? 'npm.cmd' : 'npm';
       // Check if package needs to be installed
       const packageJsonPath = path.join(process.cwd(), 'package.json');
       if (!fs.existsSync(packageJsonPath)) {
         console.log('\n⚠️  Aucun package.json trouvé. Initialisation...');
-        require('child_process').execSync('npm init -y', { stdio: 'inherit' });
+        spawnSync(npmBin, ['init', '-y'], { stdio: 'inherit' });
       }
 
       console.log(`\n📦 Installation du driver ${selectedDriver.package}...`);
-      require('child_process').execSync(`npm install ${selectedDriver.package}`, { stdio: 'inherit' });
+      const install = spawnSync(npmBin, ['install', selectedDriver.package], { stdio: 'inherit' });
+      if (install.status !== 0) {
+        throw new Error(`npm install ${selectedDriver.package} failed`);
+      }
     } else {
       console.log('\n⏭️  Installation du driver ignorée (OUTLET_INIT_NO_INSTALL=1).');
     }

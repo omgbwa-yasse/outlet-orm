@@ -15,10 +15,89 @@ const fs = require('fs');
 const fsPromises = require('fs').promises;
 const path = require('path');
 const DatabaseConnection = require('../DatabaseConnection');
-const { encrypt, decrypt, isEncrypted } = require('./BackupEncryption');
+const { encrypt, encryptV2, decrypt, isEncrypted } = require('./BackupEncryption');
 
 // DML keywords captured for transaction-log backups
 const DML_REGEX = /^\s*(INSERT|UPDATE|DELETE|REPLACE)\s+/i;
+
+/**
+ * Split a SQL script into statements without breaking semicolons inside
+ * strings, comments, dollar-quoted blocks, or PostgreSQL function bodies.
+ * @param {string} content
+ * @returns {string[]}
+ */
+function splitSqlStatements(content) {
+  const statements = [];
+  let current = '';
+  let single = false;
+  let double = false;
+  let lineComment = false;
+  let blockComment = false;
+  let dollarTag = null;
+
+  for (let i = 0; i < content.length; i++) {
+    const ch = content[i];
+    const next = content[i + 1];
+
+    if (lineComment) {
+      current += ch;
+      if (ch === '\n') lineComment = false;
+      continue;
+    }
+    if (blockComment) {
+      current += ch;
+      if (ch === '*' && next === '/') { current += '/'; i++; blockComment = false; }
+      continue;
+    }
+    if (dollarTag) {
+      if (ch === '$' && content.startsWith(dollarTag, i)) {
+        current += dollarTag;
+        i += dollarTag.length - 1;
+        dollarTag = null;
+      } else {
+        current += ch;
+      }
+      continue;
+    }
+    if (single) {
+      current += ch;
+      if (ch === '\'' && next === '\'') { current += '\''; i++; }
+      else if (ch === '\'') single = false;
+      continue;
+    }
+    if (double) {
+      current += ch;
+      if (ch === '"' && next === '"') { current += '"'; i++; }
+      else if (ch === '"') double = false;
+      continue;
+    }
+
+    if (ch === '-' && next === '-') { current += '--'; i++; lineComment = true; continue; }
+    if (ch === '/' && next === '*') { current += '/*'; i++; blockComment = true; continue; }
+    if (ch === '\'') { current += ch; single = true; continue; }
+    if (ch === '"') { current += ch; double = true; continue; }
+    if (ch === '$') {
+      const match = content.slice(i).match(/^\$[A-Za-z_][A-Za-z0-9_]*\$|^\$\$/);
+      if (match) {
+        dollarTag = match[0];
+        current += dollarTag;
+        i += dollarTag.length - 1;
+        continue;
+      }
+    }
+    if (ch === ';') {
+      const trimmed = current.trim();
+      if (trimmed && !/^--/.test(trimmed)) statements.push(trimmed);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+
+  const trailing = current.trim();
+  if (trailing && !/^--/.test(trailing)) statements.push(trailing);
+  return statements;
+}
 
 /**
  * Escape a SQL identifier (table / column name).
@@ -36,11 +115,14 @@ function quoteIdentifier(name, driver) {
  * @param {*} val
  * @returns {string}
  */
-function quoteValue(val) {
+function quoteValue(val, driver = 'mysql') {
   if (val === null || val === undefined) return 'NULL';
   if (typeof val === 'number' || typeof val === 'boolean') return String(val);
-  // Escape single quotes
-  return `'${String(val).replace(/'/g, '\'\'')}'`;
+  // Escape single quotes. MySQL also treats backslash as an escape character,
+  // so it must be doubled to prevent journal replay corruption/injection.
+  let escaped = String(val).replace(/'/g, '\'\'');
+  if (driver === 'mysql') escaped = escaped.replace(/\\/g, '\\\\');
+  return `'${escaped}'`;
 }
 
 /**
@@ -73,9 +155,15 @@ class BackupManager {
     );
 
     // Encryption settings
-    this._encryptEnabled  = Boolean(options.encrypt);
+    this._encryptEnabled  = options.encrypt !== undefined
+      ? Boolean(options.encrypt)
+      : process.env.OUTLET_BACKUP_ENCRYPT === '1';
     this._encryptPassword = options.encryptionPassword || null;
     this._saltLength      = options.saltLength != null ? options.saltLength : 6;
+    // V2 is the secure default for new backups; V1 is still decryptable.
+    this._encryptionVersion = options.encryptionVersion != null
+      ? Number(options.encryptionVersion)
+      : 2;
 
     if (this._encryptEnabled && !this._encryptPassword) {
       throw new Error('BackupManager: encryptionPassword is required when encrypt=true');
@@ -178,6 +266,17 @@ class BackupManager {
    */
   async restore(filePath, options = {}) {
     const absolute = path.resolve(process.cwd(), filePath);
+    // Confine restores to the configured backup directory by default. This
+    // prevents an agent or caller from executing an arbitrary .sql file.
+    if (options.allowOutsideBackupPath !== true) {
+      const relative = path.relative(this.backupPath, absolute);
+      if (relative.startsWith('..') || path.isAbsolute(relative)) {
+        throw new Error(
+          `BackupManager.restore: refusing to read outside the backup directory (${this.backupPath}). ` +
+          'Pass { allowOutsideBackupPath: true } only for trusted administrative restores.'
+        );
+      }
+    }
     let content = await fsPromises.readFile(absolute, 'utf8');
 
     // Decrypt if necessary
@@ -189,11 +288,8 @@ class BackupManager {
       content = decrypt(content, password);
     }
 
-    // Split on semicolon, ignore comment-only or empty chunks
-    const statements = content
-      .split(';')
-      .map((s) => s.trim())
-      .filter((s) => s && !s.startsWith('--'));
+    // Split statements while respecting strings, comments and dollar quotes.
+    const statements = splitSqlStatements(content);
 
     let count = 0;
     await this.connection.transaction(async () => {
@@ -366,14 +462,14 @@ class BackupManager {
     if (driver === 'postgres' || driver === 'postgresql') {
       let out = sql;
       for (let i = 0; i < params.length; i++) {
-        out = out.replace(`$${i + 1}`, quoteValue(params[i]));
+        out = out.replace(`$${i + 1}`, quoteValue(params[i], driver));
       }
       return out;
     }
 
-    // MySQL / SQLite – replace each ? in order
+    // MySQL / SQLite - replace each ? in order
     let idx = 0;
-    return sql.replace(/\?/g, () => quoteValue(params[idx++]));
+    return sql.replace(/\?/g, () => quoteValue(params[idx++], driver));
   }
 
   /**
@@ -399,10 +495,11 @@ class BackupManager {
    */
   async _writeContent(filePath, content) {
     if (this._encryptEnabled) {
-      const { encryptedContent, salt } = encrypt(content, this._encryptPassword, this._saltLength);
-      await fsPromises.writeFile(filePath, encryptedContent, 'utf8');
-      // Log the grain de sable (salt) for audit purposes without exposing the password
-      console.log(`  🔒 Encrypted (grain de sable: "${salt}", AES-256-GCM, scrypt key derivation)`);
+      const encrypted = this._encryptionVersion === 2
+        ? encryptV2(content, this._encryptPassword)
+        : encrypt(content, this._encryptPassword, this._saltLength);
+      await fsPromises.writeFile(filePath, encrypted.encryptedContent, 'utf8');
+      console.log(`  🔒 Encrypted (AES-256-GCM, ${this._encryptionVersion === 2 ? 'V2 scrypt' : 'V1 scrypt'})`);
     } else {
       await fsPromises.writeFile(filePath, content, 'utf8');
     }

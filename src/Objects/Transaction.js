@@ -32,7 +32,7 @@ class SchemaTransaction {
     if (!this._db) {
       throw new TypeError(
         `${this._className} is not bound to a connection. ` +
-        `Call Transaction.use(db) first.`
+        'Call Transaction.use(db) first.'
       );
     }
   }

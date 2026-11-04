@@ -1,5 +1,7 @@
 'use strict';
 
+const { fetchWithTimeout } = require('../Support/Fetch');
+
 /**
  * OnnProvider
  * Prompt-based chat at api.onn.ai with simulated streaming (70-char chunks).
@@ -20,7 +22,7 @@ class OnnProvider {
       prompt: joined,
       model: options.model || 'onn-default',
     };
-    const res = await fetch(this.endpoint, {
+    const res = await fetchWithTimeout(this.endpoint, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,

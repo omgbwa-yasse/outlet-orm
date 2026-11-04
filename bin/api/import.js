@@ -44,13 +44,53 @@ function isHttpUrl(location) {
   return location.startsWith('http://') || location.startsWith('https://');
 }
 
+const MAX_REMOTE_BYTES = 5 * 1024 * 1024;
+const REMOTE_TIMEOUT_MS = Number(process.env.OUTLET_IMPORT_TIMEOUT_MS) || 15000;
+
+/**
+ * Reject URLs that could turn `outlet api import --spec <url>` into an SSRF
+ * primitive (localhost, private ranges, link-local, cloud metadata).
+ * @param {string} location
+ * @returns {URL}
+ */
+function assertSafeRemoteUrl(location) {
+  const url = new URL(location);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error('Only http(s) URLs are supported');
+  }
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  const blocked = /^(localhost|127\.|0\.0\.0\.0$|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.|169\.254\.|::1$|fe80:|fc00:|fd00:)/i;
+  if (blocked.test(host) || host.endsWith('.local') || host === 'metadata.google.internal') {
+    throw new Error(`Refusing to fetch a private or link-local URL: ${host}`);
+  }
+  return url;
+}
+
 async function readRemote(location) {
-  const res = await globalThis.fetch(location);
+  assertSafeRemoteUrl(location);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REMOTE_TIMEOUT_MS);
+  let res;
+  try {
+    res = await globalThis.fetch(location, {
+      signal: controller.signal,
+      redirect: 'error'
+    });
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok) {
     throw new Error('Failed to fetch source from ' + location + ' - HTTP ' + res.status);
   }
+  const declaredLength = Number(res.headers.get('content-length') || 0);
+  if (declaredLength > MAX_REMOTE_BYTES) {
+    throw new Error(`Source is too large (${declaredLength} bytes > ${MAX_REMOTE_BYTES})`);
+  }
   const contentType = String(res.headers.get('content-type') || '').toLowerCase();
   const text = await res.text();
+  if (Buffer.byteLength(text, 'utf8') > MAX_REMOTE_BYTES) {
+    throw new Error(`Source is too large (> ${MAX_REMOTE_BYTES} bytes)`);
+  }
   return {
     location,
     finalUrl: res.url || location,

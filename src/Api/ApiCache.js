@@ -4,8 +4,9 @@
  * Inline in-memory cache store with TTL support.
  */
 class MemoryStore {
-  constructor() {
+  constructor(maxEntries = 1000) {
     this._store = new Map();
+    this._maxEntries = Number(maxEntries) > 0 ? Number(maxEntries) : 1000;
   }
 
   get(key) {
@@ -19,6 +20,10 @@ class MemoryStore {
   }
 
   set(key, value, ttl) {
+    if (this._store.size >= this._maxEntries && !this._store.has(key)) {
+      const oldest = this._store.keys().next().value;
+      if (oldest !== undefined) this._store.delete(oldest);
+    }
     this._store.set(key, {
       value,
       expiresAt: ttl ? Date.now() + ttl : null
@@ -189,7 +194,7 @@ class ApiCache {
     options = options || {};
     this._strategy = options.strategy || 'cache-first';
     this._ttl = options.ttl != null ? options.ttl : 60000;
-    this._store = options.store || new MemoryStore();
+    this._store = options.store || new MemoryStore(options.maxEntries);
   }
 
   /**

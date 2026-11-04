@@ -1,5 +1,7 @@
 'use strict';
 
+const { fetchWithTimeout } = require('../Support/Fetch');
+
 /**
  * CustomOpenAIProvider
  * Fully configurable OpenAI-compatible provider.
@@ -42,14 +44,14 @@ class CustomOpenAIProvider {
   /** @private */
   async _post(url, body, stream = false) {
     const opts = { method: 'POST', headers: this._headers(), body: JSON.stringify(body) };
-    if (stream) return fetch(url, opts);
-    const res = await fetch(url, opts);
+    if (stream) return fetchWithTimeout(url, opts);
+    const res = await fetchWithTimeout(url, opts);
     return res.json();
   }
 
   /** @private */
   async _get(url) {
-    const res = await fetch(url, { method: 'GET', headers: this._headers() });
+    const res = await fetchWithTimeout(url, { method: 'GET', headers: this._headers() });
     return res.json();
   }
 
@@ -206,7 +208,7 @@ class CustomOpenAIProvider {
       voice: options.voice || 'alloy',
       format: options.format || 'mp3',
     };
-    const res = await fetch(this._endpoint('tts'), {
+    const res = await fetchWithTimeout(this._endpoint('tts'), {
       method: 'POST',
       headers: this._headers(),
       body: JSON.stringify(payload),
@@ -227,7 +229,7 @@ class CustomOpenAIProvider {
 
     const headers = { [this.authHeader]: this.authPrefix + this.apiKey };
     Object.assign(headers, this.extraHeaders);
-    const res = await fetch(this._endpoint('stt'), { method: 'POST', headers, body: formData });
+    const res = await fetchWithTimeout(this._endpoint('stt'), { method: 'POST', headers, body: formData });
     const data = await res.json();
     return { text: data.text || '', raw: data };
   }

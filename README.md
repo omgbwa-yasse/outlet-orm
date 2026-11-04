@@ -65,7 +65,7 @@ npm install sqlite3
 
 Useful dependencies and prerequisites:
 
-- Node.js `>= 18.0.0`
+- Node.js `>= 20.17.0`
 - the main package is CommonJS (`require` / `module.exports`)
 - `mysql2`, `pg`, and `sqlite3` are optional peer dependencies loaded on demand
 - `graphql-ws` is optional if you use GraphQL subscriptions
@@ -905,6 +905,21 @@ npm run test:lab
 ```bash
 npm run lint
 ```
+
+## Security Notes
+
+Production-oriented defaults added in 15.3.0:
+
+- **Database TLS**: pass `ssl`, `ca`, `cert`, `key`, `rejectUnauthorized`, or set `DB_SSL=true` (`DB_SSL_REJECT_UNAUTHORIZED=false` only for controlled environments).
+- **Mass assignment**: use `static fillable = [...]` or `static guarded = ['role', 'is_admin']`. Set `static strictFillable = true` to deny everything not explicitly listed. `fillable`, `guarded`, `insert()`, `update()` and `upsert()` share the same policy.
+- **Transactions**: `db.transaction()` is concurrency-safe and supports nested transactions via savepoints. Prefer it over manual `beginTransaction()` in request handlers.
+- **Backups**: restores are confined to `backupPath` by default; set `encrypt: true` and `encryptionPassword` for data at rest. New backups use V2 encryption (16-byte salt, stronger scrypt, HMAC); V1 files remain decryptable. `OUTLET_BACKUP_ENCRYPT=1` enables encryption globally.
+- **Backup daemon**: binds to `127.0.0.1`; a non-loopback host requires `authToken` (or `OUTLET_BACKUP_TOKEN`). Set `allowRestore: false` to disable remote restores.
+- **MCP**: destructive tools require `OUTLET_AI_CONSENT_TOKEN` or the exact confirmation phrase. Do not disable `safetyGuardrails` against production.
+- **API client**: set `Model.cacheScope` (or `cacheScope` in the cache config) when one process serves multiple users; request logs redact credentials by default.
+- **Remote import**: `outlet api import --spec <url>` blocks private/link-local/metadata addresses and enforces timeouts and size limits.
+
+See [SECURITY.md](SECURITY.md) for the disclosure process.
 
 ## Useful Notes and Limits
 

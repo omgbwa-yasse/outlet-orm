@@ -197,7 +197,7 @@ describe('BackupSocketClient – restore', () => {
 
     // Mount a dedicated server wired to the fresh DB
     const restorePort   = PORT + 50;
-    const restoreServer = new BackupSocketServer(fresh, { port: restorePort, backupPath: TMP_DIR });
+    const restoreServer = new BackupSocketServer(fresh, { port: restorePort, backupPath: TMP_DIR, allowRestore: true });
     await restoreServer.listen();
     const restoreClient = await (async () => {
       const c = new BackupSocketClient({ port: restorePort, timeout: 10_000 });
@@ -272,6 +272,7 @@ describe('BackupSocketClient – restore', () => {
     const restoreEncServer = new BackupSocketServer(freshDB, {
       port      : restoreEncPort,
       backupPath: TMP_DIR,
+      allowRestore: true,
     });
     await restoreEncServer.listen();
     const restoreEncClient = await (async () => {
@@ -322,6 +323,7 @@ describe('BackupSocketClient – restore', () => {
     const encFile2 = await encClient2.run('full', { filename: 'restore_nopass.sql.enc' });
 
     // Try to restore without password using a plain server
+    server.allowRestore = true;
     await expect(client.restore(encFile2)).rejects.toThrow(/encrypted/);
 
     await encClient2.disconnect();

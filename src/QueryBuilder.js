@@ -73,6 +73,20 @@ class QueryBuilder {
     }
   }
 
+  /**
+   * Refuse mass update/delete without an explicit WHERE clause.
+   * @param {string} operation
+   * @private
+   */
+  _assertHasConditions(operation) {
+    if (!this.wheres || this.wheres.length === 0) {
+      throw new QueryBuilderError(
+        `Refusing to ${operation} without a WHERE clause. ` +
+        'Add a condition or use the lower-level connection API explicitly.'
+      );
+    }
+  }
+
   _buildQueryObj() {
     const query = this.buildQuery();
     if (this._subParams && this._subParams.length > 0) {
@@ -104,7 +118,9 @@ class QueryBuilder {
     if (this._excludeAllScopes) return;
     if (this._scopesApplied) return;
 
-    const scopes = this.model.globalScopes || {};
+    const scopes = this.model._getGlobalScopes
+      ? this.model._getGlobalScopes()
+      : (this.model.globalScopes || {});
     for (const [name, scopeFn] of Object.entries(scopes)) {
       if (!this._excludedScopes.includes(name)) {
         scopeFn(this);
@@ -914,24 +930,62 @@ class QueryBuilder {
   }
 
   /**
+   * Whether the current query can use keyset pagination safely.
+   * @private
+   */
+  _keysetEligible() {
+    if (!this.model || !this.model.primaryKey) return false;
+    if (this.groupBys.length || this.havings.length || this.unions.length ||
+        this.distinctFlag || this.joins.length) return false;
+    const cols = this.selectedColumns || ['*'];
+    const selectsPk = cols.includes('*') || cols.includes(this.model.primaryKey);
+    if (!selectsPk) return false;
+    if (this.orders.length === 0) return true;
+    if (this.orders.length !== 1) return false;
+    const [order] = this.orders;
+    return order.type !== 'raw' &&
+      order.column === this.model.primaryKey &&
+      String(order.direction || 'asc').toLowerCase() === 'asc';
+  }
+
+  /**
    * Lazily iterate over matching records using an async generator.
-   * Yields one model instance at a time, consuming minimal memory.
+   * Uses keyset pagination when possible; falls back to OFFSET for complex
+   * queries (joins, grouping, custom ordering).
    * @param {number} [chunkSize=100] - Number of records per internal query
    * @returns {AsyncGenerator<Model>}
    */
   async *cursor(chunkSize = 100) {
+    const keyset = this._keysetEligible();
+    const pk = keyset ? this.model.primaryKey : null;
+    let lastKey = null;
     let offset = 0;
+
     while (true) {
       const cloned = this.clone();
       cloned.limitValue = chunkSize;
-      cloned.offsetValue = offset;
+      if (keyset) {
+        cloned.offsetValue = null;
+        if (cloned.orders.length === 0) cloned.orderBy(pk, 'asc');
+        if (lastKey !== null) cloned.where(pk, '>', lastKey);
+      } else {
+        cloned.offsetValue = offset;
+      }
+
       const results = await cloned.get();
       if (results.length === 0) break;
       for (const model of results) {
         yield model;
       }
       if (results.length < chunkSize) break;
-      offset += chunkSize;
+
+      if (keyset) {
+        const nextKey = results[results.length - 1].getAttribute(pk);
+        if (nextKey === null || nextKey === undefined) break;
+        lastKey = nextKey;
+      } else {
+        offset += chunkSize;
+      }
     }
   }
 
@@ -1005,10 +1059,8 @@ class QueryBuilder {
    * @returns {Promise<any>}
    */
   async insert(data) {
-    // Apply fillable guard: only allow fields listed in model.fillable (if defined)
-    const fillable = this.model.fillable || [];
-    const applyFillable = (obj) => fillable.length > 0
-      ? Object.fromEntries(Object.entries(obj).filter(([k]) => fillable.includes(k)))
+    const applyFillable = (obj) => this.model
+      ? this.model._filterFillable(obj)
       : { ...obj };
 
     const safeData = Array.isArray(data) ? data.map(applyFillable) : applyFillable(data);
@@ -1038,6 +1090,7 @@ class QueryBuilder {
    * @returns {Promise<any>}
    */
   async update(attributes) {
+    this._assertHasConditions('update');
     if (this._isStandalone) {
       this._assertNotConsumed();
       this._consumed = true;
@@ -1047,11 +1100,8 @@ class QueryBuilder {
         this.buildQuery()
       );
     }
-    // Apply fillable guard: only allow fields listed in model.fillable (if defined)
-    const fillable = this.model.fillable || [];
-    const safeAttributes = fillable.length > 0
-      ? Object.fromEntries(Object.entries(attributes).filter(([k]) => fillable.includes(k)))
-      : { ...attributes };
+    // Apply the model mass-assignment policy.
+    const safeAttributes = this.model._filterFillable(attributes);
 
     if (this.model.timestamps) {
       safeAttributes.updated_at = new Date();
@@ -1084,6 +1134,37 @@ class QueryBuilder {
    * @returns {Promise<any>}
    */
   async delete() {
+    this._assertHasConditions('delete');
+
+    if (this.model && this.model.softDeletes) {
+      this._applySoftDeleteConstraints();
+      return this.model.connection.update(
+        this._getQuerySource(),
+        { [this.model.DELETED_AT]: new Date() },
+        this.buildQuery()
+      );
+    }
+
+    if (this._isStandalone) {
+      this._assertNotConsumed();
+      this._consumed = true;
+      return this._standaloneConnection.delete(
+        this._getQuerySource(),
+        this.buildQuery()
+      );
+    }
+    return this.model.connection.delete(
+      this._getQuerySource(),
+      this.buildQuery()
+    );
+  }
+
+  /**
+   * Permanently delete records, bypassing soft deletes.
+   * @returns {Promise<any>}
+   */
+  async forceDelete() {
+    this._assertHasConditions('forceDelete');
     if (this._isStandalone) {
       this._assertNotConsumed();
       this._consumed = true;
@@ -1370,6 +1451,9 @@ class QueryBuilder {
    * @returns {Promise<void>}
    */
   async chunk(size, callback) {
+    const keyset = this._keysetEligible();
+    const pk = keyset ? this.model.primaryKey : null;
+    let lastKey = null;
     let page = 1;
     let offset = 0;
 
@@ -1377,16 +1461,28 @@ class QueryBuilder {
     while (true) {
       const cloned = this.clone();
       cloned.limitValue = size;
-      cloned.offsetValue = offset;
-      const results = await cloned.get();
+      if (keyset) {
+        cloned.offsetValue = null;
+        if (cloned.orders.length === 0) cloned.orderBy(pk, 'asc');
+        if (lastKey !== null) cloned.where(pk, '>', lastKey);
+      } else {
+        cloned.offsetValue = offset;
+      }
 
+      const results = await cloned.get();
       if (results.length === 0) break;
 
       const shouldContinue = await callback(results, page);
       if (shouldContinue === false) break;
       if (results.length < size) break;
 
-      offset += size;
+      if (keyset) {
+        const nextKey = results[results.length - 1].getAttribute(pk);
+        if (nextKey === null || nextKey === undefined) break;
+        lastKey = nextKey;
+      } else {
+        offset += size;
+      }
       page++;
     }
   }

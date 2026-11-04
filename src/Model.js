@@ -1,4 +1,17 @@
 const QueryBuilder = require('./QueryBuilder');
+const { isDeepStrictEqual } = require('util');
+
+/**
+ * Validate a SQL identifier used by raw model helpers (e.g. upsert).
+ * @param {string} value
+ * @returns {string}
+ */
+function assertSqlIdentifier(value) {
+  if (typeof value !== 'string' || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) {
+    throw new Error(`Invalid SQL identifier: ${String(value)}`);
+  }
+  return value;
+}
 
 /**
  * Base Model class implementing the Active Record pattern.
@@ -8,6 +21,9 @@ class Model {
   static primaryKey = 'id';
   static timestamps = true;
   static fillable = [];
+  static guarded = [];
+  /** When true, an empty `fillable` denies every attribute instead of allowing all. */
+  static strictFillable = false;
   static hidden = [];
   static casts = {};
   static connection = null;
@@ -18,6 +34,9 @@ class Model {
 
   // Scopes
   static globalScopes = {};
+
+  // Default connection shared by models that do not declare their own.
+  static _defaultConnection = null;
 
   // Events/Hooks
   static eventListeners = {
@@ -41,11 +60,14 @@ class Model {
    * If none is set, it will be initialized from environment (.env) lazily.
    */
   static ensureConnection() {
-    if (!this.connection) {
-      // Lazy require to avoid circular dependencies
+    if (this.connection) return;
+    // Share one default connection across models instead of creating a new
+    // pool per model class (which exhausted database connections at scale).
+    if (!Model._defaultConnection) {
       const DatabaseConnection = require('./DatabaseConnection');
-      this.connection = new DatabaseConnection();
+      Model._defaultConnection = new DatabaseConnection();
     }
+    this.connection = Model._defaultConnection;
   }
 
   /**
@@ -62,6 +84,11 @@ class Model {
    * @param {DatabaseConnection} connection
    */
   static setConnection(connection) {
+    if (this === Model) {
+      Model._defaultConnection = connection;
+      Model.connection = connection;
+      return;
+    }
     this.connection = connection;
   }
 
@@ -252,15 +279,30 @@ class Model {
   // ==================== Scopes ====================
 
   /**
+   * Return the global scopes owned by this model class. The first access
+   * creates an own property so scopes never leak into sibling models through
+   * the prototype chain.
+   * @returns {Object}
+   */
+  static _getGlobalScopes() {
+    if (!Object.prototype.hasOwnProperty.call(this, 'globalScopes') || !this.globalScopes) {
+      Object.defineProperty(this, 'globalScopes', {
+        value: {},
+        writable: true,
+        configurable: true,
+        enumerable: true
+      });
+    }
+    return this.globalScopes;
+  }
+
+  /**
    * Add a global scope
    * @param {string} name - Scope name
    * @param {Function} callback - Function that modifies the query builder
    */
   static addGlobalScope(name, callback) {
-    if (!this.globalScopes) {
-      this.globalScopes = {};
-    }
-    this.globalScopes[name] = callback;
+    this._getGlobalScopes()[name] = callback;
   }
 
   /**
@@ -268,9 +310,8 @@ class Model {
    * @param {string} name - Scope name
    */
   static removeGlobalScope(name) {
-    if (this.globalScopes && this.globalScopes[name]) {
-      delete this.globalScopes[name];
-    }
+    const scopes = this._getGlobalScopes();
+    if (scopes[name]) delete scopes[name];
   }
 
   /**
@@ -322,7 +363,7 @@ class Model {
    * @returns {boolean}
    */
   trashed() {
-    return this.constructor.softDeletes && this.attributes[this.constructor.DELETED_AT] !== null;
+    return this.constructor.softDeletes && this.attributes[this.constructor.DELETED_AT] != null;
   }
 
   /**
@@ -821,32 +862,55 @@ class Model {
   static async upsert(rows, uniqueBy, update) {
     if (!rows || rows.length === 0) return;
     this.ensureConnection();
-    const uniqueCols = Array.isArray(uniqueBy) ? uniqueBy : [uniqueBy];
 
-    // Determine columns to update on conflict
-    const allCols = Object.keys(rows[0]);
-    const updateCols = update || allCols.filter(c => !uniqueCols.includes(c));
+    const table = assertSqlIdentifier(this.table);
+    const uniqueCols = (Array.isArray(uniqueBy) ? uniqueBy : [uniqueBy])
+      .map(assertSqlIdentifier);
+    if (uniqueCols.length === 0) {
+      throw new Error('upsert() requires at least one unique column');
+    }
 
-    // Build driver-specific upsert SQL
-    const table = this.table;
-    const columns = allCols;
-    const placeholders = rows.map(() => `(${columns.map(() => '?').join(', ')})`).join(', ');
-    const values = rows.flatMap(r => columns.map(c => r[c] !== undefined ? r[c] : null));
+    // Enforce the same mass-assignment policy as create()/update().
+    const safeRows = rows.map((row) => {
+      const filtered = this._filterFillable(row);
+      // Unique columns are required for the conflict target even when they are
+      // not listed in fillable.
+      for (const col of uniqueCols) {
+        if (row[col] !== undefined) filtered[col] = row[col];
+      }
+      return filtered;
+    });
+
+    const allCols = Object.keys(safeRows[0]).map(assertSqlIdentifier);
+    if (allCols.length === 0) {
+      throw new Error('upsert() received no writable columns');
+    }
+    const updateCols = (update || allCols.filter(c => !uniqueCols.includes(c)))
+      .map(assertSqlIdentifier);
+    if (updateCols.length === 0) {
+      throw new Error('upsert() requires at least one column to update');
+    }
+
+    const placeholders = safeRows
+      .map(() => `(${allCols.map(() => '?').join(', ')})`)
+      .join(', ');
+    const values = safeRows.flatMap(r => allCols.map(c => r[c] !== undefined ? r[c] : null));
 
     const conn = this.connection;
     const driver = conn.config ? conn.config.driver : 'mysql';
+    const q = (identifier) => driver === 'mysql' ? `\`${identifier}\`` : `"${identifier}"`;
 
     let sql;
     if (driver === 'sqlite') {
-      const updateSet = updateCols.map(c => `\`${c}\` = excluded.\`${c}\``).join(', ');
-      sql = `INSERT INTO \`${table}\` (${columns.map(c => `\`${c}\``).join(', ')}) VALUES ${placeholders} ON CONFLICT (${uniqueCols.map(c => `\`${c}\``).join(', ')}) DO UPDATE SET ${updateSet}`;
+      const updateSet = updateCols.map(c => `${q(c)} = excluded.${q(c)}`).join(', ');
+      sql = `INSERT INTO ${q(table)} (${allCols.map(q).join(', ')}) VALUES ${placeholders} ON CONFLICT (${uniqueCols.map(q).join(', ')}) DO UPDATE SET ${updateSet}`;
     } else if (driver === 'postgres' || driver === 'postgresql') {
-      const updateSet = updateCols.map(c => `"${c}" = EXCLUDED."${c}"`).join(', ');
-      sql = `INSERT INTO "${table}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES ${placeholders} ON CONFLICT (${uniqueCols.map(c => `"${c}"`).join(', ')}) DO UPDATE SET ${updateSet}`;
+      const updateSet = updateCols.map(c => `${q(c)} = EXCLUDED.${q(c)}`).join(', ');
+      sql = `INSERT INTO ${q(table)} (${allCols.map(q).join(', ')}) VALUES ${placeholders} ON CONFLICT (${uniqueCols.map(q).join(', ')}) DO UPDATE SET ${updateSet}`;
     } else {
       // MySQL: INSERT ... ON DUPLICATE KEY UPDATE
-      const updateSet = updateCols.map(c => `\`${c}\` = VALUES(\`${c}\`)`).join(', ');
-      sql = `INSERT INTO \`${table}\` (${columns.map(c => `\`${c}\``).join(', ')}) VALUES ${placeholders} ON DUPLICATE KEY UPDATE ${updateSet}`;
+      const updateSet = updateCols.map(c => `${q(c)} = VALUES(${q(c)})`).join(', ');
+      sql = `INSERT INTO ${q(table)} (${allCols.map(q).join(', ')}) VALUES ${placeholders} ON DUPLICATE KEY UPDATE ${updateSet}`;
     }
 
     return conn.execute(sql, values);
@@ -919,16 +983,38 @@ class Model {
   // ==================== Instance Methods ====================
 
   /**
+   * Apply the model mass-assignment policy to a plain object.
+   *
+   * - `static guarded = ['role', 'is_admin']` always wins.
+   * - `static guarded = ['*']` blocks every attribute.
+   * - `static fillable = ['name']` allows only those attributes.
+   * - Neither set means "allow all" (backwards-compatible default).
+   *
+   * @param {Object} attributes
+   * @returns {Object}
+   */
+  static _filterFillable(attributes) {
+    const data = attributes || {};
+    const guarded = this.guarded || [];
+    if (guarded.includes('*')) return {};
+    const fillable = this.fillable || [];
+    if (this.strictFillable && fillable.length === 0) return {};
+    return Object.fromEntries(
+      Object.entries(data).filter(([key]) =>
+        !guarded.includes(key) && (fillable.length === 0 || fillable.includes(key))
+      )
+    );
+  }
+
+  /**
    * Fill the model with attributes
    * @param {Object} attributes
    * @returns {this}
    */
   fill(attributes) {
-    const fillable = this.constructor.fillable || [];
-    for (const [key, value] of Object.entries(attributes)) {
-      if (fillable.includes(key)) {
-        this.setAttribute(key, value);
-      }
+    const safe = this.constructor._filterFillable(attributes);
+    for (const [key, value] of Object.entries(safe)) {
+      this.setAttribute(key, value);
     }
     return this;
   }
@@ -988,6 +1074,12 @@ class Model {
       return String(value);
     case 'bool':
     case 'boolean':
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (['false', '0', 'no', 'off', ''].includes(normalized)) return false;
+        if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+      }
+      if (typeof value === 'number') return value !== 0;
       return Boolean(value);
     case 'array':
     case 'json':
@@ -1148,7 +1240,7 @@ class Model {
   getDirty() {
     const dirty = {};
     for (const [key, value] of Object.entries(this.attributes)) {
-      if (JSON.stringify(value) !== JSON.stringify(this.original[key])) {
+      if (!isDeepStrictEqual(value, this.original[key])) {
         dirty[key] = value;
       }
     }

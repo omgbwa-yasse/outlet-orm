@@ -62,6 +62,17 @@ class ApiAdapter {
   // ── Request log ──────────────────────────────────────────────────────
   enableRequestLog() {
     this._logEnabled = true;
+    // Safe defaults: never persist credentials in request logs unless the
+    // caller explicitly overrides security.redactHeaders.
+    if (!this.security.redactHeaders || this.security.redactHeaders.length === 0) {
+      this.security.redactHeaders = [
+        'authorization',
+        'proxy-authorization',
+        'cookie',
+        'set-cookie',
+        'x-api-key'
+      ];
+    }
   }
 
   getRequestLog() {
@@ -80,26 +91,26 @@ class ApiAdapter {
   async _buildAuthHeaders(auth) {
     if (!auth) return {};
     switch (auth.type) {
-      case 'bearer':
-        return { Authorization: 'Bearer ' + auth.token };
-      case 'basic': {
-        const credentials = auth.username + ':' + auth.password;
-        const encoded = Buffer.from(credentials, 'utf8').toString('base64');
-        return { Authorization: 'Basic ' + encoded };
-      }
-      case 'apiKey':
-        if (auth.in === 'query') return {};
-        return { [auth.name || auth.header || 'X-API-Key']: auth.key };
-      case 'cookie': {
-        const cookieStr = auth.name
-          ? auth.name + '=' + (auth.value != null ? auth.value : '')
-          : (auth.cookie || '');
-        return { Cookie: cookieStr };
-      }
-      case 'oauth2':
-        return { Authorization: 'Bearer ' + auth.accessToken };
-      default:
-        return {};
+    case 'bearer':
+      return { Authorization: 'Bearer ' + auth.token };
+    case 'basic': {
+      const credentials = auth.username + ':' + auth.password;
+      const encoded = Buffer.from(credentials, 'utf8').toString('base64');
+      return { Authorization: 'Basic ' + encoded };
+    }
+    case 'apiKey':
+      if (auth.in === 'query') return {};
+      return { [auth.name || auth.header || 'X-API-Key']: auth.key };
+    case 'cookie': {
+      const cookieStr = auth.name
+        ? auth.name + '=' + (auth.value != null ? auth.value : '')
+        : (auth.cookie || '');
+      return { Cookie: cookieStr };
+    }
+    case 'oauth2':
+      return { Authorization: 'Bearer ' + auth.accessToken };
+    default:
+      return {};
     }
   }
 
@@ -159,38 +170,38 @@ class ApiAdapter {
 
     let error;
     switch (status) {
-      case 401:
-        error = new ApiUnauthorizedError(body && body.message);
-        break;
-      case 403:
-        error = new ApiForbiddenError(body && body.message);
-        break;
-      case 404:
-        error = new ApiNotFoundError(body && body.message);
-        break;
-      case 422: {
-        const errors = (body && body.errors) || {};
-        error = new ApiValidationError(body && body.message, {
-          statusCode: 422,
-          source: 'server',
-          errors
-        });
-        break;
+    case 401:
+      error = new ApiUnauthorizedError(body && body.message);
+      break;
+    case 403:
+      error = new ApiForbiddenError(body && body.message);
+      break;
+    case 404:
+      error = new ApiNotFoundError(body && body.message);
+      break;
+    case 422: {
+      const errors = (body && body.errors) || {};
+      error = new ApiValidationError(body && body.message, {
+        statusCode: 422,
+        source: 'server',
+        errors
+      });
+      break;
+    }
+    case 429: {
+      const retryAfter = response && response.headers && response.headers.get
+        ? response.headers.get('Retry-After')
+        : null;
+      error = new ApiRateLimitError(body && body.message, retryAfter);
+      break;
+    }
+    default:
+      if (status >= 500 && status <= 599) {
+        error = new ApiServerError(body && body.message, status);
+      } else {
+        error = new ApiResponseError(body && body.message, status);
       }
-      case 429: {
-        const retryAfter = response && response.headers && response.headers.get
-          ? response.headers.get('Retry-After')
-          : null;
-        error = new ApiRateLimitError(body && body.message, retryAfter);
-        break;
-      }
-      default:
-        if (status >= 500 && status <= 599) {
-          error = new ApiServerError(body && body.message, status);
-        } else {
-          error = new ApiResponseError(body && body.message, status);
-        }
-        break;
+      break;
     }
 
     if (this.onError) this.onError(error);
@@ -327,6 +338,10 @@ class ApiAdapter {
     // Retry loop (T059-T060)
     let lastErr;
     const maxRetries = options._retried ? 0 : this._retry.maxRetries;
+    const upperMethod = String(method).toUpperCase();
+    const idempotent = ['GET', 'HEAD', 'PUT', 'DELETE', 'OPTIONS'].includes(upperMethod)
+      || options.idempotent === true
+      || Boolean(options.idempotencyKey);
     for (let attempt_ = 0; attempt_ <= maxRetries; attempt_++) {
       if (attempt_ > 0) {
         let delay = this._retry.delay;
@@ -343,15 +358,11 @@ class ApiAdapter {
         lastErr = err;
         const isRetryable = err.statusCode && this._retry.retryCodes.includes(err.statusCode);
         const isNetErr = err instanceof ApiNetworkError;
-        if ((isRetryable || isNetErr) && attempt_ < maxRetries) {
+        if ((isRetryable || isNetErr) && attempt_ < maxRetries && idempotent) {
           continue;
         }
         this._cbOnFailure();
-        try {
-          await this.interceptors.runResponseError(err);
-        } catch (interceptedErr) {
-          throw interceptedErr;
-        }
+        await this.interceptors.runResponseError(err);
         throw err;
       }
     }

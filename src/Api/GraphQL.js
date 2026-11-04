@@ -86,7 +86,8 @@ class ApiGraphQL extends Api {
       // Optional peer dep — graceful fallback
       const { createClient } = require('graphql-ws');
       const wsUrl = opts.wsUrl || (this._config && this._config.wsUrl) || '';
-      wsClient = createClient({ url: wsUrl });
+      const connectionParams = opts.connectionParams || (this._config && this._config.connectionParams);
+      wsClient = createClient({ url: wsUrl, connectionParams });
     } catch (e) {
       const err = new ApiError('graphql-ws is not installed. Run: npm install graphql-ws');
       err.code = 'MISSING_PEER_DEP';

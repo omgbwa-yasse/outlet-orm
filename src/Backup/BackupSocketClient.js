@@ -39,6 +39,7 @@ class BackupSocketClient extends events.EventEmitter {
     this.port    = options.port    || DEFAULT_PORT;
     this.host    = options.host    || DEFAULT_HOST;
     this.timeout = options.timeout || DEFAULT_TIMEOUT;
+    this.token   = options.token   || process.env.OUTLET_BACKUP_TOKEN || null;
 
     this._socket  = null;
     this._buffer  = '';
@@ -55,9 +56,17 @@ class BackupSocketClient extends events.EventEmitter {
    */
   connect() {
     return new Promise((resolve, reject) => {
-      this._socket = net.createConnection({ port: this.port, host: this.host }, () => {
+      this._socket = net.createConnection({ port: this.port, host: this.host }, async () => {
         this._socket.setEncoding('utf8');
         this.emit('connect');
+        if (this.token) {
+          try {
+            await this._send({ action: 'auth', token: this.token });
+          } catch (err) {
+            reject(err);
+            return;
+          }
+        }
         resolve();
       });
 

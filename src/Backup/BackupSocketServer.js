@@ -64,12 +64,17 @@ class BackupSocketServer extends events.EventEmitter {
     this.connection = connection;
     this.port    = options.port || DEFAULT_PORT;
     this.host    = options.host || DEFAULT_HOST;
+    this.authToken = options.authToken || process.env.OUTLET_BACKUP_TOKEN || null;
+    // Remote restore is disabled by default. Enable it explicitly for trusted
+    // administrative setups.
+    this.allowRestore = options.allowRestore === true;
 
     this._managerOptions = {
       backupPath         : options.backupPath,
       encrypt            : options.encrypt,
       encryptionPassword : options.encryptionPassword,
       saltLength         : options.saltLength,
+      encryptionVersion  : options.encryptionVersion,
     };
 
     this.manager   = new BackupManager(connection, this._managerOptions);
@@ -91,6 +96,13 @@ class BackupSocketServer extends events.EventEmitter {
    */
   listen() {
     return new Promise((resolve, reject) => {
+      const loopback = /^(127\.|localhost$|::1$)/i.test(this.host);
+      if (!loopback && !this.authToken) {
+        return reject(new Error(
+          'BackupSocketServer: refusing to bind a non-loopback host without an authToken. ' +
+          'Set options.authToken or OUTLET_BACKUP_TOKEN, or bind to 127.0.0.1.'
+        ));
+      }
       this._server = net.createServer((socket) => this._handleClient(socket));
 
       this._server.on('error', (err) => {
@@ -185,6 +197,17 @@ class BackupSocketServer extends events.EventEmitter {
       msg = JSON.parse(raw);
     } catch (_) {
       this._send(socket, { ok: false, error: 'Invalid JSON' });
+      return;
+    }
+
+    if (this.authToken && !socket._outletAuthed) {
+      if (msg.action === 'auth' && msg.token === this.authToken) {
+        socket._outletAuthed = true;
+        this._send(socket, { ok: true, result: 'authenticated' });
+        return;
+      }
+      this._send(socket, { ok: false, error: 'Unauthorized' });
+      socket.destroy();
       return;
     }
 
@@ -283,6 +306,9 @@ class BackupSocketServer extends events.EventEmitter {
     }
 
     case 'restore': {
+      if (!this.allowRestore) {
+        throw new Error('Remote restore is disabled (allowRestore=false)');
+      }
       if (!msg.filePath) {
         throw new Error('\'filePath\' is required for restore');
       }
@@ -293,7 +319,10 @@ class BackupSocketServer extends events.EventEmitter {
           || this._managerOptions.encryptionPassword,
       });
       const restoreManager = new BackupManager(this.connection, restoreOpts);
-      return restoreManager.restore(msg.filePath, msg.options || {});
+      return restoreManager.restore(msg.filePath, {
+        ...(msg.options || {}),
+        allowOutsideBackupPath: false
+      });
     }
 
     default:
@@ -322,15 +351,18 @@ class BackupSocketServer extends events.EventEmitter {
   }
 
   /**
-   * Build BackupManager options, merging server defaults with per-call overrides.
+   * Build BackupManager options from server-side defaults only.
+   * Per-request overrides must never change the backup directory, disable
+   * encryption, or replace the encryption password.
    * @private
    */
-  _buildManagerOptions(overrides = {}) {
+  _buildManagerOptions(/* overrides = {} */) {
     return {
-      backupPath        : overrides.backupPath         || this._managerOptions.backupPath,
-      encrypt           : overrides.encrypt            != null ? overrides.encrypt            : this._managerOptions.encrypt,
-      encryptionPassword: overrides.encryptionPassword || this._managerOptions.encryptionPassword,
-      saltLength        : overrides.saltLength         != null ? overrides.saltLength         : this._managerOptions.saltLength,
+      backupPath        : this._managerOptions.backupPath,
+      encrypt           : this._managerOptions.encrypt,
+      encryptionPassword: this._managerOptions.encryptionPassword,
+      saltLength        : this._managerOptions.saltLength,
+      encryptionVersion : this._managerOptions.encryptionVersion,
     };
   }
 

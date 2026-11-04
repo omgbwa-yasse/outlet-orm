@@ -1,5 +1,7 @@
 'use strict';
 
+const { fetchWithTimeout } = require('../Support/Fetch');
+
 const JsonSchemaValidator = require('../Support/JsonSchemaValidator');
 const DocumentAttachmentMapper = require('../Support/DocumentAttachmentMapper');
 const fs = require('fs');
@@ -50,16 +52,16 @@ class OpenAIProvider {
     const fetchOpts = { method: 'POST', headers, body: JSON.stringify(body) };
     if (streamFlag) {
       // Return raw response for streaming
-      return fetch(url, fetchOpts);
+      return fetchWithTimeout(url, fetchOpts);
     }
-    const res = await fetch(url, fetchOpts);
+    const res = await fetchWithTimeout(url, fetchOpts);
     return res.json();
   }
 
   /** @private */
   async _get(url, options = {}) {
     const headers = this._headers(options);
-    const res = await fetch(url, { method: 'GET', headers });
+    const res = await fetchWithTimeout(url, { method: 'GET', headers });
     return res.json();
   }
 
@@ -412,7 +414,7 @@ class OpenAIProvider {
     if (options.voice_instructions) payload.voice_instructions = options.voice_instructions;
 
     // For SSE streaming TTS — not typical, fallback to normal
-    const res = await fetch(this.textToSpeechEndpoint, {
+    const res = await fetchWithTimeout(this.textToSpeechEndpoint, {
       method: 'POST',
       headers: this._headers(options),
       body: JSON.stringify(payload),
@@ -446,7 +448,7 @@ class OpenAIProvider {
     if (options.organization) headers['OpenAI-Organization'] = options.organization;
     if (options.project) headers['OpenAI-Project'] = options.project;
 
-    const res = await fetch(endpoint, { method: 'POST', headers, body: formData });
+    const res = await fetchWithTimeout(endpoint, { method: 'POST', headers, body: formData });
     const data = await res.json();
     return { text: data.text || '', raw: data };
   }

@@ -213,10 +213,10 @@ class ApiQueryBuilder {
     } else if (strategy === 'odata') {
       const filters = [];
       for (const w of this._wheres) {
-        if (w.op === '=') filters.push(w.col + " eq '" + w.val + "'");
-        else if (w.op === 'like') filters.push("contains(" + w.col + ", '" + w.val + "')");
+        if (w.op === '=') filters.push(w.col + ' eq \'' + w.val + '\'');
+        else if (w.op === 'like') filters.push('contains(' + w.col + ', \'' + w.val + '\')');
         else if (w.op === 'between') filters.push(w.col + ' ge ' + w.val[0] + ' and ' + w.col + ' le ' + w.val[1]);
-        else if (w.op === 'in') filters.push(w.col + ' in (' + w.val.map(v => "'" + v + "'").join(',') + ')');
+        else if (w.op === 'in') filters.push(w.col + ' in (' + w.val.map(v => '\'' + v + '\'').join(',') + ')');
         else if (w.op === 'null') filters.push(w.col + ' eq null');
         else if (w.op === 'not_null') filters.push(w.col + ' ne null');
       }
@@ -359,6 +359,7 @@ class ApiQueryBuilder {
   async eachPage(perPage, fn) {
     perPage = perPage || 15;
     let page = 1;
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       const paginator = await this.paginate(page, perPage);
       const items = paginator.data.map(item => this._model._hydrate(item));

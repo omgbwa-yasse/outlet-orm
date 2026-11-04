@@ -247,6 +247,7 @@ declare module 'outlet-orm' {
     /** Update and return first matching row as model, optionally eager-loading relations */
     updateAndFetch(attributes: Record<string, any>, relations?: string[]): Promise<T | null>;
     delete(): Promise<any>;
+    forceDelete(): Promise<any>;
     increment(column: string, amount?: number): Promise<any>;
     decrement(column: string, amount?: number): Promise<any>;
     /** Lazily iterate over matching records using an async generator */
@@ -338,6 +339,8 @@ declare module 'outlet-orm' {
     static primaryKey: string;
     static timestamps: boolean;
     static fillable: string[];
+    static guarded: string[];
+    static strictFillable: boolean;
     static hidden: string[];
     static casts: Record<string, CastType>;
     static connection: DatabaseConnection | null;

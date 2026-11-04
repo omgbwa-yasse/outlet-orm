@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [15.3.0] — 2026-11-04
+
+### 🔒 Security hardening
+
+- **Transactions are now concurrency-safe**: `DatabaseConnection.transaction()` uses `AsyncLocalStorage` and a dedicated client per transaction; nested transactions use `SAVEPOINT`. Concurrent transactions on the same instance no longer corrupt each other.
+- **Database TLS is configurable**: `ssl`, `ca`, `cert`, `key`, `rejectUnauthorized`, `minVersion`, `socketPath`, `charset` and timeouts are forwarded to MySQL/PostgreSQL; `DB_SSL=true` enables TLS from the environment.
+- **Stricter mass-assignment policy**: added `static guarded` and `static strictFillable`; `fill()`, `QueryBuilder.insert()`, `QueryBuilder.update()` and `Model.upsert()` now share the same filter. `upsert()` validates every SQL identifier.
+- **Backups**: restores are confined to the configured backup directory by default; remote restore is disabled on the backup daemon unless `allowRestore: true`; SQL scripts are split with a quote/comment-aware parser; MySQL backslashes are escaped in journal replays; the backup socket daemon requires an auth token on non-loopback hosts. New backups use the **V2 encryption format** (16-byte salt, stronger scrypt, HMAC integrity) while V1 files remain decryptable.
+- **Schema**: added `table.string('col').change()` for MySQL (`MODIFY COLUMN`) and PostgreSQL (`ALTER COLUMN TYPE`); SQLite throws `UnsupportedCapabilityError`.
+- **Pagination**: `cursor()` and `chunk()` now use keyset pagination when the query shape allows it, falling back to OFFSET for joins/grouping/custom ordering.
+- **Offline queue**: `MutationQueue` accepts optional async `encrypt`/`decrypt` hooks for at-rest protection of queued mutations.
+- **MCP**: destructive tools now include `migrate_run`, `migrate_rollback`, `seed_run` and `backup_create`; consent requires an out-of-band token or the explicit confirmation phrase; write detection scans the whole statement (including CTEs); `migrate_make` validates names and paths.
+- **AI providers**: all HTTP calls have a hard timeout (`AI_TIMEOUT_MS`), and Gemini uses the `x-goog-api-key` header instead of a query-string key.
+- **Remote API import**: blocks private/link-local/metadata URLs, disables redirects, and enforces timeouts and size limits.
+- **Query log**: values for password/token/API-key columns are redacted; request logs redact credentials by default.
+- **Migrations**: advisory locks use a dedicated connection, production detection also uses host/database indicators, and `restore:auto` refuses paths outside the backup directory.
+- **API client**: cache entries include an optional `cacheScope`, memory stores are bounded, and only idempotent requests are retried by default.
+
+### ✅ Tooling
+
+- Upgraded `js-yaml` (4.3.2), `mysql2` (3.24.6) and `sqlite3` (6.0.1); `npm audit --omit=dev` is clean.
+- CI now runs the lint, secrets/dynamic-code gate and dependency audit; added Dependabot and `SECURITY.md`.
+- `prepublishOnly` runs lint, tests and the security gate.
+
 ## [15.2.0] — 2026-05-20
 
 ### ✨ Safer schema and migration workflows

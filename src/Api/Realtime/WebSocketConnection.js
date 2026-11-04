@@ -29,6 +29,7 @@ class WebSocketConnection extends EventEmitter {
     this._onConnect     = opts.onConnect     || null;
     this._onDisconnect  = opts.onDisconnect  || null;
     this._onError       = opts.onError       || null;
+    this._connectionParams = opts.connectionParams || null;
     this._retries       = 0;
     this._closed        = false;
     this._ws            = null;
@@ -51,16 +52,19 @@ class WebSocketConnection extends EventEmitter {
         this._retries = 0;
         this.emit('connect');
         if (this._onConnect) this._onConnect();
+        if (this._connectionParams) {
+          try { ws.send(JSON.stringify(this._connectionParams)); } catch (_) { /* socket already closed */ }
+        }
         // Flush send queue
         while (this._sendQueue.length) {
           const msg = this._sendQueue.shift();
-          try { ws.send(typeof msg === 'string' ? msg : JSON.stringify(msg)); } catch (_) {}
+          try { ws.send(typeof msg === 'string' ? msg : JSON.stringify(msg)); } catch (_) { /* socket already closed */ }
         }
       };
 
       ws.onmessage = (e) => {
         let data = e.data;
-        try { data = JSON.parse(data); } catch (_) {}
+        try { data = JSON.parse(data); } catch (_) { /* plain-text message */ }
         this.emit('message', data);
         if (this._onMessage) this._onMessage(data);
       };
