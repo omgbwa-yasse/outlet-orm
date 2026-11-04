@@ -71,8 +71,8 @@
   },
   "homepage": "https://github.com/omgbwa-yasse/outlet-orm#readme",
   "dependencies": {
-    "dotenv": "^16.4.5",
-    "js-yaml": "^4.3.2",
+    "dotenv": "^18.0.9",
+    "js-yaml": "^5.5.0",
     "pluralize": "^8.0.0"
   },
   "peerDependencies": {
